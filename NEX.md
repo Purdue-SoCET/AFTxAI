@@ -1,6 +1,5 @@
-# Project Glossary
-- "AFT" = top level project name, microcontroller
-- "RISCVBusiness" = core, 3 stage pipeline RISCV32IE
+# Project Overview
+This project is a microcontroller with a RISCV32 core, buses, and peripherals. Goal is full tapeout from scratch.
 
 # Top Level Resource Locations
 - Documentation: `/docs`
@@ -14,4 +13,26 @@
 - Waveforms: `/wav`
 
 # Engineering Conventions
+- Use interfaces across all source modules, create new ones when necessary
 - Write Source Files first, then testbench to verify functionality
+- Write source files purely in SystemVerilog
+- Use Makefiles for simulation, synthesis, waves, linting
+
+# Available Tools
+- Git
+- gcc
+- python3
+- riscv-gcc
+- Verilator
+- Cadence Xcelium
+- Siemens Questa
+- GTKWave
+- LCOV
+- Cadence Innovus
+- Cadence Virtuoso
+- Cadence Spectre
+- Cadence Pegasus
+- Cadence Quantus
+- Intel Quartus
+
+
