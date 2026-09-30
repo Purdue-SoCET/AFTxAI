@@ -17,6 +17,10 @@ This project is a microcontroller with a RISCV32 core, buses, and peripherals. G
 - Write Source Files first, then testbench to verify functionality
 - Write source files purely in SystemVerilog
 - Use Makefiles for simulation, synthesis, waves, linting
+- Use underscores to divide words in signal names
+
+# Verification Strategy
+- Create UVM testbenches for each major block and SystemVerilog assertion-based testbenches for every smaller submodule
 
 # Available Tools
 - Git
