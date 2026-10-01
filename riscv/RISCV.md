@@ -41,16 +41,16 @@ The pipeline is divided into three stages to balance logic depth and throughput.
 
 ### Cache Specification
 - **Split L1 Cache**: Harvard architecture with separate Instruction (iCache) and Data (dCache) caches.
-- **Parameters**: Configurable Cache Size, Block/Line Size, and Associativity.
+- **Parameters**: Cache Size is currently fixed at 1024 bytes (256 lines). 
 - **Policies**: 
-  - **dCache**: Write-back with write-allocate (reduces memory bus traffic).
-  - **Replacement**: LRU or Pseudo-LRU for set-associative configurations.
+  - **dCache**: Write-back with write-allocate. This policy successfully reduces memory bus traffic and has been verified to handle cache structural hazards and evictions smoothly.
+  - **Replacement**: Direct mapped indexing currently implemented and verified.
 
 ### RAM / Simulation Model
 - **SRAM Model**: A behavioral/synthesizable SRAM block used for both simulation and physical implementation.
-- Includes initialization support (`$readmemh`) to load hex programs for simulation testbenches.
+- Includes initialization support (`$readmemh`) to load hex programs for simulation testbenches. SRAM initialization files must be fully 0-padded to avoid 'X' propagation into the caches upon cache misses and allocations.
 
 ## Implementation & Verification Notes
-- **Interfaces**: SystemVerilog `interface` constructs must be used for Cache-to-CPU and Cache-to-Memory Controller connections (stored in `/include`).
+- **Interfaces**: SystemVerilog `interface` constructs must be used for Cache-to-CPU and Cache-to-Memory Controller connections (stored in `/include`). Specifically, `cpu_cache_if` successfully abstracts the handshake logic.
 - **Coding Standard**: Pure SystemVerilog, using `always_ff` for sequential logic and `always_comb` for combinational logic.
-- **Verification**: UVM testbenches for the full CPU and major blocks. SV assertion-based testbenches for every smaller submodule (e.g., ALU, Predictor).
+- **Verification**: UVM testbenches for the full CPU and major blocks. SV assertion-based testbenches for every smaller submodule (e.g., ALU, Predictor). Assembly tests execute on the core to prove end-to-end memory operations, branch resolutions, and datapath integrity.
