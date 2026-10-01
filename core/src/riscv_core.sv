@@ -4,12 +4,13 @@ module riscv_core (
     input  logic clk,
     input  logic rst_n,
 
-    // Instruction Memory Interface
+    // Instruction Memory Interface (Connecting to Main Memory or Bus)
     output logic [31:0] imem_addr,
     input  logic [31:0] imem_rdata,
     input  logic        imem_valid,
+    output logic        imem_req,
 
-    // Data Memory Interface
+    // Data Memory Interface (Connecting to Main Memory or Bus)
     output logic [31:0] dmem_addr,
     output logic [31:0] dmem_wdata,
     output logic        dmem_read,
@@ -23,6 +24,20 @@ module riscv_core (
     fetch_exec_if fe_if();
     exec_mem_if   em_if();
     mem_wb_if     mwb_if();
+
+    // Cache signals
+    logic [31:0] icache_rdata;
+    logic        icache_valid;
+    logic [31:0] icache_addr;
+    logic        icache_req;
+
+    logic [31:0] dcache_addr;
+    logic [31:0] dcache_wdata;
+    logic        dcache_read;
+    logic        dcache_write;
+    logic [2:0]  dcache_size;
+    logic [31:0] dcache_rdata;
+    logic        dcache_ready;
 
     // Internal signals
     logic stall_fetch;
@@ -41,13 +56,47 @@ module riscv_core (
     logic        bp_taken;
     logic [31:0] bp_target;
 
+    // L1 Instruction Cache
+    icache l1_icache (
+        .clk(clk),
+        .rst_n(rst_n),
+        .core_addr(icache_addr),
+        .core_req(icache_req),
+        .core_rdata(icache_rdata),
+        .core_valid(icache_valid),
+        .mem_addr(imem_addr),
+        .mem_req(imem_req),
+        .mem_rdata(imem_rdata),
+        .mem_valid(imem_valid)
+    );
+
+    // L1 Data Cache
+    dcache l1_dcache (
+        .clk(clk),
+        .rst_n(rst_n),
+        .core_addr(dcache_addr),
+        .core_wdata(dcache_wdata),
+        .core_read(dcache_read),
+        .core_write(dcache_write),
+        .core_size(dcache_size),
+        .core_rdata(dcache_rdata),
+        .core_ready(dcache_ready),
+        .mem_addr(dmem_addr),
+        .mem_wdata(dmem_wdata),
+        .mem_read(dmem_read),
+        .mem_write(dmem_write),
+        .mem_size(dmem_size),
+        .mem_rdata(dmem_rdata),
+        .mem_ready(dmem_ready)
+    );
+
     branch_predictor bp (
         .clk(clk),
         .rst_n(rst_n),
         .pc(bp_pc),
         .predict_taken(bp_taken),
         .predict_target(bp_target),
-        .update_valid(em_if.valid), // Simplified update
+        .update_valid(em_if.valid),
         .update_pc(fe_if.pc),
         .update_taken(1'b0), // Connect properly later
         .update_target(32'h0)
@@ -61,9 +110,10 @@ module riscv_core (
         .flush(branch_mispredict),
         .branch_mispredict(branch_mispredict),
         .correct_target_pc(correct_target_pc),
-        .imem_addr(imem_addr),
-        .imem_rdata(imem_rdata),
-        .imem_valid(imem_valid),
+        .icache_addr(icache_addr),
+        .icache_req(icache_req),
+        .icache_rdata(icache_rdata),
+        .icache_valid(icache_valid),
         .bp_pc(bp_pc),
         .bp_taken(bp_taken),
         .bp_target(bp_target)
@@ -91,17 +141,17 @@ module riscv_core (
         .rst_n(rst_n),
         .em_if(em_if.mem),
         .mwb_if(mwb_if.mem),
-        .dmem_addr(dmem_addr),
-        .dmem_wdata(dmem_wdata),
-        .dmem_read(dmem_read),
-        .dmem_write(dmem_write),
-        .dmem_size(dmem_size),
-        .dmem_rdata(dmem_rdata),
-        .dmem_ready(dmem_ready)
+        .dcache_addr(dcache_addr),
+        .dcache_wdata(dcache_wdata),
+        .dcache_read(dcache_read),
+        .dcache_write(dcache_write),
+        .dcache_size(dcache_size),
+        .dcache_rdata(dcache_rdata),
+        .dcache_ready(dcache_ready)
     );
 
     hazard_unit hazard (
-        .fe_rs1_addr(ex_rs1_addr), // Using decoded addresses from Exec
+        .fe_rs1_addr(ex_rs1_addr),
         .fe_rs2_addr(ex_rs2_addr),
         .em_mem_read_en(em_if.mem_read_en),
         .em_rd_addr(em_if.rd_addr),
