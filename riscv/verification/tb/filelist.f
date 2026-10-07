@@ -1,0 +1,15 @@
++incdir+../../../riscv/include
+../../../riscv/include/riscv_pkg.sv
+../../../riscv/include/ahb_if.sv
+../../../riscv/include/cache_if.sv
+../../../riscv/include/coherence_if.sv
+../../../riscv/rtl/core/alu.sv
+../../../riscv/rtl/core/regfile.sv
+../../../riscv/rtl/core/base_decoder.sv
+../../../riscv/rtl/core/ext_a_decoder.sv
+../../../riscv/rtl/core/decoder.sv
+../../../riscv/rtl/core/hazard_unit.sv
+../../../riscv/rtl/core/forwarding_unit.sv
+../../../riscv/rtl/core/branch_predictor.sv
+../../../riscv/rtl/core/csr_regfile.sv
+../../../riscv/rtl/cache/l1_cache.sv

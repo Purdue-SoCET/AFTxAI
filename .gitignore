@@ -1,1 +1,6 @@
 */work/*
+logs/
+modelsim.ini
+transcript
+work/
+.nex/
