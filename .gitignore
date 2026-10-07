@@ -4,3 +4,13 @@ modelsim.ini
 transcript
 work/
 .nex/
+
+# Generated simulation and build files
+obj_dir/
+xcelium.d/
+*.log
+*.history
+*.elf
+*.dump
+*.hex
+!sort32.hex
