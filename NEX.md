@@ -7,11 +7,7 @@ AHB-to-APB bridge), on-chip and off-chip memory, and a set of peripherals. The
 goal is a fully synthesizable, verified design taken through tapeout.
 
 Treat this file as the primary engineering guidance for working in this
-repository. The architectural specification in `docs/AiFT_spec.md` is the
-authoritative source for system behavior, address maps, and block
-requirements. Where this file and the specification disagree on architecture,
-the specification wins; where they disagree on process or conventions, this
-file wins.
+repository.
 
 # Project Glossary
 
