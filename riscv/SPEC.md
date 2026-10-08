@@ -53,10 +53,24 @@ The core implements a strict 3-stage pipeline.
 
 ### 3.2. Interfaces
 - **CPU-to-Cache:** Standard `valid` / `ready` / `addr` / `rdata` / `wdata` / `wstrb` (byte enables) handshake.
-- **Cache-to-Fabric:** Separate standard AHB Master interfaces for Instruction and Data (Harvard architecture). 
-  - Fills and evictions use standard AHB `INCR` bursts.
+- **Cache-to-Bus-Controller:** Simple internal handshaking protocol (not AHB). Data width is 32 bits. Cache lines (up to 8 words) are transferred word-by-word.
 
 ### 3.3. Cache Policies
 - **dCache (Data):** Write-back, write-allocate. Uses basic Valid and Dirty bits (No MESI protocol/coherency).
 - **iCache (Instruction):** Read-only. Uses Valid bits only.
 - **Replacement Policy:** True LRU (Least Recently Used) for the 2-way set associative configuration.
+
+---
+
+## 4. Bus Controller
+A dedicated Bus Controller arbitrates cache misses and unifies the Harvard caches into a single stream.
+
+### 4.1. Architecture & Arbitration
+- **Role:** Merges iCache and dCache requests, handing them off to an external AHB Manager.
+- **Arbitration:** Fixed priority. The dCache strictly wins arbitration if both caches miss simultaneously.
+- **Buffering:** Strictly unbuffered. The cache and pipeline remain stalled until the memory transaction is fully completed by the AHB Manager.
+
+### 4.2. Interfaces & Error Handling
+- **Cache-Facing:** Uses the simple 32-bit word-by-word internal protocol.
+- **Fabric-Facing:** Connects to an external AHB Manager (which handles the translation to actual AHB `INCR` bursts).
+- **Error Handling:** If the AHB Manager reports a bus error during a cache fill or eviction, the Bus Controller permanently halts the core.
