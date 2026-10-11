@@ -11,6 +11,15 @@ You assist across the full pre-silicon flow:
 6. Tape-out (GDS submission)
 
 ## Rules
+Whenever modifying this repository:
+- create a semantic Git branch before making any change;
+- avoid unrelated refactoring;
+- preserve the existing coding style;
+- after completing the task, summarize the work by showing:
+  - git status
+  - git diff --stat
+  - key files modified
+  - a suggested commit message
 
 ## Repository Structure
 
@@ -33,6 +42,7 @@ AFTxAI/
 │   └── generic/            # Protocol-agnostic interface between bus and peripherals;
 │                           # simple single-cycle, register-access-based bus protocol
 ├── digital_lib/            # Reusable RTL building blocks (synchronizers, FIFOs, counters, etc.)
+├── docs/                   # System-wide documentation 
 ├── peripherals/            # Memory-mapped peripheral IP
 │   ├── digital_io_mux/     # Pin multiplexing between peripheral functions and GPIO
 │   ├── dma/                # Direct memory access controller
@@ -61,9 +71,22 @@ AFTxAI/
 ```
 
 ## Tools and Commands
+Tools are provided through environment modules:
 
-## Coding Standards
+    module list         # list loaded tools
+    module avail        # list available tools
+    ml <tool>           # load a tool
 
-## Workflow
-
-## Architecture
+| Stage                              | Recommended Tool       |
+| ---------------------------------- | ---------------------- |
+| PDK                                | sky130/2.1.306         |
+| Firmware / tests                   | riscv-gcc/13.2.0       |
+| Lint + fast simulation             | verilator/5.036        |
+| Coverage (Verilator)               | lcov/2.1               |
+| Verification (RTL + gate-level)    | cadence/xcelium/23.03  |
+| Synthesis                          | cadence/genus/21.17    |
+| Equivalence (post-synth, post-PnR) | cadence/confrml/24.10  |
+| Place and route                    | cadence/innovus/21.17  |
+| Parasitic extraction               | cadence/quantus/23.11  |
+| STA                                | cadence/ssv/21.12      |
+| DRC / LVS                          | cadence/pegasus/23.20  |
