@@ -1,6 +1,14 @@
 # NEX.md
 
 ## Overview
+AFT is a RISC-V SoC with memory mapped peripherals.
+You assist across the full pre-silicon flow:
+1. Architecture & spec
+2. RTL design + verification (in parallel, both derived from the spec)
+3. Synthesis + equivalence check
+4. Place & route
+5. Sign-off (STA, DRC, LVS)
+6. Tape-out (GDS submission)
 
 ## Rules
 
@@ -9,7 +17,7 @@
 ```
 AFTxAI/
 ├── bus/                    # On-chip bus fabric: protocols, interconnects, and bridges
-│   ├── ahb/                # AMBA AHB implementation
+│   ├── ahb/                # AMBA AHB-Lite implementation
 │   │   ├── ahb_interconnect/   # Address decode and arbitration between managers and subordinates
 │   │   ├── ahb_manager/        # AHB manager (initiator) interface
 │   │   ├── ahb_subordinate/    # AHB subordinate (target) interface
