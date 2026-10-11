@@ -61,7 +61,7 @@ AFTxAI/
 │   ├── include/            # Core packages, ISA definitions, and shared types
 │   ├── rtl/                # Synthesizable processor RTL
 │   │   ├── caches/             # Instruction and data caches
-│   │   ├── core/               # Pipeline datapath and control
+│   │   ├── datapath/           # Pipeline datapath and control
 │   │   └── memory/             # Memory interface and bus adapters
 │   └── verification/       # Processor verification
 │       ├── asmFiles/           # Assembly test programs
