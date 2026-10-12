@@ -9,6 +9,8 @@ module bus_controller #(parameter int BLOCK_SIZE = 4) (
     typedef enum logic { STATE_IDLE, STATE_XFER } state_e;
     state_e state, next_state;
     logic active_sel, next_active_sel;
+    logic active_rnw_reg, next_active_rnw_reg;
+    logic [31:0] active_addr_reg, next_active_addr_reg;
     logic [3:0] word_cnt, next_word_cnt;
     logic halt_error, next_halt_error;
 
@@ -22,17 +24,31 @@ module bus_controller #(parameter int BLOCK_SIZE = 4) (
     always_comb begin
         next_state = state;
         next_active_sel = active_sel;
+        next_active_rnw_reg = active_rnw_reg;
+        next_active_addr_reg = active_addr_reg;
         next_word_cnt = word_cnt;
         next_halt_error = ahbm_if.error ? 1'b1 : halt_error;
         
         case (state)
             STATE_IDLE: begin
-                if (dcache_if.req) begin next_active_sel = 1'b1; next_state = STATE_XFER; next_word_cnt = '0; end
-                else if (icache_if.req) begin next_active_sel = 1'b0; next_state = STATE_XFER; next_word_cnt = '0; end
+                if (dcache_if.req) begin 
+                    next_active_sel = 1'b1; 
+                    next_active_rnw_reg = dcache_if.rnw;
+                    next_active_addr_reg = dcache_if.addr;
+                    next_state = STATE_XFER; 
+                    next_word_cnt = '0; 
+                end
+                else if (icache_if.req) begin 
+                    next_active_sel = 1'b0; 
+                    next_active_rnw_reg = icache_if.rnw;
+                    next_active_addr_reg = icache_if.addr;
+                    next_state = STATE_XFER; 
+                    next_word_cnt = '0; 
+                end
             end
             STATE_XFER: begin
                 if (ahbm_if.ack) begin
-                    if (word_cnt == BLOCK_SIZE - 1) next_state = STATE_IDLE;
+                    if (word_cnt == 4'(BLOCK_SIZE - 1)) next_state = STATE_IDLE;
                     else next_word_cnt = word_cnt + 1;
                 end
             end
@@ -43,11 +59,15 @@ module bus_controller #(parameter int BLOCK_SIZE = 4) (
         if (!nRST) begin
             state <= STATE_IDLE;
             active_sel <= 1'b0;
+            active_rnw_reg <= 1'b0;
+            active_addr_reg <= 32'b0;
             word_cnt <= '0;
             halt_error <= 1'b0;
         end else begin
             state <= next_state;
             active_sel <= next_active_sel;
+            active_rnw_reg <= next_active_rnw_reg;
+            active_addr_reg <= next_active_addr_reg;
             word_cnt <= next_word_cnt;
             halt_error <= next_halt_error;
         end
@@ -64,10 +84,10 @@ module bus_controller #(parameter int BLOCK_SIZE = 4) (
                 else if (icache_if.req) icache_if.gnt = 1'b1;
             end
             STATE_XFER: begin
-                ahbm_if.req = 1'b1; ahbm_if.rnw = active_rnw; ahbm_if.addr = active_addr + (word_cnt << 2); ahbm_if.wdata = active_wdata;
+                ahbm_if.req = 1'b1; ahbm_if.rnw = active_rnw_reg; ahbm_if.addr = active_addr_reg + (32'(word_cnt) << 2); ahbm_if.wdata = active_wdata;
                 if (ahbm_if.ack) begin
-                    if (active_sel) begin dcache_if.valid = 1'b1; dcache_if.last = (word_cnt == BLOCK_SIZE - 1); end
-                    else begin icache_if.valid = 1'b1; icache_if.last = (word_cnt == BLOCK_SIZE - 1); end
+                    if (active_sel) begin dcache_if.valid = 1'b1; dcache_if.last = (word_cnt == 4'(BLOCK_SIZE - 1)); end
+                    else begin icache_if.valid = 1'b1; icache_if.last = (word_cnt == 4'(BLOCK_SIZE - 1)); end
                 end
             end
         endcase
