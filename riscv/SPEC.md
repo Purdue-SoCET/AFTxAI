@@ -11,7 +11,7 @@
 
 ### 1.2. Global Signals & Parameters
 - **Clock:** Single clock domain (`HCLK`) for the entire core and cache subsystem.
-- **Reset:** Asynchronous, active-low.
+- **Reset:** Asynchronous, active-low (`nRST`).
 - **Boot Address:** Parameterized, default `0x0000_0000`.
 
 ---

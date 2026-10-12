@@ -5,7 +5,7 @@ description: This skill is used to revise markdown files for content, clarity, a
 
 # Instructions
 
-1. Review the provided markdown file.
+1. Review $ARGUMENTS.
 2. Ask clarifying questions for any content that is confusing or ambiguous.
 3. Add concise information from the clarifying question answers.
 4. Remove any non-important or incorrect information.
