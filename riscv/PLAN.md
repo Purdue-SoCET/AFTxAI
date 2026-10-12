@@ -1,4 +1,5 @@
 # AFT SoC: RISC-V CPU Design & Verification Plan
+Goal: Completely design and verify a RV32I/E CPU with L1 cache and bus controller. The CPU should be able to run assembly files that can be checked for correctness by comparing expected final memory state to actual final memory state.
 
 ## 1. Directory Mapping (AFT Repository Structure)
 - **RTL**:

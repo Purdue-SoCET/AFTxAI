@@ -11,7 +11,7 @@ You assist across the full pre-silicon flow:
 6. Tape-out (GDS submission)
 
 ## Rules
-Whenever modifying this repository:
+### Whenever modifying this repository:
 - create a semantic Git branch before making any change;
 - avoid unrelated refactoring;
 - preserve the existing coding style;
@@ -20,6 +20,10 @@ Whenever modifying this repository:
   - git diff --stat
   - key files modified
   - a suggested commit message
+
+### Coding Rules:
+- Never put logic in an always_ff block, use next logic in always_comb;
+- Create an interface file for each module;
 
 ## Repository Structure
 
