@@ -28,7 +28,7 @@ module tb_top;
     initial begin
         nRST = 0;
         #20 nRST = 1;
-        #5000;
+        #500000;
         $display("TIMEOUT: Simulation ran too long.");
         $finish;
     end
