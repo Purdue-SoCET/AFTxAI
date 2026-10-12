@@ -24,8 +24,12 @@ module ahb_memory (
 
     always_ff @(posedge HCLK) begin
         if (ahbm_if.req && !ahbm_if.rnw && ahbm_if.addr == 32'h00001000) begin
-            $display("SUCCESS: Magic write to 0x1000 with data %08x", ahbm_if.wdata);
             $writememh("mem_out.hex", mem);
+            if (ahbm_if.wdata == 32'h0000600d) begin
+                $display("SUCCESS: Magic write to 0x1000 with data %08x (PASSED)", ahbm_if.wdata);
+            end else begin
+                $display("FAILURE: Magic write to 0x1000 with data %08x (FAILED)", ahbm_if.wdata);
+            end
             $finish;
         end
     end
