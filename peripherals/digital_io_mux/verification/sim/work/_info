@@ -1,0 +1,224 @@
+m255
+K4
+z2
+Z0 !s99 nomlopt
+!s11f vlog 2022.4_5 2024.06, Jun 21 2024
+13
+!s112 1.1
+!i10d 8192
+!i10e 25
+!i10f 100
+cModel Technology
+Z1 d/home/asicfab/a/ehysa/AiFT/AFTxAI/peripherals/digital_io_mux/verification/sim
+T_opt
+!s110 1792095889
+Vm?Zkk;Tc9dO@<J;SPMEj62
+04 17 4 work tb_digital_io_mux fast 0
+=1-1866dab9deaf-6ad13691-298c-88cd
+R0
+!s12b OEM100
+!s124 OEM100
+o-quiet -auto_acc_if_foreign -work work -L work +acc
+Z2 tCvgOpt 0
+n@_opt
+OE;O;2022.4_5;75
+Yapb_if
+Z3 DXx6 sv_std 3 std 0 22 9oUSJO;AeEaW`l:M@^WG92
+Z4 !s110 1792095888
+!i10b 1
+!s100 f^RQNW3R:o6eMC1FMJ3R43
+ISKkWSF9MbNX_W3W_SEP0P0
+S1
+R1
+w1792094200
+8../../../../bus/apb/include/apb_if.sv
+F../../../../bus/apb/include/apb_if.sv
+!i122 0
+Z5 L0 4 0
+Z6 VDg1SIo80bB@j0V0VzS_@n1
+Z7 OE;L;2022.4_5;75
+r1
+!s85 0
+31
+Z8 !s108 1792095888.000000
+Z9 !s107 ../tb/tb_digital_io_mux.sv|../../../../digital_lib/sync_2ff.sv|../../rtl/digital_io_mux.sv|../../rtl/digital_io_mux_apb.sv|../../rtl/digital_io_mux_cell.sv|../../include/digital_io_mux_cell_if.sv|../../include/digital_io_mux_if.sv|../../../../bus/apb/include/apb_if.sv|
+Z10 !s90 -sv|-cover|bcesf|-incdir|../../../../bus/apb/include|-incdir|../../include|../../../../bus/apb/include/apb_if.sv|../../include/digital_io_mux_if.sv|../../include/digital_io_mux_cell_if.sv|../../rtl/digital_io_mux_cell.sv|../../rtl/digital_io_mux_apb.sv|../../rtl/digital_io_mux.sv|../../../../digital_lib/sync_2ff.sv|../tb/tb_digital_io_mux.sv|
+!i113 0
+Z11 !s102 -cover bcesf
+Z12 o-sv -cover bcesf -L mtiAvm -L mtiRnm -L mtiOvm -L mtiUvm -L mtiUPF -L infact
+R2
+vdigital_io_mux
+R3
+R4
+!i10b 1
+!s100 ^:JVb_6VV:oj7[5=4M4an3
+I4VR<:M4ND3QB>_XSY9aPd3
+S1
+R1
+w1792094504
+8../../rtl/digital_io_mux.sv
+F../../rtl/digital_io_mux.sv
+!i122 0
+L0 5 64
+R6
+R7
+r1
+!s85 0
+31
+R8
+R9
+R10
+!i113 0
+R11
+R12
+R2
+vdigital_io_mux_apb
+R3
+R4
+!i10b 1
+!s100 SPngFQ:cHYW8Z5aak`[@:2
+IfJeE`HM;F1Z9=mBa0cE_O0
+S1
+R1
+w1792094576
+8../../rtl/digital_io_mux_apb.sv
+F../../rtl/digital_io_mux_apb.sv
+!i122 0
+L0 3 71
+R6
+R7
+r1
+!s85 0
+31
+R8
+R9
+R10
+!i113 0
+R11
+R12
+R2
+vdigital_io_mux_cell
+R3
+R4
+!i10b 1
+!s100 g>PI]AcOXc@Xo2bMFVD9T2
+INhUO6AiCP6UM=@>0::2W^3
+S1
+R1
+w1792094506
+8../../rtl/digital_io_mux_cell.sv
+F../../rtl/digital_io_mux_cell.sv
+!i122 0
+L0 3 45
+R6
+R7
+r1
+!s85 0
+31
+R8
+R9
+R10
+!i113 0
+R11
+R12
+R2
+Ydigital_io_mux_cell_if
+R3
+R4
+!i10b 1
+!s100 b<^K2NF2>_Hl8]F;0m5D[0
+I?Sflcl<Dm1234DYnk:Dfe3
+S1
+R1
+w1792094496
+8../../include/digital_io_mux_cell_if.sv
+F../../include/digital_io_mux_cell_if.sv
+!i122 0
+R5
+R6
+R7
+r1
+!s85 0
+31
+R8
+R9
+R10
+!i113 0
+R11
+R12
+R2
+Ydigital_io_mux_if
+R3
+R4
+!i10b 1
+!s100 iAaPHiPd9k9_kU>BR>A3C1
+I:6Y?jlUTH1_O>;EOEWnLd1
+S1
+R1
+w1792094218
+8../../include/digital_io_mux_if.sv
+F../../include/digital_io_mux_if.sv
+!i122 0
+R5
+R6
+R7
+r1
+!s85 0
+31
+R8
+R9
+R10
+!i113 0
+R11
+R12
+R2
+vsync_2ff
+R3
+R4
+!i10b 1
+!s100 AS8^_J;eMeo934Ol=oI5>1
+Ib5D_VMfjRW^kA8`WfK>;L2
+S1
+R1
+w1792094203
+8../../../../digital_lib/sync_2ff.sv
+F../../../../digital_lib/sync_2ff.sv
+!i122 0
+L0 1 31
+R6
+R7
+r1
+!s85 0
+31
+R8
+R9
+R10
+!i113 0
+R11
+R12
+R2
+vtb_digital_io_mux
+R3
+R4
+!i10b 1
+!s100 9;R]bSP_87ZbHKAXaaR_00
+I4Y>mP`VH1X@^feb8jD3:B2
+S1
+R1
+w1792095767
+8../tb/tb_digital_io_mux.sv
+F../tb/tb_digital_io_mux.sv
+!i122 0
+L0 6 221
+R6
+R7
+r1
+!s85 0
+31
+R8
+R9
+R10
+!i113 0
+R11
+R12
+R2

@@ -1,0 +1,2 @@
+var g_data = {"4":["work.digital_io_mux",100.00,1],"5":["work.digital_io_mux_apb",83.56,1],"7":["work.digital_io_mux_cell",66.66,1],"8":["work.sync_2ff",100.00,1],"1":["work.tb_digital_io_mux",46.52,1]};
+processDuLinks(g_data);
