@@ -1,0 +1,24 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
+-XLMODE
+./xcelium.d/run.lnx8664.23.03.d
+-RUNMODE
+-sv
+../include/apb_if.sv
+../../generic/bus_protocol_if.sv
+../rtl/apb_requester.sv
+../rtl/apb_interconnect.sv
+../rtl/apb_completer.sv
+tb_apb.sv
+-CDSLIB
+./xcelium.d/run.lnx8664.23.03.d/cdsrun.lib
+-HDLVAR
+./xcelium.d/run.lnx8664.23.03.d/hdlrun.var
+-no_analogsolver
+-MESSAGES
+-UPDATE
+-XLLIBSTORE
+./xcelium.d/run.lnx8664.23.03.d/xllibs
+-ALLOWUNBOUND

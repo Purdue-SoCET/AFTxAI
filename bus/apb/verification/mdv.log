@@ -1,0 +1,22 @@
+[INFO ] 2026-10-16 19:12:00 [com.cadence.mdv.imc.Main] [main] - Binding debug tools http on port: 44813
+[ERROR] 2026-10-16 19:12:01 [com.cadence.mdv.cli.engine.CLIEnvironment] [BLNativeThread-1] - command reportMetricsIMC failed
+
+com.cadence.mdv.exceptions.MDVException: illegal metric
+	at com.cadence.mdv.cli.commands.ReportMetricsCmd.handelMetrics(ReportMetricsCmd.java:283)
+	at com.cadence.mdv.cli.commands.ReportMetricsIMCCmd.internalInvoke(ReportMetricsIMCCmd.java:44)
+	at com.cadence.mdv.cli.commands.BaseCliJavaCMD.invoke(BaseCliJavaCMD.java:152)
+	at com.cadence.mdv.cli.commands.BaseCliJavaCMD.invoke(BaseCliJavaCMD.java:157)
+	at com.cadence.mdv.cli.engine.CLIEnvironment.runJavaCmd(CLIEnvironment.java:235)
+	at com.cadence.mdv.bl.impl.core.blNative.BLNative.runCommandNative(Native Method)
+	at com.cadence.mdv.bl.impl.core.blNative.BLNative$87.callInternal(BLNative.java:1927)
+	at com.cadence.mdv.util.CallableWithSource.call(CallableWithSource.java:25)
+	at com.cadence.mdv.central.tools.SystemInterThreadCommXRegistry.lambda$wrap$1(SystemInterThreadCommXRegistry.java:61)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+[ERROR] 2026-10-16 19:12:01 [com.cadence.mdv.messaging.MDVASynchronicMessaging] [frontend-pool-1] - 'overalldetail' is an illegal value for -metrics option. Valid values are all, code, fsm, functional, block, expression, toggle, state, transition, arc, assertion, covergroup.
+[INFO ] 2026-10-16 19:12:17 [com.cadence.mdv.imc.Main] [main] - Binding debug tools http on port: 42613
+[ERROR] 2026-10-16 19:12:17 [com.cadence.mdv.messaging.MDVASynchronicMessaging] [frontend-pool-1] - Incorrect command parameters. Unknown option 'format'
+[INFO ] 2026-10-16 19:15:09 [com.cadence.mdv.imc.Main] [main] - Binding debug tools http on port: 35833
+[INFO ] 2026-10-16 19:15:41 [com.cadence.mdv.imc.Main] [main] - Binding debug tools http on port: 42329

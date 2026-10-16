@@ -65,7 +65,9 @@ module tb_apb;
     // -----------------------------------------------------
     // Downstream Peripheral Models
     // -----------------------------------------------------
-    // apb_completer expects combinational rdata!
+    logic stall_override_0 = 0;
+    logic stall_override_1 = 0;
+
     always_comb begin
         periph_bus_0.rdata = periph_bus_0.ren ? ~periph_bus_0.addr : 32'h0;
         periph_bus_1.rdata = periph_bus_1.ren ? ~periph_bus_1.addr : 32'h0;
@@ -73,8 +75,8 @@ module tb_apb;
         periph_bus_0.error = 1'b0;
         periph_bus_1.error = 1'b0;
         
-        periph_bus_0.request_stall = 1'b0;
-        periph_bus_1.request_stall = 1'b0;
+        periph_bus_0.request_stall = stall_override_0;
+        periph_bus_1.request_stall = stall_override_1;
     end
 
     // -----------------------------------------------------
@@ -106,6 +108,7 @@ module tb_apb;
         
         data = cpu_bus.rdata;
         err = cpu_bus.error;
+        
         cpu_bus.ren <= 0;
     endtask
 
@@ -174,11 +177,50 @@ module tb_apb;
         $display("PASS T02: Comp 1 basic read/write");
 
         // ------------------------------------------
-        // T03: Back-to-back across completers
+        // T03: Back-to-back across completers & Coverage
         // ------------------------------------------
         bus_write(32'h8000_000C, 32'h11111111, 4'hF);
         bus_write(32'h8001_000C, 32'h22222222, 4'hF);
+        
+        // WAW same completer for coverage
+        bus_write(32'h8000_0008, 32'h33333333, 4'hF);
+        bus_write(32'h8000_000C, 32'h44444444, 4'hF);
         $display("PASS T03: Back-to-back writes across completers");
+
+        // ------------------------------------------
+        // T04: Transaction with wait states
+        // ------------------------------------------
+        fork
+            begin
+                bus_write(32'h8000_000C, 32'hCAFEBABE, 4'hF);
+            end
+            begin
+                stall_override_0 = 1;
+                repeat(3) @(posedge PCLK);
+                stall_override_0 <= 0;
+            end
+        join
+        
+        fork
+            begin
+                bus_read(32'h8000_000C, rdata, err);
+            end
+            begin
+                stall_override_0 = 1;
+                repeat(3) @(posedge PCLK);
+                stall_override_0 <= 0;
+            end
+        join
+        
+        if (err !== 0 || rdata !== ~32'h0000_000C) begin
+            $display("FAIL T04: Wait state Read Mismatch. got rdata=%h err=%b", rdata, err);
+            $finish(1);
+        end
+        $display("PASS T04: Wait states injected successfully");
+
+        // RAR same completer for coverage
+        bus_read(32'h8000_000C, rdata, err);
+        bus_read(32'h8000_000C, rdata, err);
 
         // ------------------------------------------
         // T05 & T06: Error conditions 
@@ -207,7 +249,15 @@ module tb_apb;
         if (cpu_bus.error !== 1'b1) begin
             $display("FAIL T07: Unmapped access did not flag error!");
         end else begin
-            $display("PASS T07: Unmapped access error flagged");
+            $display("PASS T07: Unmapped write access error flagged");
+        end
+        
+        // Unmapped Read for coverage
+        bus_read(32'h9000_0000, rdata, err);
+        if (err !== 1'b1) begin
+            $display("FAIL T07: Unmapped read access did not flag error!");
+        end else begin
+            $display("PASS T07: Unmapped read access error flagged");
         end
         
         #50;

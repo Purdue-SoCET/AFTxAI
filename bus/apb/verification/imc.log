@@ -1,0 +1,5 @@
+IMC(64): 23.03-s003: (c) Copyright 1995-2023 Cadence Design Systems Inc - Simulator version: 23.03-s004 - Coverage engine version: 23.03-s004
+Starting batch mode
+imc> load -run cov_work/scope/default; report_metrics -detail -metrics assertion -out assert_cov.txt; exit
+imc: *I,RUNLD: Successfully loaded run /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/verification/cov_work/scope/default.
+Metrics report written to /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/verification/assert_cov.txt/index.html
