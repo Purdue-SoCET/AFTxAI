@@ -74,6 +74,8 @@ module timer_tb;
 
     logic [31:0] rdata;
     logic err;
+    logic [31:0] expected;
+    logic [31:0] expected_cap;
 
     initial begin
         presetn = 0;
@@ -104,8 +106,25 @@ module timer_tb;
         do_read(13'h0008, rdata, err); assert(rdata == 32'h12345678 && err == 0) else $fatal(1, "T03");
 
         // T04: PSTRB masks
-        do_write(13'h0008, 32'hAAAAAAAA, 4'h3); 
-        do_read(13'h0008, rdata, err); assert(rdata == 32'h1234AAAA && err == 0) else $fatal(1, "T04");
+        do_write(13'h0008, 32'h00000000, 4'hF); 
+        for (int i=0; i<16; i++) begin
+            do_write(13'h0008, 32'hFFFFFFFF, i[3:0]);
+            do_read(13'h0008, rdata, err);
+            assert(err == 0) else $fatal(1, "T04 err");
+            expected = 0;
+            if (i[0]) expected[7:0]   = 8'hFF;
+            if (i[1]) expected[15:8]  = 8'hFF;
+            if (i[2]) expected[23:16] = 8'hFF;
+            if (i[3]) expected[31:24] = 8'hFF;
+            assert(rdata == expected) else $fatal(1, "T04 data mismatch");
+            do_write(13'h0008, 32'h00000000, 4'hF); 
+        end
+        // zero-strobe no-op while running
+        do_write(13'h0008, 32'h2, 4'hF);
+        do_write(13'h0000, 32'h1, 4'hF);
+        do_write(13'h0008, 32'hFFFFFFFF, 4'h0); // Should be no-op, not error, and not write
+        assert(dut.write_error == 0) else $fatal(1, "T04 zero-strobe err while running");
+        do_write(13'h0000, 32'h0, 4'hF);
 
         // T05: Invalid addresses
         do_read(13'h0020, rdata, err); assert(err == 1) else $fatal(1, "T05");
@@ -281,12 +300,66 @@ module timer_tb;
         #10 presetn = 0; #100 presetn = 1; // Reset to get capture baseline
         repeat(5) @(posedge pclk);
         do_write(13'h0008, 32'hFFFF_FFFF, 4'hF);
+        
+        // T22/T23: Rising edge capture
         do_write(13'h0000, 32'h9, 4'hF); // EN=1, CAP_EN=1, EDGE=00 (rising)
         repeat(2) @(posedge pclk);
+        
+        // Ensure falling edge is ignored
+        capture_i = 0; // Falling edge
+        repeat(4) @(posedge pclk);
+        do_read(13'h0014, rdata, err); assert(rdata[2] == 0) else $fatal(1, "T22 falling edge wrongly captured");
+        
+        // Now rising edge
+        @(posedge pclk);
+        #1;
+        fork begin
+            wait(dut.cap_event);
+            expected_cap = dut.count_reg;
+        end join_none
         capture_i = 1; // Rising edge
+        
         repeat(4) @(posedge pclk);
         do_read(13'h0014, rdata, err); assert(rdata[2] == 1) else $fatal(1, "T22 cap pend");
-        do_read(13'h0018, rdata, err); assert(rdata > 0 && rdata < 10) else $fatal(1, "T23 cap val");
+        do_read(13'h0018, rdata, err); assert(rdata == expected_cap) else $fatal(1, "T23 exact cap val mismatch");
+        do_write(13'h0014, 32'h4, 4'hF); // W1C
+        
+        do_write(13'h0000, 32'h8, 4'hF); // Stop first
+        do_write(13'h0000, 32'h19, 4'hF); // EN=1, CAP_EN=1, EDGE=01 (falling)
+        repeat(2) @(posedge pclk);
+        capture_i = 1; // already 1
+        @(posedge pclk);
+        #1;
+        fork begin
+            wait(dut.cap_event);
+            expected_cap = dut.count_reg;
+            $display("T22 falling: cap_event triggered at %0t, count=%0d", $time, expected_cap);
+        end join_none
+        capture_i = 0; // Falling edge
+        $display("T22 falling: capture_i=0 at %0t, control_reg=%h, count=%d", $time, dut.control_reg, dut.count_reg);
+        repeat(4) @(posedge pclk);
+        do_read(13'h0014, rdata, err); 
+        $display("T22 falling: read rdata=%h at %0t", rdata, $time);
+        assert(rdata[2] == 1) else $fatal(1, "T22 falling cap pend");
+        do_read(13'h0018, rdata, err); assert(rdata == expected_cap) else $fatal(1, "T23 falling exact cap val mismatch");
+        do_write(13'h0014, 32'h4, 4'hF); // W1C
+        
+        // T22/T23: Either edge capture
+        do_write(13'h0000, 32'h18, 4'hF); // Stop first
+        do_write(13'h0000, 32'h29, 4'hF); // EN=1, CAP_EN=1, EDGE=10 (either)
+        repeat(2) @(posedge pclk);
+        @(posedge pclk);
+        #1;
+        fork begin
+            wait(dut.cap_event);
+            expected_cap = dut.count_reg;
+        end join_none
+        capture_i = 1; // Rising edge
+        repeat(4) @(posedge pclk);
+        do_read(13'h0014, rdata, err); assert(rdata[2] == 1) else $fatal(1, "T22 either(R) cap pend");
+        do_read(13'h0018, rdata, err); assert(rdata == expected_cap) else $fatal(1, "T23 either(R) exact cap val mismatch");
+        do_write(13'h0014, 32'h4, 4'hF); // W1C
+
         
         capture_i = 0; repeat(4) @(posedge pclk);
         capture_i = 1; repeat(4) @(posedge pclk); // Second capture

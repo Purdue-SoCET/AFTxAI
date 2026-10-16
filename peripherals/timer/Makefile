@@ -35,8 +35,10 @@ compile_tb: $(WORK_DIR)
 	$(VLOG) -work work -sv +incdir+../../bus/include $(RTL_SRC) $(TB_SRC)
 
 sim_tb: compile_tb
-	$(VSIM) -c -do "run -all; quit -f" -l transcript work.timer_tb
-	@if grep -q -E "\*\* Fatal:|\*\* Error:" transcript; then echo "Simulation failed!"; exit 1; fi
+	@echo "onbreak {quit -code 1}; onerror {quit -code 1}; run -all; quit -code 0" > $(WORK_DIR)/run_tb.do
+	$(VSIM) -c -do $(WORK_DIR)/run_tb.do -l transcript work.timer_tb
+	@if grep -q "\*\* Fatal:" transcript; then echo "Simulation failed (Fatal)!"; exit 1; fi
+	@if grep -q "\*\* Error:" transcript; then echo "Simulation failed (Error)!"; exit 1; fi
 
 compile_uvm: $(WORK_DIR)
 	$(VLOG) -work work -sv +incdir+../../bus/include $(RTL_SRC) $(UVM_TB_SRC)
@@ -44,10 +46,19 @@ compile_uvm: $(WORK_DIR)
 sim: compile_uvm
 	@echo "onbreak {quit -code 1}; onerror {quit -code 1}; run -all; quit -code 0" > $(WORK_DIR)/run_uvm.do
 	$(VSIM) -c -do $(WORK_DIR)/run_uvm.do -l transcript work.timer_uvm_tb +UVM_TESTNAME=$(TEST) -sv_seed $(SEED)
-	@if grep -q -E "UVM_ERROR :[ ]+[1-9]" transcript; then echo "UVM_ERROR failed!"; exit 1; fi
-	@if grep -q -E "UVM_FATAL :[ ]+[1-9]" transcript; then echo "UVM_FATAL failed!"; exit 1; fi
-	@if grep -q "\*\* Fatal:" transcript; then echo "Simulation failed!"; exit 1; fi
-	@if grep -q "\*\* Error:" transcript; then echo "Simulation failed!"; exit 1; fi
+	@if grep -q -E "UVM_ERROR :[ \t]+[1-9]" transcript; then echo "UVM_ERROR failed!"; exit 1; fi
+	@if grep -q -E "UVM_FATAL :[ \t]+[1-9]" transcript; then echo "UVM_FATAL failed!"; exit 1; fi
+	@if grep -q "\*\* Fatal:" transcript; then echo "Simulation failed (Fatal)!"; exit 1; fi
+	@if grep -q "\*\* Error:" transcript; then echo "Simulation failed (Error)!"; exit 1; fi
+
+regress:
+	@echo "Running Directed Tests..."
+	$(MAKE) sim_tb
+	@echo "Running UVM Basic Test..."
+	$(MAKE) sim TEST=timer_base_test SEED=1
+	$(MAKE) sim TEST=timer_base_test SEED=7
+	$(MAKE) sim TEST=timer_base_test SEED=23
+	@echo "Regression PASSED"
 
 cov: $(WORK_DIR)
 	$(VLOG) -work work -sv +incdir+../../bus/include +cover=bcesft $(RTL_SRC) $(UVM_TB_SRC)
