@@ -23,7 +23,7 @@ module timer_tb;
         forever #40 pclk = ~pclk; // 12.5 MHz = 80ns period
     end
 
-    task do_write(input [12:0] addr, input [31:0] data, input [3:0] strb);
+    task do_setup_only(input [12:0] addr, input [31:0] data, input [3:0] strb);
         @(posedge pclk);
         paddr <= addr;
         psel <= 1;
@@ -32,19 +32,33 @@ module timer_tb;
         pwdata <= data;
         pstrb <= strb;
         @(posedge pclk);
+        psel <= 0; // Abort before access
+    endtask
+
+    task do_write(input [12:0] addr, input [31:0] data, input [3:0] strb, input [2:0] prot=0);
+        @(posedge pclk);
+        paddr <= addr;
+        psel <= 1;
+        penable <= 0;
+        pwrite <= 1;
+        pwdata <= data;
+        pstrb <= strb;
+        pprot <= prot;
+        @(posedge pclk);
         penable <= 1;
         @(posedge pclk);
         psel <= 0;
         penable <= 0;
     endtask
-
-    task do_read(input [12:0] addr, output [31:0] data, output err);
+    
+    task do_read_raw(input [12:0] addr, input [3:0] strb, output [31:0] data, output err, input [2:0] prot=0);
         @(posedge pclk);
         paddr <= addr;
         psel <= 1;
         penable <= 0;
         pwrite <= 0;
-        pstrb <= 0;
+        pstrb <= strb;
+        pprot <= prot;
         @(posedge pclk);
         penable <= 1;
         @(posedge pclk);
@@ -52,6 +66,10 @@ module timer_tb;
         err = pslverr;
         psel <= 0;
         penable <= 0;
+    endtask
+
+    task do_read(input [12:0] addr, output [31:0] data, output err, input [2:0] prot=0);
+        do_read_raw(addr, 4'h0, data, err, prot);
     endtask
 
     logic [31:0] rdata;
@@ -69,43 +87,235 @@ module timer_tb;
         capture_i = 0;
 
         repeat (5) @(posedge pclk);
-        presetn = 1;
+        // T01: Assert reset between edges
+        #10 presetn = 1;
         repeat (5) @(posedge pclk);
 
-        // T01: Read registers after reset
-        do_read(13'h0000, rdata, err);
-        assert(rdata == 32'h0 && err == 0) else $fatal(1, "T01: CONTROL reset error");
-        do_read(13'h0008, rdata, err);
-        assert(rdata == 32'hFFFF_FFFF && err == 0) else $fatal(1, "T01: PERIOD reset error");
+        // T01 Check resets
+        do_read(13'h0000, rdata, err); assert(rdata == 0 && err == 0) else $fatal(1, "T01");
+        do_read(13'h0008, rdata, err); assert(rdata == 32'hFFFF_FFFF && err == 0) else $fatal(1, "T01");
 
-        // T03: Write and read mapped registers
+        // T02: SETUP only
+        do_setup_only(13'h0008, 32'h12345678, 4'hF);
+        do_read(13'h0008, rdata, err); assert(rdata == 32'hFFFF_FFFF && err == 0) else $fatal(1, "T02");
+
+        // T03: Valid writes
         do_write(13'h0008, 32'h12345678, 4'hF);
-        do_read(13'h0008, rdata, err);
-        assert(rdata == 32'h12345678 && err == 0) else $fatal(1, "T03: PERIOD write/read error");
+        do_read(13'h0008, rdata, err); assert(rdata == 32'h12345678 && err == 0) else $fatal(1, "T03");
 
         // T04: PSTRB masks
-        do_write(13'h0008, 32'hAAAAAAAA, 4'h3); // Write lower half
-        do_read(13'h0008, rdata, err);
-        assert(rdata == 32'h1234AAAA && err == 0) else $fatal(1, "T04: PSTRB masking error");
+        do_write(13'h0008, 32'hAAAAAAAA, 4'h3); 
+        do_read(13'h0008, rdata, err); assert(rdata == 32'h1234AAAA && err == 0) else $fatal(1, "T04");
 
         // T05: Invalid addresses
-        do_read(13'h0020, rdata, err);
-        assert(err == 1) else $fatal(1, "T05: Invalid address did not error");
+        do_read(13'h0020, rdata, err); assert(err == 1) else $fatal(1, "T05");
+        do_read(13'h0100, rdata, err); assert(err == 1) else $fatal(1, "T05");
+        do_read(13'h1000, rdata, err); assert(err == 1) else $fatal(1, "T05");
+        do_read(13'h1FFC, rdata, err); assert(err == 1) else $fatal(1, "T05");
 
-        // Run basic counting
-        do_write(13'h0008, 32'h00000002, 4'hF); // PERIOD=2
-        do_write(13'h000C, 32'h00000000, 4'hF); // PRESCALE=0
-        do_write(13'h0000, 32'h00000001, 4'hF); // EN=1, MODE=00 (periodic)
+        // T06: Misaligned, RO write, nonzero PSTRB read
+        do_read(13'h0001, rdata, err); assert(err == 1) else $fatal(1, "T06 misalign");
+        do_write(13'h0018, 32'hFFFFFFFF, 4'hF); assert(dut.write_error == 1) else $fatal(1, "T06 RO write");
+        do_read_raw(13'h0000, 4'hF, rdata, err); assert(err == 1 && rdata == 0) else $fatal(1, "T06 PSTRB!=0 read");
 
-        repeat (6) @(posedge pclk);
-        do_read(13'h0004, rdata, err);
-        // It should have matched and wrapped
-        assert(err == 0) else $fatal(1, "Read error during running");
+        // T07: PPROT
+        for (int i=0; i<8; i++) begin
+            do_read(13'h001C, rdata, err, i[2:0]); 
+            assert(err == 0 && rdata == 32'h544D_0101) else $fatal(1, "T07");
+        end
+
+        // T08: Stop to start tick suppression (EN=1 write doesn't tick)
+        // Reset timer state
+        do_write(13'h0000, 32'h0, 4'hF);
+        do_write(13'h0004, 32'h0, 4'hF); // COUNT=0
+        do_write(13'h000C, 32'h0, 4'hF); // PRESCALE=0
+        do_write(13'h0008, 32'h10, 4'hF); // PERIOD=16
         
-        // Stop timer
-        do_write(13'h0000, 32'h00000000, 4'hF);
+        // Write EN=1
+        @(posedge pclk); paddr <= 13'h0000; psel <= 1; penable <= 0; pwrite <= 1; pwdata <= 32'h1; pstrb <= 4'hF;
+        @(posedge pclk); penable <= 1;
+        @(posedge pclk); // This is the completion edge
+        #1;
+        psel <= 0; penable <= 0;
+        assert(dut.count_reg == 0) else $fatal(1, "T08 tick on enable");
+        @(posedge pclk); 
+        #1;
+        // First tick happens here, count becomes 1
+        assert(dut.count_reg == 1) else $fatal(1, "T08 no tick after enable");
+        do_write(13'h0000, 32'h0, 4'hF); // Stop
+
+        // T09: PRESCALE=0, PERIOD=2 periodic (match at 3rd tick)
+        do_write(13'h0000, 32'h0, 4'hF);
+        do_write(13'h0004, 32'h0, 4'hF); // COUNT=0
+        do_write(13'h0008, 32'h2, 4'hF); // PERIOD=2
+        do_write(13'h0014, 32'hF, 4'hF); // W1C
         
-        $display("Directed Tests Passed");
+        @(posedge pclk); paddr <= 13'h0000; psel <= 1; penable <= 0; pwrite <= 1; pwdata <= 32'h1; pstrb <= 4'hF;
+        @(posedge pclk); penable <= 1;
+        @(posedge pclk); #1; psel <= 0; penable <= 0; // completion edge (tick 0)
+        @(posedge pclk); #1; // tick 1, count=1
+        assert(dut.count_reg == 1) else $fatal(1, "T09 tick 1");
+        @(posedge pclk); #1; // tick 2, count=2
+        assert(dut.count_reg == 2) else $fatal(1, "T09 tick 2");
+        @(posedge pclk); #1; // tick 3, count=0, match=1
+        assert(dut.count_reg == 0 && dut.irq_pending_reg[0] == 1) else $fatal(1, "T09 match");
+        do_write(13'h0000, 32'h0, 4'hF);
+
+        // T10: PRESCALE=2, PERIOD=2
+        do_write(13'h0000, 32'h0, 4'hF);
+        do_write(13'h0014, 32'hF, 4'hF);
+        do_write(13'h0004, 32'h0, 4'hF);
+        do_write(13'h000C, 32'h2, 4'hF);
+        
+        @(posedge pclk); paddr <= 13'h0000; psel <= 1; penable <= 0; pwrite <= 1; pwdata <= 32'h1; pstrb <= 4'hF;
+        @(posedge pclk); penable <= 1;
+        @(posedge pclk); #1; psel <= 0; penable <= 0; // cycle 0 (completion)
+        @(posedge pclk); #1; // cycle 1
+        @(posedge pclk); #1; // cycle 2
+        @(posedge pclk); #1; // cycle 3 (tick 1, count=1)
+        assert(dut.count_reg == 1) else $fatal(1, "T10 count 1");
+        @(posedge pclk); #1; // cycle 4
+        @(posedge pclk); #1; // cycle 5
+        @(posedge pclk); #1; // cycle 6 (tick 2, count=2)
+        assert(dut.count_reg == 2) else $fatal(1, "T10 count 2");
+        @(posedge pclk); #1; // cycle 7
+        @(posedge pclk); #1; // cycle 8
+        assert(dut.irq_pending_reg[0] == 0) else $fatal(1, "T10 match early");
+        @(posedge pclk); #1; // cycle 9 (tick 3, match)
+        assert(dut.irq_pending_reg[0] == 1 && dut.count_reg == 0) else $fatal(1, "T10 match");
+        do_write(13'h0000, 32'h0, 4'hF);
+
+        // T11: PERIOD=0 periodic
+        do_write(13'h0000, 32'h0, 4'hF);
+        do_write(13'h0014, 32'hF, 4'hF);
+        do_write(13'h0004, 32'h0, 4'hF);
+        do_write(13'h0008, 32'h0, 4'hF);
+        do_write(13'h000C, 32'h0, 4'hF);
+        do_write(13'h0000, 32'h1, 4'hF);
+        repeat(2) @(posedge pclk);
+        do_read(13'h0004, rdata, err); assert(rdata == 0) else $fatal(1, "T11");
+        do_read(13'h0014, rdata, err); assert(rdata[0] == 1) else $fatal(1, "T11");
+        do_write(13'h0000, 32'h0, 4'hF);
+        
+        // T12: One-shot expiration
+        do_write(13'h0014, 32'hF, 4'hF);
+        do_write(13'h0004, 32'h0, 4'hF);
+        do_write(13'h0008, 32'h2, 4'hF);
+        do_write(13'h000C, 32'h0, 4'hF);
+        do_write(13'h0000, 32'h3, 4'hF); // EN=1, MODE=01 (One-shot)
+        repeat(5) @(posedge pclk);
+        do_read(13'h0000, rdata, err); assert(rdata[0] == 0) else $fatal(1, "T12 auto-clear");
+        do_read(13'h0004, rdata, err); assert(rdata == 2) else $fatal(1, "T12 count");
+        
+        // T13: One-shot re-enable from expiry
+        do_write(13'h0014, 32'hF, 4'hF); // W1C
+        do_write(13'h0000, 32'h3, 4'hF); // EN=1 again
+        repeat(3) @(posedge pclk);
+        do_read(13'h0004, rdata, err); assert(rdata == 2) else $fatal(1, "T13 count");
+        do_read(13'h0014, rdata, err); assert(rdata[0] == 1) else $fatal(1, "T13 match");
+        do_write(13'h0000, 32'h0, 4'hF);
+
+        // T14, T15: Free run wrap and match at FFFFFFFF
+        do_write(13'h0014, 32'hF, 4'hF);
+        do_write(13'h0004, 32'hFFFF_FFFE, 4'hF);
+        do_write(13'h0008, 32'hFFFF_FFFF, 4'hF);
+        do_write(13'h000C, 32'h0, 4'hF);
+        do_write(13'h0000, 32'h5, 4'hF); // EN=1, MODE=10 (Free-run)
+        repeat(4) @(posedge pclk);
+        do_read(13'h0014, rdata, err); assert(rdata[0] == 1 && rdata[1] == 1) else $fatal(1, "T15 match&wrap");
+        do_read(13'h0004, rdata, err); assert(rdata < 10) else $fatal(1, "T14 count wrap");
+        do_write(13'h0000, 32'h4, 4'hF);
+
+        // T16: COUNT>PERIOD while disabled allowed
+        do_write(13'h0004, 32'h10, 4'hF);
+        do_write(13'h0008, 32'h05, 4'hF);
+        do_write(13'h0000, 32'h1, 4'hF); // Try to enable periodic
+        assert(dut.write_error == 1) else $fatal(1, "T16 atomic error");
+
+        // T17, T18: Writes to config while running
+        do_write(13'h0004, 32'h0, 4'hF); // Valid count
+        do_write(13'h0000, 32'h1, 4'hF); // EN=1
+        do_write(13'h0008, 32'h55, 4'hF); // PERIOD
+        assert(dut.write_error == 1) else $fatal(1, "T17");
+        do_write(13'h0000, 32'h3, 4'hF); // Change to One-shot
+        assert(dut.write_error == 1) else $fatal(1, "T18");
+        do_write(13'h0000, 32'h0, 4'hF); // Stop
+
+        // T19: IRQ output and mask
+        do_write(13'h0000, 32'h0, 4'hF); // Make sure we are stopped first
+        do_write(13'h0014, 32'hF, 4'hF);
+        do_write(13'h0010, 32'h0, 4'hF); // Mask all
+        do_write(13'h0004, 32'h0, 4'hF);
+        do_write(13'h0008, 32'h1, 4'hF);
+        do_write(13'h0000, 32'h1, 4'hF);
+        repeat(4) @(posedge pclk);
+        assert(irq_o == 0) else $fatal(1, "T19 masked");
+        do_write(13'h0000, 32'h0, 4'hF); // Stop the timer so we can check W1C reliably without new MATCHes
+        do_write(13'h0010, 32'h1, 4'hF); // Unmask match
+        @(posedge pclk); #1;
+        $display("T19: count=%0d, period=%0d, pending=%b, enable=%b, irq_o=%b", dut.count_reg, dut.period_reg, dut.irq_pending_reg, dut.irq_enable_reg, irq_o);
+        assert(irq_o == 1) else $fatal(1, "T19 unmasked");
+
+        // T20: W1C clears only strobed
+        do_write(13'h0014, 32'h1, 4'h1); // W1C Match
+        @(posedge pclk); #1;
+        assert(irq_o == 0) else $fatal(1, "T20 W1C");
+        do_write(13'h0000, 32'h0, 4'hF);
+
+        // T21: MATCH and W1C collision on same edge
+        do_write(13'h0004, 32'h0, 4'hF);
+        do_write(13'h0008, 32'h2, 4'hF); // PERIOD=2
+        do_write(13'h0014, 32'hF, 4'hF); // clear pending
+        do_write(13'h0000, 32'h3, 4'hF); // Start, One-shot (MODE=01)
+        
+        @(posedge pclk); // Cycle 2
+        paddr <= 13'h0014; psel <= 1; penable <= 0; pwrite <= 1; pwdata <= 32'h1; pstrb <= 4'hF;
+        @(posedge pclk); // Cycle 3
+        penable <= 1;
+        @(posedge pclk); #1; // Cycle 4 (MATCH and W1C collide)
+        psel <= 0; penable <= 0;
+        do_read(13'h0014, rdata, err); assert(rdata[0] == 1) else $fatal(1, "T21 collision HW SET priority");
+        do_write(13'h0000, 32'h0, 4'hF);
+
+        // T22-T25: Capture
+        #10 presetn = 0; #100 presetn = 1; // Reset to get capture baseline
+        repeat(5) @(posedge pclk);
+        do_write(13'h0008, 32'hFFFF_FFFF, 4'hF);
+        do_write(13'h0000, 32'h9, 4'hF); // EN=1, CAP_EN=1, EDGE=00 (rising)
+        repeat(2) @(posedge pclk);
+        capture_i = 1; // Rising edge
+        repeat(4) @(posedge pclk);
+        do_read(13'h0014, rdata, err); assert(rdata[2] == 1) else $fatal(1, "T22 cap pend");
+        do_read(13'h0018, rdata, err); assert(rdata > 0 && rdata < 10) else $fatal(1, "T23 cap val");
+        
+        capture_i = 0; repeat(4) @(posedge pclk);
+        capture_i = 1; repeat(4) @(posedge pclk); // Second capture
+        do_read(13'h0014, rdata, err); assert(rdata[3] == 1) else $fatal(1, "T24 overrun");
+        
+        do_write(13'h0014, 32'h4, 4'hF); // W1C Capture only
+        @(posedge pclk);
+        do_read(13'h0014, rdata, err); assert(rdata[2] == 0 && rdata[3] == 1) else $fatal(1, "T24 w1c independent");
+
+        // T26: Async reset while running
+        #15 presetn = 0;
+        #15 presetn = 1;
+        do_read(13'h0000, rdata, err); assert(rdata == 0) else $fatal(1, "T26");
+
+        // T27: Back-to-back APB transfers
+        // Issue two writes back to back
+        @(posedge pclk); paddr <= 13'h04; psel <= 1; penable <= 0; pwrite <= 1; pwdata <= 32'h10; pstrb <= 4'hF;
+        @(posedge pclk); penable <= 1;
+        @(posedge pclk); paddr <= 13'h08; psel <= 1; penable <= 0; pwrite <= 1; pwdata <= 32'h20; pstrb <= 4'hF;
+        @(posedge pclk); penable <= 1;
+        @(posedge pclk); psel <= 0; penable <= 0;
+        do_read(13'h04, rdata, err); assert(rdata == 32'h10) else $fatal(1, "T27");
+        do_read(13'h08, rdata, err); assert(rdata == 32'h20) else $fatal(1, "T27");
+        
+        // T28: Illegal CONTROL encoding
+        do_write(13'h0000, 32'h6, 4'hF); // MODE=11
+        assert(dut.write_error == 1) else $fatal(1, "T28 mode 11");
+
+        $display("All Directed Tests Passed");
         $finish;
     end
 endmodule

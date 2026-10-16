@@ -134,6 +134,15 @@ package timer_uvm_pkg;
 
         uvm_analysis_imp #(timer_item, timer_scoreboard) ap_imp;
 
+        // Simplified Reference Model State
+        int shadow_count = 0;
+        int shadow_period = -1;
+        int shadow_prescale = 0;
+        bit shadow_en = 0;
+        bit [1:0] shadow_mode = 0;
+        bit [3:0] shadow_irq_enable = 0;
+        bit [3:0] shadow_irq_pending = 0;
+
         function new(string name, uvm_component parent);
             super.new(name, parent);
             ap_imp = new("ap_imp", this);
@@ -141,9 +150,28 @@ package timer_uvm_pkg;
 
         function void write(timer_item t);
             if (t.is_apb) begin
-                // Simple checking placeholder
                 if (t.pwrite && !t.pslverr) begin
-                    `uvm_info("SCB", $sformatf("Valid write to %0h", t.paddr), UVM_LOW)
+                    // Predict state changes based on writes
+                    case (t.paddr)
+                        13'h0000: begin
+                            if (!shadow_en || t.pwdata[0] == 0) begin
+                                shadow_en = t.pwdata[0];
+                                if (!shadow_en) shadow_mode = t.pwdata[2:1];
+                            end
+                        end
+                        13'h0004: if (!shadow_en) shadow_count = t.pwdata;
+                        13'h0008: if (!shadow_en) shadow_period = t.pwdata;
+                        13'h000C: if (!shadow_en) shadow_prescale = t.pwdata[15:0];
+                        13'h0010: shadow_irq_enable = t.pwdata[3:0];
+                        13'h0014: shadow_irq_pending &= ~t.pwdata[3:0];
+                    endcase
+                end else if (!t.pwrite && !t.pslverr) begin
+                    // Compare read data with predicted
+                    case (t.paddr)
+                        13'h0008: if (t.prdata !== shadow_period) `uvm_error("SCB_FAIL", $sformatf("PERIOD mismatch: exp %0h, got %0h", shadow_period, t.prdata))
+                        13'h000C: if (t.prdata !== shadow_prescale) `uvm_error("SCB_FAIL", $sformatf("PRESCALE mismatch: exp %0h, got %0h", shadow_prescale, t.prdata))
+                        13'h0010: if (t.prdata !== shadow_irq_enable) `uvm_error("SCB_FAIL", $sformatf("IRQ_EN mismatch: exp %0h, got %0h", shadow_irq_enable, t.prdata))
+                    endcase
                 end
             end
         endfunction
