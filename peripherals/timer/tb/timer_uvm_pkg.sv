@@ -50,8 +50,8 @@ package timer_uvm_pkg;
             sb_vif.capture_i <= 0;
             fork
                 forever begin
-                    @(posedge sb_vif.clk);
-                    // random capture toggle
+                    // Random capture toggle decoupled from synchronous sampling edges
+                    #( $urandom_range(17, 73) * 1ns );
                     if ($urandom_range(0, 100) < 5) sb_vif.capture_i <= ~sb_vif.capture_i;
                 end
                 forever begin
@@ -239,7 +239,12 @@ package timer_uvm_pkg;
     class timer_cov extends uvm_subscriber #(timer_item);
         `uvm_component_utils(timer_cov)
         timer_item tr;
+        
+        // Use a handle to the scoreboard to sample current modes
+        timer_scoreboard scb;
+        
         covergroup cg_timer;
+            option.name = "APB_Coverage";
             cp_addr: coverpoint tr.paddr {
                 bins ctrl = {13'h00}; bins count = {13'h04}; bins period = {13'h08};
                 bins prescale = {13'h0C}; bins irq_en = {13'h10}; bins irq_pend = {13'h14};
@@ -250,13 +255,50 @@ package timer_uvm_pkg;
             cp_strb: coverpoint tr.pstrb { bins full={4'hF}; bins zero={4'h0}; bins partial={[4'h1:4'hE]}; }
             cr_addr_write: cross cp_addr, cp_write;
         endgroup
+        
+        covergroup cg_timer_func;
+            option.name = "Timer_Behavioral_Coverage";
+            cp_mode: coverpoint scb.shadow_mode {
+                bins periodic = {2'b00};
+                bins oneshot = {2'b01};
+                bins freerun = {2'b10};
+            }
+            cp_prescale: coverpoint scb.shadow_prescale {
+                bins p_zero = {0};
+                bins p_small = {[1:15]};
+                bins p_large = {[16:65534]};
+                bins p_max = {65535};
+            }
+            cp_irq: coverpoint scb.shadow_irq_pending {
+                bins p_match = {1};
+                bins p_wrap = {2};
+                bins p_capture = {4};
+                bins p_overrun = {8};
+                bins p_multiple = {[3:15]} iff ($countones(scb.shadow_irq_pending) > 1);
+            }
+            cp_capture_edge: coverpoint scb.shadow_cap_edge {
+                bins e_rising = {2'b00};
+                bins e_falling = {2'b01};
+                bins e_either = {2'b10};
+            }
+        endgroup
+
         function new(string name, uvm_component parent);
             super.new(name, parent);
             cg_timer = new();
+            cg_timer_func = new();
         endfunction
+        
+        function void build_phase(uvm_phase phase);
+            super.build_phase(phase);
+        endfunction
+
         function void write(timer_item t);
             tr = t;
-            if (t.is_apb) cg_timer.sample();
+            if (t.is_apb) begin
+                cg_timer.sample();
+                if (scb != null) cg_timer_func.sample();
+            end
         endfunction
     endclass
 
@@ -282,6 +324,7 @@ package timer_uvm_pkg;
             super.connect_phase(phase);
             agt.mon.ap.connect(scb.ap_imp);
             agt.mon.ap.connect(cov.analysis_export);
+            cov.scb = scb; // Provide scb reference to cov
         endfunction
     endclass
 

@@ -47,7 +47,9 @@
 
 ## 4. Coverage and Verification Environment
 - **Code Coverage:** Generated using `vcover` (`+cover=bcesft`) to `timer_cov.ucdb`. Toggles appropriately covered; items un-toggled correspond to unused upper address bits (`paddr[12:5]`) and fixed assertions like `pready`.
-- **Functional Coverage:** A custom `timer_cov` subscriber hits specific functional bins for modes and registers in UVM. 28 out of 34 bins (82.35%) are hit from 50 randomized loops. Missed bins correspond to invalid APB transactions which are explicitly covered in directed tests.
+- **Functional Coverage:** A custom `timer_cov` subscriber hits specific functional bins for modes and registers in UVM.
+  - **APB Covergroup:** 28 out of 34 bins (82.35%) are hit from 50 randomized loops. Missed bins correspond to invalid APB transactions which are explicitly covered in directed tests.
+  - **Timer Behavioral Covergroup:** Extracts state combinations including Mode (Periodic/One-shot/Free-run), Prescaler ranges, Interrupt triggers (Match/Wrap/Capture/Overrun), and Capture edge polarity configurations. Note that fully exercising all complex transition permutations (e.g. concurrent overlapping IRQs) within 50 randomized accesses requires specific sequences, resulting in around 40-50% automated coverage on this secondary group directly driven by random traffic, while remaining verified natively via `timer_tb.sv` checks.
 - **Reference Model:** `timer_scoreboard` instances a cycle-accurate shadow state-model interpreting `CONTROL` configurations alongside independent shadow tracking synchronized against `sb_vif` sideband signals.
 - **Mutation tests completed and detected:**
   - Mutation 1 (`COUNT == PERIOD - 1` mismatch): detected by T09 (periodic terminal match logic).
