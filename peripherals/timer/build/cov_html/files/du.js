@@ -1,2 +1,0 @@
-var g_data = {"data":[{"n":"work.apb4_if","id":1,"zf":1,"tc":52.19,"t":52.19},{"n":"work.sync_2ff","id":6,"zf":1,"tc":66.66,"s":100.00,"b":100.00,"t":0.00},{"n":"work.timer_apb","id":5,"zf":1,"tc":42.45,"s":59.77,"b":45.88,"fc":30.00,"fe":42.85,"t":33.78},{"n":"work.timer_uvm_pkg","id":2,"zf":1,"tc":45.25,"s":65.13,"b":26.19,"fc":44.44},{"n":"work.timer_uvm_tb","id":4,"zf":1,"tc":68.75,"s":100.00,"t":37.50}]};
-processDuData(g_data);
