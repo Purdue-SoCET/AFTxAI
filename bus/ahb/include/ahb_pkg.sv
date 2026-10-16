@@ -1,3 +1,6 @@
+`ifndef AHB_PKG_SV
+`define AHB_PKG_SV
+
 package ahb_pkg;
 
     typedef enum logic [1:0] {
@@ -28,3 +31,5 @@ package ahb_pkg;
     } HSIZE_t;
 
 endpackage
+
+`endif

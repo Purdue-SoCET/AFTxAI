@@ -1,1 +1,9 @@
 */work/*
+obj_dir/
+*.elf
+*.hex
+*.vcd
+xcelium.d/
+xrun.history
+xrun.log
+xrun*.log
