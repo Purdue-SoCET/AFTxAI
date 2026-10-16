@@ -22,7 +22,11 @@ interface ahb_if #(
     logic [DATA_WIDTH - 1:0] HRDATA;
     logic [(DATA_WIDTH/8) - 1:0] HWSTRB;
 
-    assign HREADY = HREADYOUT;
+    // In a multi-target interconnect, HREADY input to the target is the global HREADY.
+    // HREADYOUT is the target's readiness output.
+    // For single-target systems without an interconnect, they can be tied together, 
+    // but the interconnect must break this loop. We remove the hardwired assign here 
+    // and let the interconnect (or top level) drive HREADY.
 
     modport manager(
         input HCLK, HRESETn,
@@ -34,7 +38,7 @@ interface ahb_if #(
     modport subordinate(
         input HCLK, HRESETn,
         input HSEL, HWRITE, HMASTLOCK, HTRANS,
-        HBURST, HSIZE, HADDR, HWDATA, HWSTRB,
+        HBURST, HSIZE, HADDR, HWDATA, HWSTRB, HREADY,
         output HREADYOUT, HRDATA, HRESP
     );
 
