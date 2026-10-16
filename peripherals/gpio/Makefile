@@ -16,10 +16,11 @@ LIB_INC = ../../digital_lib/src
 # Source files
 RTL_SRC = $(LIB_INC)/sync_2ff.sv $(SRC_DIR)/gpio_apb.sv
 TB_SRC = $(TB_DIR)/gpio_tb.sv
-UVM_TB_SRC = $(BUS_INC)/apb4_if.sv $(TB_DIR)/gpio_uvm_pkg.sv $(TB_DIR)/gpio_uvm_tb.sv
+UVM_TB_SRC = $(BUS_INC)/apb4_if.sv $(TB_DIR)/gpio_pad_if.sv $(TB_DIR)/gpio_uvm_pkg.sv $(TB_DIR)/gpio_uvm_tb.sv
 
 TEST ?= gpio_base_test
 SEED ?= random
+WIDTH ?= 32
 
 # Verilator lint
 .PHONY: lint
@@ -48,13 +49,13 @@ build_sim:
 .PHONY: sim
 sim: build_sim
 	cd $(BUILD_DIR) && $(VSIM) -c -do "onbreak {quit -f -code 1}; onerror {quit -f -code 1}; run -all; quit -code 0" \
-		work.gpio_uvm_tb +UVM_TESTNAME=$(TEST) +UVM_MAX_QUIT_COUNT=1 -sv_seed $(SEED) -l sim.log
+		work.gpio_uvm_tb -gGPIO_WIDTH=$(WIDTH) +UVM_TESTNAME=$(TEST) +UVM_MAX_QUIT_COUNT=1 -sv_seed $(SEED) -l sim.log
 	@awk '/^# UVM_FATAL / && !/: +[0-9]+$$/ {f=1} /^# UVM_ERROR / && !/: +[0-9]+$$/ {e=1} /^# \*\* (Error|Fatal):/ {r=1} END {if(f||e||r) {print "Errors detected in log"; exit 1}}' $(BUILD_DIR)/sim.log
 
 .PHONY: sim_tb
 sim_tb: build_sim
 	cd $(BUILD_DIR) && $(VSIM) -c -do "onbreak {quit -f -code 1}; onerror {quit -f -code 1}; run -all; quit -code 0" \
-		work.gpio_tb -sv_seed $(SEED) -l sim_tb.log
+		work.gpio_tb -gGPIO_WIDTH=$(WIDTH) -sv_seed $(SEED) -l sim_tb.log
 	@awk '/^# \*\* (Error|Fatal):/ {r=1} END {if(r) {print "Errors detected in log"; exit 1}}' $(BUILD_DIR)/sim_tb.log
 
 # Run one test with verilator
@@ -97,8 +98,16 @@ cov: build_cov
 .PHONY: regress
 regress:
 	@echo "Running regression..."
-	$(MAKE) sim_tb
-	$(MAKE) sim TEST=gpio_base_test
+	$(MAKE) sim_tb WIDTH=1
+	$(MAKE) sim_tb WIDTH=7
+	$(MAKE) sim_tb WIDTH=16
+	$(MAKE) sim_tb WIDTH=31
+	$(MAKE) sim_tb WIDTH=32
+	$(MAKE) sim TEST=gpio_base_test WIDTH=1
+	$(MAKE) sim TEST=gpio_base_test WIDTH=7
+	$(MAKE) sim TEST=gpio_base_test WIDTH=16
+	$(MAKE) sim TEST=gpio_base_test WIDTH=31
+	$(MAKE) sim TEST=gpio_base_test WIDTH=32
 
 .PHONY: clean
 clean:

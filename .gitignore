@@ -1,1 +1,10 @@
-*/work/*peripherals/gpio/work/
+# Simulation build directories and libraries
+peripherals/gpio/work/
+peripherals/gpio/build/
+
+# Log files and compiler outputs
+*.log
+transcript
+*.vstf
+*.ucdb
+
