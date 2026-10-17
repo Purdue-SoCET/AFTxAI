@@ -1,29 +1,33 @@
-# APB Verification Makefile
-CFG ?= default
+SIM_OPTS = -access +rwc -uvm -timescale 1ns/1ps
+COV_OPTS = -covoverwrite -coverage all
 
-# Tools are provided through environment modules.
-# Ensure `module load cadence/xcelium/23.03` is run before make.
-XRUN = xrun
-XRUN_FLAGS = -sv -access +rwc -timescale 1ns/1ps -I../include -I../../generic
+SRC = ../../include/apb_if.sv \
+      ../../rtl/apb_interconnect.sv \
+      apb_sva.sv \
+      apb_pkg.sv \
+      tb_top.sv
 
-SRC_IF = ../include/apb_if.sv ../../generic/bus_protocol_if.sv
-SRC_RTL = $(wildcard ../rtl/*.sv)
-SRC_TB = tb_apb.sv
+TEST ?= sanity_test
 
-.PHONY: all lint sim regress cov clean
+.PHONY: all sim regress cov clean
 
-all: lint
-
-lint:
-	$(XRUN) -compile $(XRUN_FLAGS) $(SRC_IF) $(SRC_RTL) $(SRC_TB)
+all: sim
 
 sim:
-	$(XRUN) $(XRUN_FLAGS) $(SRC_IF) $(SRC_RTL) $(SRC_TB) -covoverwrite -coverage all -covtest $(CFG)
+	xrun $(SIM_OPTS) $(COV_OPTS) -covtest $(TEST) $(SRC) +UVM_TESTNAME=$(TEST)
 
-regress: sim
+regress:
+	-make sim TEST=sanity_test
+	-make sim TEST=unmapped_test
+	-make sim TEST=boundary_test
+	-make sim TEST=wait_state_test
+	-make sim TEST=slverr_test
+	-make sim TEST=b2b_test
+	-make sim TEST=full_random_test
+	-make sim TEST=reset_test
 
 cov:
-	@echo "Coverage configured. Run imc to view cov_work."
+	imc -execcmd "merge cov_work/scope/* -out cov_work/merged; report -summary -out coverage_summary.txt; exit"
 
 clean:
-	rm -rf xcelium.d xrun.history xrun.log cov_work
+	rm -rf xcelium.d xrun.history xrun.log cov_work coverage_summary.txt

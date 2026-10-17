@@ -1,0 +1,10 @@
+cov_work/
+*.txt/
+coverage_out/
+*.txt
+*.key
+*.log
+*.history
+imc_*.tcl
+*.zip
+xcelium.d/
