@@ -46,6 +46,9 @@ module controller (
   logic sr_shift_next;
   
   always_comb begin
+    logic shift_edge;
+    logic sample_edge;
+
     state_next = state;
     bit_cnt_next = bit_cnt;
     ss_next = ss_reg;
@@ -78,8 +81,8 @@ module controller (
         TRANS: begin
           phy_sck_en = 1'b1;
           
-          logic shift_edge = (ctrl.clock_phase == 1'b0) ? (ctrl.clock_polarity ? sck_rise : sck_fall) : (ctrl.clock_polarity ? sck_fall : sck_rise);
-          logic sample_edge = (ctrl.clock_phase == 1'b0) ? (ctrl.clock_polarity ? sck_fall : sck_rise) : (ctrl.clock_polarity ? sck_rise : sck_fall);
+          shift_edge = (ctrl.clock_phase == 1'b0) ? (ctrl.clock_polarity ? sck_rise : sck_fall) : (ctrl.clock_polarity ? sck_fall : sck_rise);
+          sample_edge = (ctrl.clock_phase == 1'b0) ? (ctrl.clock_polarity ? sck_fall : sck_rise) : (ctrl.clock_polarity ? sck_rise : sck_fall);
           
           if (shift_edge) begin
             sr_shift = 1'b1;
@@ -107,8 +110,8 @@ module controller (
       ss_next = 1'b1;
       if (!ss_in) begin
         tc_next = 1'b0;
-        logic shift_edge = (ctrl.clock_phase == 1'b0) ? (ctrl.clock_polarity ? sck_in_rise : sck_in_fall) : (ctrl.clock_polarity ? sck_in_fall : sck_in_rise);
-        logic sample_edge = (ctrl.clock_phase == 1'b0) ? (ctrl.clock_polarity ? sck_in_fall : sck_in_rise) : (ctrl.clock_polarity ? sck_in_rise : sck_in_fall);
+        shift_edge = (ctrl.clock_phase == 1'b0) ? (ctrl.clock_polarity ? sck_in_rise : sck_in_fall) : (ctrl.clock_polarity ? sck_in_fall : sck_in_rise);
+        sample_edge = (ctrl.clock_phase == 1'b0) ? (ctrl.clock_polarity ? sck_in_fall : sck_in_rise) : (ctrl.clock_polarity ? sck_in_rise : sck_in_fall);
         
         if (shift_edge) begin
           sr_shift = 1'b1;

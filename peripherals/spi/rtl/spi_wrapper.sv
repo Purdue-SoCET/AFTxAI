@@ -3,13 +3,15 @@ import spi_types_pkg::*;
 module spi_wrapper #(
   parameter int FIFO_DEPTH = 4
 )(
+  input logic pclk,
+  input logic presetn,
   apb_if.completer apb,
   spi_if phy
 );
   logic clk;
   logic nRST;
-  assign clk = apb.PCLK;
-  assign nRST = apb.PRESETn;
+  assign clk = pclk;
+  assign nRST = presetn;
   
   spi_cr_t ctrl, ctrl_next;
   spi_status_t status, status_next;
@@ -56,8 +58,6 @@ module spi_wrapper #(
       else sck_out_next = ctrl.clock_polarity ? ~sclk_gen_out : sclk_gen_out;
       
       mosi_out_next = ser_out;
-    end else begin
-      phy.miso_out = ser_out;
     end
   end
   
@@ -86,8 +86,6 @@ module spi_wrapper #(
     .sck_out(), .ss_out(phy.ss_out), .mode_out(phy.mode), .ss_in(phy.ss_in),
     .transfer_complete(tc)
   );
-  
-  assign rx_data_in = sr_par_out;
 
   interrupt_control irq_ctrl (.ctrl(ctrl), .status(status), .irq(phy.irq));
   
@@ -100,6 +98,7 @@ module spi_wrapper #(
     status_next.tx_water_mark_hit = (tx_cnt <= ctrl.tx_water_mark);
     status_next.rx_water_mark_hit = (rx_cnt >= ctrl.rx_water_mark);
     status_next.transfer_complete = tc;
+    status_next.modf = status.modf | (ctrl.modf_enable && ctrl.mode == 1'b1 && !phy.ss_in);
   end
   
   always_ff @(posedge clk or negedge nRST) begin
@@ -108,7 +107,7 @@ module spi_wrapper #(
   end
 
   // APB Completer Access Logic
-  assign apb.PREADY = 1'b1; // Zero wait-state
+  assign apb.pready = 1'b1; // Zero wait-state
 
   always_comb begin
     ctrl_next = ctrl;
@@ -116,35 +115,35 @@ module spi_wrapper #(
     tx_push = 1'b0;
     rx_pop = 1'b0;
     tx_data_in = '0;
-    apb.PRDATA = '0;
-    apb.PSLVERR = 1'b0;
+    apb.prdata = '0;
+    apb.pslverr = 1'b0;
     
     // Read operations
-    if (apb.PSEL && !apb.PWRITE) begin
-        case (apb.PADDR[7:0])
-          8'h00: apb.PRDATA = ctrl;
-          8'h04: apb.PRDATA = status;
-          8'h08: apb.PRDATA = {16'h0, clkdiv};
-          8'h10: apb.PRDATA = {24'h0, rx_data_out};
-          default: apb.PRDATA = '0;
+    if (apb.psel && !apb.pwrite) begin
+        case (apb.paddr[7:0])
+          8'h00: apb.prdata = ctrl;
+          8'h04: apb.prdata = status;
+          8'h08: apb.prdata = {16'h0, clkdiv};
+          8'h10: apb.prdata = {24'h0, rx_data_out};
+          default: apb.prdata = '0;
         endcase
-        if (apb.PENABLE) begin
-          if (apb.PADDR[7:0] == 8'h10 && !rx_empty) rx_pop = 1'b1;
+        if (apb.penable) begin
+          if (apb.paddr[7:0] == 8'h10 && !rx_empty) rx_pop = 1'b1;
         end
     end
     
     // Write operations
-    if (apb.PSEL && apb.PENABLE && apb.PWRITE) begin
-        case (apb.PADDR[7:0])
-          8'h00: ctrl_next = apb.PWDATA;
-          8'h08: clkdiv_next = apb.PWDATA[15:0];
+    if (apb.psel && apb.penable && apb.pwrite) begin
+        case (apb.paddr[7:0])
+          8'h00: ctrl_next = apb.pwdata;
+          8'h08: clkdiv_next = apb.pwdata[15:0];
           8'h0C: begin
             if (!tx_full) begin
                 tx_push = 1'b1;
-                tx_data_in = apb.PWDATA[7:0];
+                tx_data_in = apb.pwdata[7:0];
             end
           end
-          default: apb.PSLVERR = 1'b1; // Unmapped address
+          default: apb.pslverr = 1'b1; // Unmapped address
         endcase
     end
   end
