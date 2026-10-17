@@ -51,7 +51,7 @@ module apb_interconnect #(
             assign completers[i].PADDR   = requester.PADDR;
             assign completers[i].PPROT   = requester.PPROT;
             assign completers[i].PSEL    = sel_completer[i];
-            assign completers[i].PENABLE = requester.PENABLE;
+            assign completers[i].PENABLE = requester.PENABLE && sel_completer[i];
             assign completers[i].PWRITE  = requester.PWRITE;
             assign completers[i].PWDATA  = requester.PWDATA;
             assign completers[i].PSTRB   = requester.PSTRB;

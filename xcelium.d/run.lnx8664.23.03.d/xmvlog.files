@@ -1,0 +1,14 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
+/home/asicfab/a/ehysa/AiFT/AFTxAI/peripherals/spi/include/spi_types_pkg.sv
+/home/asicfab/a/ehysa/AiFT/AFTxAI/peripherals/spi/include/spi_if.sv
+/home/asicfab/a/ehysa/AiFT/AFTxAI/peripherals/spi/rtl/fifo.sv
+/home/asicfab/a/ehysa/AiFT/AFTxAI/peripherals/spi/rtl/clock_generator.sv
+/home/asicfab/a/ehysa/AiFT/AFTxAI/peripherals/spi/rtl/edge_detect_spi.sv
+/home/asicfab/a/ehysa/AiFT/AFTxAI/peripherals/spi/rtl/flex_sr_spi.sv
+/home/asicfab/a/ehysa/AiFT/AFTxAI/peripherals/spi/rtl/controller.sv
+/home/asicfab/a/ehysa/AiFT/AFTxAI/peripherals/spi/rtl/interrupt_control.sv
+/home/asicfab/a/ehysa/AiFT/AFTxAI/peripherals/spi/rtl/spi_wrapper.sv
+/home/asicfab/a/ehysa/AiFT/AFTxAI/peripherals/spi/verification/tb/tb_spi_top.sv
