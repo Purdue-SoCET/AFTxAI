@@ -1,0 +1,602 @@
+<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+<> User: ehysa
+
+Host: asicfab.ecn.purdue.edu
+
+Report date: Fri 16 Oct 2026 20:22:08 EDT
+
+Report options: -detail -out coverage_detail.txt
+
+Coverage database path: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/verification/uvm/cov_work/scope/merged
+
+Coverage model files: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/verification/uvm/cov_work/scope/merged/icc_536504ba_72615c93.ucm
+
+Coverage data files: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/verification/uvm/cov_work/scope/merged/icc_536504ba_72615c93.ucd
+
+CCF files:  None
+
+
+Coverage database date: Fri 16 Oct 2026 20:14:04 EDT
+
+*** There were no refinement files applied ***
+
+ <>
+<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+Coverage Table Legend
+---------------------
+  EXCL       excluded using refinement rule
+  P-EXCL     excluded from parent
+  U-EXCL     excluded and unreachable by IEV
+  T-EXCL     excluded from type
+  S-EXCL     smart excluded using refinement rule
+  EXCL(S)    smart indirect excluded
+  EMPTY      all children are excluded
+  CONST      marked constant during simulation
+  IGN        marked ignored during simulation
+  UNG        marked ungradeable during simulation
+  DES        marked deselected during simulation
+  UNR        marked unreachable by IEV
+  UNG-Expr   expression marked ungradeable during simulation
+  UNG-Toggle toggle marked ungradeable during simulation
+
+
+Uncovered Block Detail Report, Instance Based
+=============================================
+
+Instance name: tb_top.dut
+Type name: apb_interconnect
+File name: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/rtl/apb_interconnect.sv
+Number of uncovered blocks: 2 of 11
+Number of unreachable blocks: 0
+
+Count  Block Line  Kind                 Origin Source Code                    
+------------------------------------------------------------------------------
+0      4     23    true part of         23     if (requester.PADDR[ADDR_WIDTH-1 : COMPLETER_ADDR_BITS] == APB_MAP[i][ADDR_WIDTH-1 : COMPLETER_ADDR_BITS]) begin 
+0      10    75    true part of         75     if (sel_completer[j]) begin    
+
+Uncovered Expression Detail Report, Instance Based
+==================================================
+
+Expression coverage Table Legend
+---------------------
+  -      don't care
+  e      event for event-or expressions
+  O (odd), E (even), B (both), X (not scored),
+         I (marked ignore) for parity trees
+  Y (covered), N (not covered), C (constant), 
+  P (one or more inputs for this bit have been padded) for vector scoring, 
+  d=== , b=== shows which bit differs in vector scoring 
+  rval   Resulting value of the expression for coverage purposes given
+         the input values
+  <-n->  Shows the n-th term composition
+
+
+Uncovered Toggle Detail Report, Instance Based
+==============================================
+
+Instance name: tb_top
+Type name: tb_top
+File name: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/verification/uvm/tb_top.sv
+Number of uncovered signal bits: 1 of 2
+Number of unreachable signal bits: 0
+Number of signal bits partially toggled(rise): 1 of 2
+Number of signal bits partially toggled(fall): 0 of 2
+
+Hit(Full)  Hit(Rise)  Hit(Fall)  Signal                    
+-----------------------------------------------------------
+0          1          0          presetn                   
+
+Instance name: tb_top.m_if
+Type name: apb_if
+File name: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/include/apb_if.sv
+Number of uncovered signal bits: 49 of 110
+Number of unreachable signal bits: 0
+Number of signal bits partially toggled(rise): 13 of 110
+Number of signal bits partially toggled(fall): 0 of 110
+
+Hit(Full)  Hit(Rise)  Hit(Fall)  Signal                    
+-----------------------------------------------------------
+0          1          0          PRESETn                   
+0          0          0          PADDR[31]                 
+0          1          0          PADDR[30]                 
+0          1          0          PADDR[29]                 
+0          1          0          PADDR[27]                 
+0          1          0          PADDR[26]                 
+0          1          0          PADDR[25]                 
+0          1          0          PADDR[24]                 
+0          1          0          PADDR[23]                 
+0          1          0          PADDR[22]                 
+0          1          0          PADDR[21]                 
+0          1          0          PADDR[20]                 
+0          1          0          PADDR[19]                 
+0          1          0          PADDR[18]                 
+0          0          0          PADDR[1]                  
+0          0          0          PADDR[0]                  
+0          0          0          PREADY                    
+0          0          0          PRDATA[31]                
+0          0          0          PRDATA[30]                
+0          0          0          PRDATA[29]                
+0          0          0          PRDATA[28]                
+0          0          0          PRDATA[27]                
+0          0          0          PRDATA[26]                
+0          0          0          PRDATA[25]                
+0          0          0          PRDATA[24]                
+0          0          0          PRDATA[23]                
+0          0          0          PRDATA[22]                
+0          0          0          PRDATA[21]                
+0          0          0          PRDATA[20]                
+0          0          0          PRDATA[19]                
+0          0          0          PRDATA[18]                
+0          0          0          PRDATA[17]                
+0          0          0          PRDATA[16]                
+0          0          0          PRDATA[15]                
+0          0          0          PRDATA[14]                
+0          0          0          PRDATA[13]                
+0          0          0          PRDATA[12]                
+0          0          0          PRDATA[11]                
+0          0          0          PRDATA[10]                
+0          0          0          PRDATA[9]                 
+0          0          0          PRDATA[8]                 
+0          0          0          PRDATA[7]                 
+0          0          0          PRDATA[6]                 
+0          0          0          PRDATA[5]                 
+0          0          0          PRDATA[4]                 
+0          0          0          PRDATA[3]                 
+0          0          0          PRDATA[2]                 
+0          0          0          PRDATA[1]                 
+0          0          0          PRDATA[0]                 
+
+Instance name: tb_top.s_if[0]
+Type name: apb_if
+File name: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/include/apb_if.sv
+Number of uncovered signal bits: 51 of 110
+Number of unreachable signal bits: 0
+Number of signal bits partially toggled(rise): 13 of 110
+Number of signal bits partially toggled(fall): 0 of 110
+
+Hit(Full)  Hit(Rise)  Hit(Fall)  Signal                    
+-----------------------------------------------------------
+0          1          0          PRESETn                   
+0          0          0          PADDR[31]                 
+0          1          0          PADDR[30]                 
+0          1          0          PADDR[29]                 
+0          1          0          PADDR[27]                 
+0          1          0          PADDR[26]                 
+0          1          0          PADDR[25]                 
+0          1          0          PADDR[24]                 
+0          1          0          PADDR[23]                 
+0          1          0          PADDR[22]                 
+0          1          0          PADDR[21]                 
+0          1          0          PADDR[20]                 
+0          1          0          PADDR[19]                 
+0          1          0          PADDR[18]                 
+0          0          0          PADDR[1]                  
+0          0          0          PADDR[0]                  
+0          0          0          PSEL                      
+0          0          0          PREADY                    
+0          0          0          PRDATA[31]                
+0          0          0          PRDATA[30]                
+0          0          0          PRDATA[29]                
+0          0          0          PRDATA[28]                
+0          0          0          PRDATA[27]                
+0          0          0          PRDATA[26]                
+0          0          0          PRDATA[25]                
+0          0          0          PRDATA[24]                
+0          0          0          PRDATA[23]                
+0          0          0          PRDATA[22]                
+0          0          0          PRDATA[21]                
+0          0          0          PRDATA[20]                
+0          0          0          PRDATA[19]                
+0          0          0          PRDATA[18]                
+0          0          0          PRDATA[17]                
+0          0          0          PRDATA[16]                
+0          0          0          PRDATA[15]                
+0          0          0          PRDATA[14]                
+0          0          0          PRDATA[13]                
+0          0          0          PRDATA[12]                
+0          0          0          PRDATA[11]                
+0          0          0          PRDATA[10]                
+0          0          0          PRDATA[9]                 
+0          0          0          PRDATA[8]                 
+0          0          0          PRDATA[7]                 
+0          0          0          PRDATA[6]                 
+0          0          0          PRDATA[5]                 
+0          0          0          PRDATA[4]                 
+0          0          0          PRDATA[3]                 
+0          0          0          PRDATA[2]                 
+0          0          0          PRDATA[1]                 
+0          0          0          PRDATA[0]                 
+0          0          0          PSLVERR                   
+
+Instance name: tb_top.s_if[1]
+Type name: apb_if
+File name: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/include/apb_if.sv
+Number of uncovered signal bits: 51 of 110
+Number of unreachable signal bits: 0
+Number of signal bits partially toggled(rise): 13 of 110
+Number of signal bits partially toggled(fall): 0 of 110
+
+Hit(Full)  Hit(Rise)  Hit(Fall)  Signal                    
+-----------------------------------------------------------
+0          1          0          PRESETn                   
+0          0          0          PADDR[31]                 
+0          1          0          PADDR[30]                 
+0          1          0          PADDR[29]                 
+0          1          0          PADDR[27]                 
+0          1          0          PADDR[26]                 
+0          1          0          PADDR[25]                 
+0          1          0          PADDR[24]                 
+0          1          0          PADDR[23]                 
+0          1          0          PADDR[22]                 
+0          1          0          PADDR[21]                 
+0          1          0          PADDR[20]                 
+0          1          0          PADDR[19]                 
+0          1          0          PADDR[18]                 
+0          0          0          PADDR[1]                  
+0          0          0          PADDR[0]                  
+0          0          0          PSEL                      
+0          0          0          PREADY                    
+0          0          0          PRDATA[31]                
+0          0          0          PRDATA[30]                
+0          0          0          PRDATA[29]                
+0          0          0          PRDATA[28]                
+0          0          0          PRDATA[27]                
+0          0          0          PRDATA[26]                
+0          0          0          PRDATA[25]                
+0          0          0          PRDATA[24]                
+0          0          0          PRDATA[23]                
+0          0          0          PRDATA[22]                
+0          0          0          PRDATA[21]                
+0          0          0          PRDATA[20]                
+0          0          0          PRDATA[19]                
+0          0          0          PRDATA[18]                
+0          0          0          PRDATA[17]                
+0          0          0          PRDATA[16]                
+0          0          0          PRDATA[15]                
+0          0          0          PRDATA[14]                
+0          0          0          PRDATA[13]                
+0          0          0          PRDATA[12]                
+0          0          0          PRDATA[11]                
+0          0          0          PRDATA[10]                
+0          0          0          PRDATA[9]                 
+0          0          0          PRDATA[8]                 
+0          0          0          PRDATA[7]                 
+0          0          0          PRDATA[6]                 
+0          0          0          PRDATA[5]                 
+0          0          0          PRDATA[4]                 
+0          0          0          PRDATA[3]                 
+0          0          0          PRDATA[2]                 
+0          0          0          PRDATA[1]                 
+0          0          0          PRDATA[0]                 
+0          0          0          PSLVERR                   
+
+Instance name: tb_top.dut
+Type name: apb_interconnect
+File name: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/rtl/apb_interconnect.sv
+Number of uncovered signal bits: 72 of 75
+Number of unreachable signal bits: 0
+Number of signal bits partially toggled(rise): 0 of 75
+Number of signal bits partially toggled(fall): 0 of 75
+
+Hit(Full)  Hit(Rise)  Hit(Fall)  Signal                    
+-----------------------------------------------------------
+0          0          0          sel_completer[1]          
+0          0          0          sel_completer[0]          
+0          0          0          mux_prdata[31]            
+0          0          0          mux_prdata[30]            
+0          0          0          mux_prdata[29]            
+0          0          0          mux_prdata[28]            
+0          0          0          mux_prdata[27]            
+0          0          0          mux_prdata[26]            
+0          0          0          mux_prdata[25]            
+0          0          0          mux_prdata[24]            
+0          0          0          mux_prdata[23]            
+0          0          0          mux_prdata[22]            
+0          0          0          mux_prdata[21]            
+0          0          0          mux_prdata[20]            
+0          0          0          mux_prdata[19]            
+0          0          0          mux_prdata[18]            
+0          0          0          mux_prdata[17]            
+0          0          0          mux_prdata[16]            
+0          0          0          mux_prdata[15]            
+0          0          0          mux_prdata[14]            
+0          0          0          mux_prdata[13]            
+0          0          0          mux_prdata[12]            
+0          0          0          mux_prdata[11]            
+0          0          0          mux_prdata[10]            
+0          0          0          mux_prdata[9]             
+0          0          0          mux_prdata[8]             
+0          0          0          mux_prdata[7]             
+0          0          0          mux_prdata[6]             
+0          0          0          mux_prdata[5]             
+0          0          0          mux_prdata[4]             
+0          0          0          mux_prdata[3]             
+0          0          0          mux_prdata[2]             
+0          0          0          mux_prdata[1]             
+0          0          0          mux_prdata[0]             
+0          0          0          mux_pready                
+0          0          0          agg_pready[1]             
+0          0          0          agg_pready[0]             
+0          0          0          agg_pslverr[1]            
+0          0          0          agg_pslverr[0]            
+0          0          0          final_prdata[31]          
+0          0          0          final_prdata[30]          
+0          0          0          final_prdata[29]          
+0          0          0          final_prdata[28]          
+0          0          0          final_prdata[27]          
+0          0          0          final_prdata[26]          
+0          0          0          final_prdata[25]          
+0          0          0          final_prdata[24]          
+0          0          0          final_prdata[23]          
+0          0          0          final_prdata[22]          
+0          0          0          final_prdata[21]          
+0          0          0          final_prdata[20]          
+0          0          0          final_prdata[19]          
+0          0          0          final_prdata[18]          
+0          0          0          final_prdata[17]          
+0          0          0          final_prdata[16]          
+0          0          0          final_prdata[15]          
+0          0          0          final_prdata[14]          
+0          0          0          final_prdata[13]          
+0          0          0          final_prdata[12]          
+0          0          0          final_prdata[11]          
+0          0          0          final_prdata[10]          
+0          0          0          final_prdata[9]           
+0          0          0          final_prdata[8]           
+0          0          0          final_prdata[7]           
+0          0          0          final_prdata[6]           
+0          0          0          final_prdata[5]           
+0          0          0          final_prdata[4]           
+0          0          0          final_prdata[3]           
+0          0          0          final_prdata[2]           
+0          0          0          final_prdata[1]           
+0          0          0          final_prdata[0]           
+0          0          0          final_pready              
+
+Instance name: tb_top.sva_m
+Type name: apb_sva
+File name: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/verification/uvm/apb_sva.sv
+Number of uncovered signal bits: 49 of 110
+Number of unreachable signal bits: 0
+Number of signal bits partially toggled(rise): 13 of 110
+Number of signal bits partially toggled(fall): 0 of 110
+
+Hit(Full)  Hit(Rise)  Hit(Fall)  Signal                    
+-----------------------------------------------------------
+0          1          0          PRESETn                   
+0          0          0          PADDR[31]                 
+0          1          0          PADDR[30]                 
+0          1          0          PADDR[29]                 
+0          1          0          PADDR[27]                 
+0          1          0          PADDR[26]                 
+0          1          0          PADDR[25]                 
+0          1          0          PADDR[24]                 
+0          1          0          PADDR[23]                 
+0          1          0          PADDR[22]                 
+0          1          0          PADDR[21]                 
+0          1          0          PADDR[20]                 
+0          1          0          PADDR[19]                 
+0          1          0          PADDR[18]                 
+0          0          0          PADDR[1]                  
+0          0          0          PADDR[0]                  
+0          0          0          PREADY                    
+0          0          0          PRDATA[31]                
+0          0          0          PRDATA[30]                
+0          0          0          PRDATA[29]                
+0          0          0          PRDATA[28]                
+0          0          0          PRDATA[27]                
+0          0          0          PRDATA[26]                
+0          0          0          PRDATA[25]                
+0          0          0          PRDATA[24]                
+0          0          0          PRDATA[23]                
+0          0          0          PRDATA[22]                
+0          0          0          PRDATA[21]                
+0          0          0          PRDATA[20]                
+0          0          0          PRDATA[19]                
+0          0          0          PRDATA[18]                
+0          0          0          PRDATA[17]                
+0          0          0          PRDATA[16]                
+0          0          0          PRDATA[15]                
+0          0          0          PRDATA[14]                
+0          0          0          PRDATA[13]                
+0          0          0          PRDATA[12]                
+0          0          0          PRDATA[11]                
+0          0          0          PRDATA[10]                
+0          0          0          PRDATA[9]                 
+0          0          0          PRDATA[8]                 
+0          0          0          PRDATA[7]                 
+0          0          0          PRDATA[6]                 
+0          0          0          PRDATA[5]                 
+0          0          0          PRDATA[4]                 
+0          0          0          PRDATA[3]                 
+0          0          0          PRDATA[2]                 
+0          0          0          PRDATA[1]                 
+0          0          0          PRDATA[0]                 
+
+Instance name: tb_top.sva_s0
+Type name: apb_sva
+File name: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/verification/uvm/apb_sva.sv
+Number of uncovered signal bits: 51 of 110
+Number of unreachable signal bits: 0
+Number of signal bits partially toggled(rise): 13 of 110
+Number of signal bits partially toggled(fall): 0 of 110
+
+Hit(Full)  Hit(Rise)  Hit(Fall)  Signal                    
+-----------------------------------------------------------
+0          1          0          PRESETn                   
+0          0          0          PADDR[31]                 
+0          1          0          PADDR[30]                 
+0          1          0          PADDR[29]                 
+0          1          0          PADDR[27]                 
+0          1          0          PADDR[26]                 
+0          1          0          PADDR[25]                 
+0          1          0          PADDR[24]                 
+0          1          0          PADDR[23]                 
+0          1          0          PADDR[22]                 
+0          1          0          PADDR[21]                 
+0          1          0          PADDR[20]                 
+0          1          0          PADDR[19]                 
+0          1          0          PADDR[18]                 
+0          0          0          PADDR[1]                  
+0          0          0          PADDR[0]                  
+0          0          0          PSEL                      
+0          0          0          PREADY                    
+0          0          0          PRDATA[31]                
+0          0          0          PRDATA[30]                
+0          0          0          PRDATA[29]                
+0          0          0          PRDATA[28]                
+0          0          0          PRDATA[27]                
+0          0          0          PRDATA[26]                
+0          0          0          PRDATA[25]                
+0          0          0          PRDATA[24]                
+0          0          0          PRDATA[23]                
+0          0          0          PRDATA[22]                
+0          0          0          PRDATA[21]                
+0          0          0          PRDATA[20]                
+0          0          0          PRDATA[19]                
+0          0          0          PRDATA[18]                
+0          0          0          PRDATA[17]                
+0          0          0          PRDATA[16]                
+0          0          0          PRDATA[15]                
+0          0          0          PRDATA[14]                
+0          0          0          PRDATA[13]                
+0          0          0          PRDATA[12]                
+0          0          0          PRDATA[11]                
+0          0          0          PRDATA[10]                
+0          0          0          PRDATA[9]                 
+0          0          0          PRDATA[8]                 
+0          0          0          PRDATA[7]                 
+0          0          0          PRDATA[6]                 
+0          0          0          PRDATA[5]                 
+0          0          0          PRDATA[4]                 
+0          0          0          PRDATA[3]                 
+0          0          0          PRDATA[2]                 
+0          0          0          PRDATA[1]                 
+0          0          0          PRDATA[0]                 
+0          0          0          PSLVERR                   
+
+Instance name: tb_top.sva_s1
+Type name: apb_sva
+File name: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/verification/uvm/apb_sva.sv
+Number of uncovered signal bits: 51 of 110
+Number of unreachable signal bits: 0
+Number of signal bits partially toggled(rise): 13 of 110
+Number of signal bits partially toggled(fall): 0 of 110
+
+Hit(Full)  Hit(Rise)  Hit(Fall)  Signal                    
+-----------------------------------------------------------
+0          1          0          PRESETn                   
+0          0          0          PADDR[31]                 
+0          1          0          PADDR[30]                 
+0          1          0          PADDR[29]                 
+0          1          0          PADDR[27]                 
+0          1          0          PADDR[26]                 
+0          1          0          PADDR[25]                 
+0          1          0          PADDR[24]                 
+0          1          0          PADDR[23]                 
+0          1          0          PADDR[22]                 
+0          1          0          PADDR[21]                 
+0          1          0          PADDR[20]                 
+0          1          0          PADDR[19]                 
+0          1          0          PADDR[18]                 
+0          0          0          PADDR[1]                  
+0          0          0          PADDR[0]                  
+0          0          0          PSEL                      
+0          0          0          PREADY                    
+0          0          0          PRDATA[31]                
+0          0          0          PRDATA[30]                
+0          0          0          PRDATA[29]                
+0          0          0          PRDATA[28]                
+0          0          0          PRDATA[27]                
+0          0          0          PRDATA[26]                
+0          0          0          PRDATA[25]                
+0          0          0          PRDATA[24]                
+0          0          0          PRDATA[23]                
+0          0          0          PRDATA[22]                
+0          0          0          PRDATA[21]                
+0          0          0          PRDATA[20]                
+0          0          0          PRDATA[19]                
+0          0          0          PRDATA[18]                
+0          0          0          PRDATA[17]                
+0          0          0          PRDATA[16]                
+0          0          0          PRDATA[15]                
+0          0          0          PRDATA[14]                
+0          0          0          PRDATA[13]                
+0          0          0          PRDATA[12]                
+0          0          0          PRDATA[11]                
+0          0          0          PRDATA[10]                
+0          0          0          PRDATA[9]                 
+0          0          0          PRDATA[8]                 
+0          0          0          PRDATA[7]                 
+0          0          0          PRDATA[6]                 
+0          0          0          PRDATA[5]                 
+0          0          0          PRDATA[4]                 
+0          0          0          PRDATA[3]                 
+0          0          0          PRDATA[2]                 
+0          0          0          PRDATA[1]                 
+0          0          0          PRDATA[0]                 
+0          0          0          PSLVERR                   
+
+Uncovered Fsm Detail Report, Instance Based
+===========================================
+
+Uncovered Assertion Detail Report, Instance Based
+=================================================
+
+Instance name: tb_top.sva_m
+Type name: apb_sva
+File name: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/verification/uvm/apb_sva.sv
+Number of uncovered assertions: 1 of 4
+
+Finished Failed Assertion                      Line  Source Code                    
+------------------------------------------------------------------------------------
+0        0      assert_stable_wait             40    assert_stable_wait: assert property(p_stable_wait) else $error("SVA: Signal stability during wait state failed!"); 
+
+Instance name: tb_top.sva_s0
+Type name: apb_sva
+File name: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/verification/uvm/apb_sva.sv
+Number of uncovered assertions: 3 of 4
+
+Finished Failed Assertion                      Line  Source Code                    
+------------------------------------------------------------------------------------
+0        0      assert_stable_wait             40    assert_stable_wait: assert property(p_stable_wait) else $error("SVA: Signal stability during wait state failed!"); 
+0        186    assert_access_psel             33    assert_access_psel: assert property(p_access_psel) else $error("SVA: PENABLE |-> PSEL failed!"); 
+0        0      assert_setup_to_access         26    assert_setup_to_access: assert property(p_setup_to_access) else $error("SVA: PSEL && !PENABLE |=> PENABLE failed!"); 
+
+Instance name: tb_top.sva_s1
+Type name: apb_sva
+File name: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/verification/uvm/apb_sva.sv
+Number of uncovered assertions: 3 of 4
+
+Finished Failed Assertion                      Line  Source Code                    
+------------------------------------------------------------------------------------
+0        0      assert_stable_wait             40    assert_stable_wait: assert property(p_stable_wait) else $error("SVA: Signal stability during wait state failed!"); 
+0        186    assert_access_psel             33    assert_access_psel: assert property(p_access_psel) else $error("SVA: PENABLE |-> PSEL failed!"); 
+0        0      assert_setup_to_access         26    assert_setup_to_access: assert property(p_setup_to_access) else $error("SVA: PSEL && !PENABLE |=> PENABLE failed!"); 
+
+Uncovered CoverGroup Detail Report, Instance Based
+==================================================
+
+Instance name: uvm_pkg.uvm_test_top.env.cov
+Type name: apb_pkg
+File name: /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/verification/uvm/apb_pkg.sv
+Include Files:
+    /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/verification/uvm/env/apb_coverage.sv
+Number of uncovered cover bins: 8 of 22
+
+Name                           Average, Covered Grade         Line  Source Code                    
+---------------------------------------------------------------------------------------------------
+cg_apb                         73.33%, 63.64% (14/22)         7 (apb_coverage.sv) covergroup cg_apb;             
+|--cp_addr                     66.67% (2/3)                   9 (apb_coverage.sv) cp_addr: coverpoint item.addr { 
+| |--upper                     0.00% (0/1)                    11 (apb_coverage.sv) bins upper = {32'h8001_FFFF}; // example based on default map 
+|--cp_slverr                   50.00% (1/2)                   16 (apb_coverage.sv) cp_slverr: coverpoint item.slverr; 
+| |--auto[0]                   0.00% (0/1)                    16 (apb_coverage.sv) cp_slverr: coverpoint item.slverr; 
+|--__cp_slave_idx_X_cp_write_X_cp_slverr 50.00% (6/12)                  23 (apb_coverage.sv) cross cp_slave_idx, cp_write, cp_slverr; 
+| |--s0,auto[0],auto[0]        0.00% (0/1)                    23 (apb_coverage.sv) cross cp_slave_idx, cp_write, cp_slverr; 
+| |--s0,auto[1],auto[0]        0.00% (0/1)                    23 (apb_coverage.sv) cross cp_slave_idx, cp_write, cp_slverr; 
+| |--s1,auto[0],auto[0]        0.00% (0/1)                    23 (apb_coverage.sv) cross cp_slave_idx, cp_write, cp_slverr; 
+| |--s1,auto[1],auto[0]        0.00% (0/1)                    23 (apb_coverage.sv) cross cp_slave_idx, cp_write, cp_slverr; 
+| |--unmapped,auto[0],auto[0]  0.00% (0/1)                    23 (apb_coverage.sv) cross cp_slave_idx, cp_write, cp_slverr; 
+| |--unmapped,auto[1],auto[0]  0.00% (0/1)                    23 (apb_coverage.sv) cross cp_slave_idx, cp_write, cp_slverr; 
+

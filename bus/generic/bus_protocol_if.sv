@@ -11,15 +11,17 @@
         logic ren; // request is a data read
         logic request_stall; // High when protocol should insert wait states in transaction
         logic [ADDR_WIDTH-1 : 0] addr; // *offset* address of request
-        logic error; // Indicate error condition to bus
-        logic [(DATA_WIDTH/8)-1 : 0] strobe; // byte enable for writes
-        logic [DATA_WIDTH-1 : 0] wdata, rdata; // data lines -- from perspective of bus master. rdata should be data read from peripheral.
+    // verilator lint_off UNUSED
+    logic error; // Indicate error condition to bus
+    logic [(DATA_WIDTH/8)-1 : 0] strobe; // byte enable for writes
+    logic [DATA_WIDTH-1 : 0] wdata, rdata; // data lines -- from perspective of bus master. rdata should be data read from peripheral.
 
-        // Hint signals
-        logic is_burst;
-        logic [1:0] burst_type; // WRAP, INCR
-        logic [7:0] burst_length; // up to 256, would support AHB and AXI
-        logic secure_transfer;
+    // Hint signals
+    logic is_burst;
+    logic [1:0] burst_type; // WRAP, INCR
+    logic [7:0] burst_length; // up to 256, would support AHB and AXI
+    logic secure_transfer;
+    // verilator lint_on UNUSED
 
 
         modport peripheral_vital (

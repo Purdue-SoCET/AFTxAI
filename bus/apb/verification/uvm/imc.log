@@ -1,0 +1,38 @@
+IMC(64): 23.03-s003: (c) Copyright 1995-2023 Cadence Design Systems Inc - Simulator version: 23.03-s004 - Coverage engine version: 23.03-s004
+Starting batch mode
+imc> merge cov_work/scope/* -out merged -overwrite; load merged; report -summary -out coverage_summary.txt; exit
+imc: *W,MGOPOW: The merge output directory cov_work/scope/merged will be overwritten.
+imc: *I,MERGL1: Merging Simulation Coverage ...
+----------------------------
+imc: *I,MERGL1: Preparing target model ...
+imc: *I,MERGL1: Reading model of primary run (cov_work/scope/b2b_test) as initial model: cov_work/scope/icc_536504ba_24041537.ucm
+imc: *I,MERGL1: Target model generated successfully.
+imc: *I,MERGL1: Projecting Simulation ucd data into the target model ...
+imc: *I,MERGL2:   cov_work/scope/b2b_test:
+imc: *I,MERGL3:       Data is projected in to the target model.
+imc: *I,MERGL2:   cov_work/scope/boundary_test:
+imc: *I,MERGL3:       Data is projected in to the target model.
+imc: *I,MERGL2:   cov_work/scope/full_random_test:
+imc: *I,MERGL3:       Data is projected in to the target model.
+imc: *I,MERGL2:   cov_work/scope/merged:
+imc: *W,WEMCP2:         Coverpoint 'cp_addr' not merged with target coverpoint 'apb_pkg.apb_coverage::cg_apb.cp_addr' - Mismatch in source code.
+imc: *W,WEMCP2:         Coverpoint 'cp_addr' not merged with target coverpoint 'uvm_pkg.uvm_test_top.env.cov.cg_apb.cp_addr' - Mismatch in source code.
+imc: *I,MERGL3:       Data is projected in to the target model.
+imc: *I,MERGL2:   cov_work/scope/sanity_test:
+imc: *I,MERGL3:       Data is projected in to the target model.
+imc: *I,MERGL2:   cov_work/scope/slverr_test:
+imc: *I,MERGL3:       Data is projected in to the target model.
+imc: *I,MERGL2:   cov_work/scope/unmapped_test:
+imc: *I,MERGL3:       Data is projected in to the target model.
+imc: *I,MERGL2:   cov_work/scope/wait_state_test:
+imc: *I,MERGL3:       Data is projected in to the target model.
+imc: *I,MERGL1: Writing output database cov_work/scope/merged:
+imc: *I,MERGL2:   Model: cov_work/scope/merged/icc_536504ba_24041537.ucm
+imc: *I,MERGL2:   Data : cov_work/scope/merged/icc_536504ba_24041537.ucd
+imc: *I,MERGL1: No Specman coverage databases found in the runs.
+Total conflicts during target model creation: 0
+Total items not merged                      : 2
+Total runs not considered during target model creation: 0
+Total runs not merged                                 : 0
+imc: *I,RUNLD: Successfully loaded run /home/asicfab/a/ehysa/AiFT/AFTxAI/bus/apb/verification/uvm/cov_work/scope/merged.
+imc: *W,REPDEP: This is a legacy report and no future enhancement is planned for this report. It is recommended that you use the 'report_metrics' command and generate a dynamic report.

@@ -1,0 +1,19 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
+-sv
+-timescale
+1ns/1ps
+peripherals/spi/include/spi_types_pkg.sv
+peripherals/spi/include/spi_if.sv
+peripherals/spi/rtl/fifo.sv
+peripherals/spi/rtl/clock_generator.sv
+peripherals/spi/rtl/edge_detect_spi.sv
+peripherals/spi/rtl/flex_sr_spi.sv
+peripherals/spi/rtl/controller.sv
+peripherals/spi/rtl/interrupt_control.sv
+peripherals/spi/rtl/spi_wrapper.sv
+peripherals/spi/verification/tb/tb_spi_top.sv
+-access
++rwc

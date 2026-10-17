@@ -1,0 +1,17 @@
+[INFO ] 2026-10-17 00:15:50 [com.cadence.mdv.imc.Main] [main] - Binding debug tools http on port: 38615
+[ERROR] 2026-10-17 00:15:51 [com.cadence.mdv.messaging.MDVASynchronicMessaging] [frontend-pool-1] - Merge output directory cov_work/cov_work/merged could not be created because either the parent directory does not exist, or the parent directory has no write permission. Make sure that the parent directory exists and has write permission before you rerun the command.
+[INFO ] 2026-10-17 00:16:05 [com.cadence.mdv.imc.Main] [main] - Binding debug tools http on port: 38327
+[ERROR] 2026-10-17 00:16:05 [com.cadence.mdv.messaging.MDVASynchronicMessaging] [frontend-pool-2] - Target model generation failed.
+[ERROR] 2026-10-17 00:16:05 [com.cadence.mdv.messaging.MDVASynchronicMessaging] [frontend-pool-1] - None of the input runs have a valid model - merge aborted.
+[ERROR] 2026-10-17 00:16:05 [com.cadence.mdv.messaging.MDVASynchronicMessaging] [frontend-pool-3] - Simulation coverage merging failed.
+[INFO ] 2026-10-17 00:16:16 [com.cadence.mdv.imc.Main] [main] - Binding debug tools http on port: 45077
+[INFO ] 2026-10-17 00:20:50 [com.cadence.mdv.imc.Main] [main] - Binding debug tools http on port: 33999
+[ERROR] 2026-10-17 00:20:50 [com.cadence.mdv.messaging.MDVASynchronicMessaging] [frontend-pool-1] - Merge output directory cov_work/scope/merged already exists. Either specify a different name for the output directory, or use the -overwrite option to overwrite the existing output directory.	   
+[INFO ] 2026-10-17 00:21:00 [com.cadence.mdv.imc.Main] [main] - Binding debug tools http on port: 46107
+[INFO ] 2026-10-17 00:21:25 [com.cadence.mdv.imc.Main] [main] - Binding debug tools http on port: 33215
+[INFO ] 2026-10-17 00:21:46 [com.cadence.mdv.imc.Main] [main] - Binding debug tools http on port: 46459
+[ERROR] 2026-10-17 00:21:46 [com.cadence.mdv.messaging.MDVASynchronicMessaging] [frontend-pool-1] - Incorrect command parameters. Unknown option 'format'
+[INFO ] 2026-10-17 00:21:57 [com.cadence.mdv.imc.Main] [main] - Binding debug tools http on port: 42943
+[ERROR] 2026-10-17 00:21:58 [com.cadence.mdv.messaging.MDVASynchronicMessaging] [frontend-pool-1] - Cannot create file coverage_detail.txt. Make sure that the parent directory has write permission, and rerun the command	   
+[INFO ] 2026-10-17 00:22:08 [com.cadence.mdv.imc.Main] [main] - Binding debug tools http on port: 35665
+[INFO ] 2026-10-17 00:24:04 [com.cadence.mdv.imc.Main] [main] - Binding debug tools http on port: 43529
