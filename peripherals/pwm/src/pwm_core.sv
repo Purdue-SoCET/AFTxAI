@@ -25,7 +25,7 @@ module pwm_core #(
     // PWM external outputs
     output logic [PWM_CHANNELS-1:0] pwm_out_o,
     output logic [PWM_CHANNELS-1:0] pwm_oe_o,
-    output logic                    irq_o
+    output wire                    irq_o
 );
 
     // Initial validation of parameters
@@ -90,7 +90,7 @@ module pwm_core #(
         prdata = '0;
         pslverr = '0;
         
-        if (psel) begin
+        if (access) begin
             if (!addr_aligned) begin
                 pslverr = 1'b1;
             end else if (!pwrite && pstrb != '0) begin // PWM-APB-004
@@ -194,12 +194,14 @@ module pwm_core #(
         end
     end
 
+
+    assign irq_o = |(irq_pending & irq_enable);
+
     // Sequential logic
     always_ff @(posedge pclk or negedge presetn) begin
         if (!presetn) begin
             irq_enable <= '0;
             irq_pending <= '0;
-            irq_o <= 1'b0;
             pwm_out_o <= '0;
             pwm_oe_o <= '0;
             ch_en <= '0;
@@ -216,15 +218,7 @@ module pwm_core #(
                 ch_prescale_phase[i] <= 16'd0;
             end
         end else begin
-            // IRQ Aggregation
-            logic [MAX_CHANNELS-1:0] active_irqs;
-            for (int i = 0; i < MAX_CHANNELS; i++) begin
-                if (i < PWM_CHANNELS)
-                    active_irqs[i] = irq_pending[i] & irq_enable[i];
-                else
-                    active_irqs[i] = 1'b0;
-            end
-            irq_o <= |active_irqs;
+
 
             // Channel processing
             for (int i = 0; i < MAX_CHANNELS; i++) begin

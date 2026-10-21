@@ -131,20 +131,53 @@ package pwm_uvm_pkg;
     endclass
 
     // --- Environment / Scoreboard ---
-    class pwm_scoreboard extends uvm_scoreboard;
+        class pwm_scoreboard extends uvm_scoreboard;
         `uvm_component_utils(pwm_scoreboard)
         uvm_analysis_imp #(apb_item, pwm_scoreboard) apb_imp;
+        virtual apb4_if#(.ADDR_WIDTH(12), .DATA_WIDTH(32)) apb_vif;
+        virtual pwm_if#(.PWM_CHANNELS(4)) pwm_vif;
+        
+        logic [3:0] exp_en;
+        logic [3:0] exp_pol;
         
         function new(string name, uvm_component parent);
             super.new(name, parent);
             apb_imp = new("apb_imp", this);
+            exp_en = 0;
+            exp_pol = 0;
+        endfunction
+        
+        function void build_phase(uvm_phase phase);
+            super.build_phase(phase);
+            if(!uvm_config_db#(virtual apb4_if#(.ADDR_WIDTH(12), .DATA_WIDTH(32)))::get(this, "", "apb_vif", apb_vif))
+                `uvm_fatal("NO_VIF", "APB VIF not found")
+            if(!uvm_config_db#(virtual pwm_if#(.PWM_CHANNELS(4)))::get(this, "", "pwm_vif", pwm_vif))
+                `uvm_fatal("NO_VIF", "PWM VIF not found")
         endfunction
         
         virtual function void write(apb_item item);
-            // Basic self-checking logged here
+            if (item.pwrite && !item.pslverr && item.paddr < 12'h100) begin
+                int ch = item.paddr[8:5];
+                if (item.paddr[4:0] == 5'h00 && item.pstrb[0]) begin
+                    exp_en[ch] = item.pwdata[0];
+                    exp_pol[ch] = item.pwdata[1];
+                end
+            end
         endfunction
+        
+        task run_phase(uvm_phase phase);
+            forever begin
+                @(posedge pwm_vif.pclk);
+                #1;
+                for (int i=0; i<4; i++) begin
+                    if (exp_en[i] == 0) begin
+                        if (pwm_vif.pwm_out_o[i] !== 0) `uvm_error("SCB", $sformatf("CH%0d out=%b (exp 0, disabled)", i, pwm_vif.pwm_out_o[i]))
+                        if (pwm_vif.pwm_oe_o[i] !== 0) `uvm_error("SCB", $sformatf("CH%0d OE=%b (exp 0, disabled)", i, pwm_vif.pwm_oe_o[i]))
+                    end
+                end
+            end
+        endtask
     endclass
-
     class pwm_coverage extends uvm_subscriber #(apb_item);
         `uvm_component_utils(pwm_coverage)
         
@@ -162,21 +195,30 @@ package pwm_uvm_pkg;
                 bins all_strb[] = {[0:15]};
             }
         endgroup
+
+        covergroup behavior_cg;
+            // Sampling event occurrences
+            cp_duty_extreme: coverpoint p_item.pwdata {
+                bins duty_0 = {0};
+                bins duty_max = {[1:$]};
+            }
+        endgroup
         
         apb_item p_item;
         
         function new(string name, uvm_component parent);
             super.new(name, parent);
             apb_cg = new();
+            behavior_cg = new();
         endfunction
         
         function void write(apb_item t);
             p_item = t;
             apb_cg.sample();
+            if (t.pwrite && !t.pslverr && t.paddr[4:0] == 5'h08) behavior_cg.sample();
         endfunction
     endclass
-
-    class pwm_env extends uvm_env;
+class pwm_env extends uvm_env;
         `uvm_component_utils(pwm_env)
         apb_agent apb_agt;
         pwm_scoreboard scb;
