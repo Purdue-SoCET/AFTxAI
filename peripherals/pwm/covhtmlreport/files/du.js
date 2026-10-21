@@ -1,0 +1,2 @@
+var g_data = {"data":[{"n":"work.apb4_if","id":1,"zf":1,"tc":23.33,"t":23.33},{"n":"work.pwm_core","id":6,"zf":1,"tc":23.48,"t":23.48},{"n":"work.pwm_if","id":5,"zf":1,"tc":27.27,"t":27.27},{"n":"work.pwm_tb","id":4,"zf":1,"tc":75.00,"t":75.00},{"n":"work.pwm_uvm_pkg","id":2,"zf":1,"tc":23.86,"b":7.96,"fc":13.33,"g":50.31}]};
+processDuData(g_data);

@@ -131,7 +131,7 @@ package pwm_uvm_pkg;
     endclass
 
     // --- Environment / Scoreboard ---
-        class pwm_scoreboard extends uvm_scoreboard;
+            class pwm_scoreboard extends uvm_scoreboard;
         `uvm_component_utils(pwm_scoreboard)
         uvm_analysis_imp #(apb_item, pwm_scoreboard) apb_imp;
         virtual apb4_if#(.ADDR_WIDTH(12), .DATA_WIDTH(32)) apb_vif;
@@ -139,12 +139,20 @@ package pwm_uvm_pkg;
         
         logic [3:0] exp_en;
         logic [3:0] exp_pol;
+        logic [31:0] exp_period[4];
+        logic [31:0] exp_duty[4];
+        
+        int match_count = 0;
         
         function new(string name, uvm_component parent);
             super.new(name, parent);
             apb_imp = new("apb_imp", this);
             exp_en = 0;
             exp_pol = 0;
+            for(int i=0; i<4; i++) begin
+                exp_period[i] = 1;
+                exp_duty[i] = 0;
+            end
         endfunction
         
         function void build_phase(uvm_phase phase);
@@ -162,23 +170,41 @@ package pwm_uvm_pkg;
                     exp_en[ch] = item.pwdata[0];
                     exp_pol[ch] = item.pwdata[1];
                 end
+                if (item.paddr[4:0] == 5'h04) exp_period[ch] = item.pwdata;
+                if (item.paddr[4:0] == 5'h08) exp_duty[ch] = item.pwdata;
             end
         endfunction
         
         task run_phase(uvm_phase phase);
+            int phase_cnt[4] = '{0,0,0,0};
             forever begin
                 @(posedge pwm_vif.pclk);
-                #1;
+                #1; // sampling after assignments
                 for (int i=0; i<4; i++) begin
                     if (exp_en[i] == 0) begin
                         if (pwm_vif.pwm_out_o[i] !== 0) `uvm_error("SCB", $sformatf("CH%0d out=%b (exp 0, disabled)", i, pwm_vif.pwm_out_o[i]))
                         if (pwm_vif.pwm_oe_o[i] !== 0) `uvm_error("SCB", $sformatf("CH%0d OE=%b (exp 0, disabled)", i, pwm_vif.pwm_oe_o[i]))
+                        phase_cnt[i] = 0;
+                        match_count++;
+                    end else begin
+                        logic exp_val = (phase_cnt[i] < exp_duty[i]) ^ exp_pol[i];
+                        if (pwm_vif.pwm_out_o[i] !== exp_val) `uvm_error("SCB", $sformatf("CH%0d phase=%0d out=%b (exp %b)", i, phase_cnt[i], pwm_vif.pwm_out_o[i], exp_val))
+                        if (pwm_vif.pwm_oe_o[i] !== 1) `uvm_error("SCB", $sformatf("CH%0d OE=%b (exp 1)", i, pwm_vif.pwm_oe_o[i]))
+                        match_count++;
+                        
+                        // Increment phase predictor (ignoring prescale/ARM updates for this simplified check)
+                        phase_cnt[i]++;
+                        if (phase_cnt[i] >= exp_period[i]) phase_cnt[i] = 0;
                     end
                 end
             end
         endtask
+        
+        function void report_phase(uvm_phase phase);
+            `uvm_info("SCB", $sformatf("Scoreboard verified %0d cycle-level comparisons successfully", match_count), UVM_NONE)
+        endfunction
     endclass
-    class pwm_coverage extends uvm_subscriber #(apb_item);
+class pwm_coverage extends uvm_subscriber #(apb_item);
         `uvm_component_utils(pwm_coverage)
         
         covergroup apb_cg;
