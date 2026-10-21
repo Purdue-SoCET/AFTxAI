@@ -216,11 +216,18 @@ module pwm_tb_directed;
         @(posedge pclk); #1; check(pwm_out_o[0] == 0, "T12: PRESCALE=1 phase 1-1 is low");
         apb_write(12'h000, 32'd0, 4'hF, err);
         
+                // T13: PRESCALE=65535 exact timing
+        apb_write(12'h004, 32'd2, 4'hF, err);
+        apb_write(12'h008, 32'd1, 4'hF, err);
         apb_write(12'h00C, 32'd65535, 4'hF, err); // PRESCALE=65535
         apb_write(12'h000, 32'd1, 4'hF, err);
         #1; check(pwm_out_o[0] == 1, "T13: PRESCALE=65535 phase 0 is high");
-        repeat(100) @(posedge pclk);
-        #1; check(pwm_out_o[0] == 1, "T13: PRESCALE=65535 output remains high");
+        // It stays high for 65536 clocks per phase
+        // Let's advance 65535 clocks
+        repeat(65535) @(posedge pclk);
+        #1; check(pwm_out_o[0] == 1, "T13: PRESCALE=65535 output remains high right before edge");
+        @(posedge pclk);
+        #1; check(pwm_out_o[0] == 0, "T13: PRESCALE=65535 output goes low exactly at edge");
         apb_write(12'h000, 32'd0, 4'hF, err);
 
         do_reset();
@@ -236,10 +243,10 @@ module pwm_tb_directed;
 
         do_reset();
 
-        // T15: 4 channels concurrent
+                // T15: 4 channels concurrent
         apb_write(12'h004, 32'd4, 4'hF, err); apb_write(12'h008, 32'd2, 4'hF, err);
-        apb_write(12'h024, 32'd4, 4'hF, err); apb_write(12'h028, 32'd2, 4'hF, err);
-        apb_write(12'h044, 32'd4, 4'hF, err); apb_write(12'h048, 32'd2, 4'hF, err);
+        apb_write(12'h024, 32'd8, 4'hF, err); apb_write(12'h028, 32'd4, 4'hF, err);
+        apb_write(12'h044, 32'd2, 4'hF, err); apb_write(12'h048, 32'd1, 4'hF, err);
         apb_write(12'h064, 32'd4, 4'hF, err); apb_write(12'h068, 32'd2, 4'hF, err);
         
         apb_write(12'h000, 32'd1, 4'hF, err); // CH0
@@ -248,9 +255,29 @@ module pwm_tb_directed;
         apb_write(12'h060, 32'd3, 4'hF, err); // CH3 (POL=1)
         
         #1; 
-        // CH0, 1, 2 are in phase 0/1/2/3 depending on when they started.
-        // We just check that they are all generating valid outputs
         check(pwm_oe_o == 4'b1111, "T15: All 4 channels enabled");
+        // CH0 (P=4,D=2), CH1 (P=8,D=4), CH2 (P=2,D=1), CH3 (P=4,D=2, POL=1)
+        // Simulate for a few clocks, predicting exact outputs
+        // They were enabled sequentially, so phase offsets exist.
+        // CH0 started 3 writes ago (so phase 3), CH1 (phase 2), CH2 (phase 1), CH3 (phase 0)
+        // Wait, apb_write takes 3 cycles.
+        // Let's just do a reset and enable them simultaneously via a broader write? Not possible in APB.
+        // We will just read `pwm_out_o` and log it, wait, we must ASSERT exact outputs.
+        // Since apb_write takes exactly 3 pclk cycles:
+        // CH0 is at phase 9 (which is 9%4 = 1)
+        // CH1 is at phase 6 (6%8 = 6)
+        // CH2 is at phase 3 (3%2 = 1)
+        // CH3 is at phase 0
+        // Expected now:
+        // CH0: phase 1 < 2 -> 1
+        // CH1: phase 6 < 4 -> 0
+        // CH2: phase 1 < 1 -> 0
+        // CH3: phase 0 < 2 ^ 1 -> 1 ^ 1 = 0
+        check(pwm_out_o == 4'b0001, "T15: Exact concurrent outputs correct (cycle 0)");
+        @(posedge pclk); #1; // CH0:ph2(0), CH1:ph7(0), CH2:ph0(1), CH3:ph1(0) -> 0100
+        check(pwm_out_o == 4'b0100, "T15: Exact concurrent outputs correct (cycle 1)");
+        @(posedge pclk); #1; // CH0:ph3(0), CH1:ph0(1), CH2:ph1(0), CH3:ph2(1) -> 1010
+        check(pwm_out_o == 4'b1010, "T15: Exact concurrent outputs correct (cycle 2)");
 
         do_reset();
         
@@ -271,13 +298,13 @@ module pwm_tb_directed;
         apb_write(12'h008, 32'd5, 4'hF, err);
         apb_write(12'h000, 32'd1, 4'hF, err); // EN=1, POL=0
         apb_write(12'h000, 32'd3, 4'hF, err); // EN=1, POL=1
-        // check(err == 1, "T25: Polarity change while running rejected");
-        // Because of the RTL glitch in pslverr evaluation when !ch_en false, err=0.
-        // I will document this known bug in SIGNOFF.md as allowed by PWM-ACC-002 "known bugs/limitations".
+        check(err == 1, "T25: Polarity change while running rejected");
+        
+        
         
         do_reset();
 
-        // T18-T20: Buffered update pending
+                        // T18-T21: Buffered update pending
         apb_write(12'h004, 32'd10, 4'hF, err);
         apb_write(12'h008, 32'd5, 4'hF, err);
         apb_write(12'h000, 32'd1, 4'hF, err); // Start running with period 10
@@ -287,6 +314,39 @@ module pwm_tb_directed;
         check(err == 0, "T19: ARM accepted");
         apb_write(12'h004, 32'd50, 4'hF, err); // Write while pending
         check(err == 1, "T19: Write while pending rejected");
+        
+        do_reset();
+        
+        // T21: ARM on boundary
+        apb_write(12'h004, 32'd8, 4'hF, err);
+        apb_write(12'h008, 32'd4, 4'hF, err);
+        apb_write(12'h000, 32'd1, 4'hF, err); // Start running
+        
+        repeat(2) @(posedge pclk);
+        
+        apb_write(12'h004, 32'd4, 4'hF, err); // phase becomes 5
+        apb_write(12'h010, 32'd1, 4'hF, err); // ARM completes at phase 0!
+        
+        // It applies at NEXT boundary.
+        apb_read(12'h018, rdata, err); 
+        // phase was 0 when apb_read started. Setup cycle -> ph 1. Access cycle -> ph 2. Data sampled.
+        check(rdata == 32'd2, "T21: ARM on boundary deferred to next boundary (phase is 2)");
+        
+        repeat(4) @(posedge pclk); 
+        @(posedge pclk); #1; // phase 0 of NEW period
+        
+        apb_read(12'h018, rdata, err); 
+        check(rdata == 32'd2, "T20: New period applied (phase 2)");
+        @(posedge pclk); 
+        apb_read(12'h018, rdata, err); 
+        check(rdata == 32'd2, "T20: Period is indeed 4 (phase 2 again)");
+        
+        do_reset();
+        
+        apb_write(12'h004, 32'd4, 4'hF, err);
+        apb_write(12'h008, 32'd2, 4'hF, err);
+        apb_write(12'h000, 32'd1, 4'hF, err);
+
         
         // Wait for boundary
         apb_write(12'h100, 32'h1, 4'hF, err); // Enable CH0 IRQ
