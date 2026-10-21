@@ -91,10 +91,16 @@ module timer_tb;
             tb_count <= 0;
             tb_en <= 0;
         end else begin
-            if (tb_en) tb_count <= tb_count + 1;
+            logic disable_req;
+            disable_req = (psel && penable && pwrite && paddr == 13'h0000 && !pwdata[0] && tb_en);
+            
+            if (psel && penable && pwrite && paddr == 13'h0004) begin
+                tb_count <= pwdata;
+            end else if (tb_en && !disable_req) begin
+                tb_count <= tb_count + 1;
+            end
             
             if (psel && penable && pwrite && paddr == 13'h0000) tb_en <= pwdata[0];
-            if (psel && penable && pwrite && paddr == 13'h0004) tb_count <= pwdata;
         end
     end
 
@@ -352,7 +358,7 @@ module timer_tb;
         $display("RISING: tb_count=%0d, dut.count_reg=%0d", tb_count, dut.count_reg);
         // The synchronizer delays the edge by 2 cycles (sync, sync_d1). 
         // We use our independent tb_count instead of dut.count_reg.
-        expected_cap = 12; // Deterministic hardware capture value
+        expected_cap = tb_count + 2; 
         capture_i = 1; // Rising edge
         
         repeat(4) @(posedge pclk);
@@ -371,7 +377,7 @@ module timer_tb;
         @(posedge pclk);
         #1;
         $display("FALLING: tb_count=%0d, dut.count_reg=%0d", tb_count, dut.count_reg);
-        expected_cap = 30; // Deterministic hardware capture value
+        expected_cap = tb_count + 2; 
         capture_i = 0; // Falling edge
         
         repeat(4) @(posedge pclk);
@@ -390,7 +396,7 @@ module timer_tb;
         @(posedge pclk);
         #1;
         $display("EITHER: tb_count=%0d, dut.count_reg=%0d", tb_count, dut.count_reg);
-        expected_cap = 48; // Deterministic hardware capture value
+        expected_cap = tb_count + 2; 
         capture_i = 1; // Rising edge
         repeat(4) @(posedge pclk);
         do_read(13'h0014, rdata, err); assert(rdata[2] == 1) else $fatal(1, "T22 either(R) cap pend");

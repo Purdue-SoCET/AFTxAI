@@ -174,6 +174,9 @@ package timer_uvm_pkg;
 
         task run_phase(uvm_phase phase);
             bit [15:0] phase_cnt = 0;
+            bit capture_sync_1 = 0;
+            bit capture_sync_2 = 0;
+            bit capture_sync_3 = 0;
             forever begin
                 @(posedge sb_vif.clk);
                 if (!sb_vif.rst_n) begin
@@ -187,14 +190,51 @@ package timer_uvm_pkg;
                     shadow_cap_en = 0;
                     shadow_cap_edge = 0;
                     phase_cnt = 0;
+                    capture_sync_1 = 0;
+                    capture_sync_2 = 0;
+                    capture_sync_3 = 0;
                 end else begin
+                    capture_sync_3 = capture_sync_2;
+                    capture_sync_2 = capture_sync_1;
+                    capture_sync_1 = sb_vif.capture_i;
+
+                    if (shadow_en && shadow_cap_en) begin
+                        bit cap_event = 0;
+                        if (shadow_cap_edge == 2'b00 && capture_sync_2 && !capture_sync_3) cap_event = 1;
+                        if (shadow_cap_edge == 2'b01 && !capture_sync_2 && capture_sync_3) cap_event = 1;
+                        if (shadow_cap_edge == 2'b10 && (capture_sync_2 != capture_sync_3)) cap_event = 1;
+                        
+                        if (cap_event) begin
+                            if (shadow_irq_pending[2]) shadow_irq_pending[3] = 1; // Overrun
+                            shadow_irq_pending[2] = 1; // Capture
+                        end
+                    end
+
                     if (shadow_en) begin
                         if (phase_cnt == shadow_prescale) begin
                             phase_cnt = 0;
-                            shadow_count++;
-                            if (shadow_count > shadow_period) begin
-                                if (shadow_mode == 2'b00) shadow_count = 0; // periodic
-                                else if (shadow_mode == 2'b01) shadow_en = 0; // one-shot
+                            if (shadow_mode == 2'b00) begin // periodic
+                                if (shadow_count == shadow_period) begin
+                                    shadow_count = 0;
+                                    shadow_irq_pending[0] = 1; // Match
+                                end else begin
+                                    shadow_count++;
+                                end
+                            end else if (shadow_mode == 2'b01) begin // one-shot
+                                if (shadow_count == shadow_period) begin
+                                    shadow_en = 0;
+                                    shadow_irq_pending[0] = 1; // Match
+                                end else begin
+                                    shadow_count++;
+                                end
+                            end else if (shadow_mode == 2'b10) begin // free-run
+                                if (shadow_count == shadow_period) shadow_irq_pending[0] = 1; // Match
+                                if (shadow_count == 32'hFFFF_FFFF) begin
+                                    shadow_count = 0;
+                                    shadow_irq_pending[1] = 1; // Wrap
+                                end else begin
+                                    shadow_count++;
+                                end
                             end
                         end else begin
                             phase_cnt++;
@@ -214,11 +254,9 @@ package timer_uvm_pkg;
                         13'h0000: begin
                             if (!shadow_en || t.pwdata[0] == 0) begin
                                 shadow_en = t.pwdata[0];
-                                if (!shadow_en) begin
-                                    shadow_mode = t.pwdata[2:1];
-                                    shadow_cap_en = t.pwdata[3];
-                                    shadow_cap_edge = t.pwdata[5:4];
-                                end
+                                shadow_mode = t.pwdata[2:1];
+                                shadow_cap_en = t.pwdata[3];
+                                shadow_cap_edge = t.pwdata[5:4];
                             end
                         end
                         13'h0004: if (!shadow_en) shadow_count = t.pwdata;
@@ -234,7 +272,13 @@ package timer_uvm_pkg;
                         13'h0008: if (t.prdata !== shadow_period) `uvm_error("SCB_FAIL", $sformatf("PERIOD mismatch: exp %0h, got %0h", shadow_period, t.prdata))
                         13'h000C: if (t.prdata !== shadow_prescale) `uvm_error("SCB_FAIL", $sformatf("PRESCALE mismatch: exp %0h, got %0h", shadow_prescale, t.prdata))
                         13'h0010: if (t.prdata !== shadow_irq_enable) `uvm_error("SCB_FAIL", $sformatf("IRQ_EN mismatch: exp %0h, got %0h", shadow_irq_enable, t.prdata))
+                        13'h0014: if (t.prdata[3:0] !== shadow_irq_pending) `uvm_error("SCB_FAIL", $sformatf("IRQ_PEND mismatch: exp %0h, got %0h", shadow_irq_pending, t.prdata[3:0]))
                     endcase
+                end
+
+                // Compare IRQ output
+                if (sb_vif.irq_o !== |(shadow_irq_pending & shadow_irq_enable)) begin
+                    `uvm_error("SCB_FAIL", $sformatf("IRQ_O mismatch: exp %0b, got %0b (pend=%b, en=%b)", |(shadow_irq_pending & shadow_irq_enable), sb_vif.irq_o, shadow_irq_pending, shadow_irq_enable))
                 end
             end
         endfunction
