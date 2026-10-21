@@ -156,6 +156,10 @@ package timer_uvm_pkg;
         bit [3:0] shadow_irq_pending = 0;
         bit shadow_cap_en = 0;
         bit [1:0] shadow_cap_edge = 0;
+        
+        bit capture_sync_1 = 0;
+        bit capture_sync_2 = 0;
+        bit capture_sync_3 = 0;
 
         function new(string name, uvm_component parent);
             super.new(name, parent);
