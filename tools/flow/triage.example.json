@@ -1,0 +1,62 @@
+{
+  "spec": "peripherals/i2c/I2C.md",
+  "round": 1,
+  "generated": "2026-10-23T18:30:00Z",
+  "tools": {
+    "verilator": "5.036",
+    "lcov": "2.1",
+    "xcelium": "23.03"
+  },
+  "summary": { "pass": 1, "fail": 2, "not_run": 0 },
+  "results": [
+    { "test": "T01", "config": "default", "seed": null, "status": "PASS", "log": "peripherals/i2c/build/default/T01.log" },
+    { "test": "T07", "config": "default", "seed": 4021, "status": "FAIL", "log": "peripherals/i2c/build/default/T07.log" },
+    { "test": "T10", "config": "default", "seed": 77, "status": "FAIL", "log": "peripherals/i2c/build/default/T10.log" }
+  ],
+  "failures": [
+    {
+      "id": "F01",
+      "test": "T07",
+      "config": "default",
+      "seed": 4021,
+      "class": "rtl",
+      "requirements": ["I2C-ENG-004"],
+      "summary": "On a READ with CMD.NACK = 1, the engine drives ACK (sda_oe = 1) on the 9th SCL pulse instead of releasing SDA.",
+      "evidence": {
+        "time": "18450 ns",
+        "signals": ["sda_oe", "scl_i"],
+        "expected": "sda_oe = 0 during the 9th SCL high phase",
+        "observed": "sda_oe = 1",
+        "log": "peripherals/i2c/build/default/T07.log"
+      },
+      "proposed_fix": "In i2c_engine, drive sda_oe = ~CMD.NACK on the ACK bit of a READ (I2C-ENG-004: 0 = ACK, 1 = NACK); the polarity is currently inverted.",
+      "files": ["peripherals/i2c/rtl/i2c_engine.sv"],
+      "approved": false
+    },
+    {
+      "id": "F02",
+      "test": "T10",
+      "config": "default",
+      "seed": 77,
+      "class": "spec",
+      "requirements": ["I2C-ENG-006", "I2C-ENG-008"],
+      "summary": "The spec does not say whether clock stretching may happen during the STOP condition, and the RTL and TB disagree.",
+      "evidence": {
+        "time": "22100 ns",
+        "signals": ["scl_i", "sda_oe"],
+        "expected": "TB: engine waits for scl_i = 1 before releasing SDA",
+        "observed": "RTL: SDA released one quarter period after SCL released, without waiting",
+        "log": "peripherals/i2c/build/default/T10.log"
+      },
+      "proposed_fix": "Decide in the spec whether I2C-ENG-002 waits for scl_i = 1 (clock stretching) before the SDA release.",
+      "approved": false
+    }
+  ],
+  "coverage": [
+    { "metric": "functional", "config": "default", "result": 100.0, "target": 100, "met": true, "exclusions": [] },
+    { "metric": "line", "config": "default", "result": 100.0, "target": 100, "met": true, "exclusions": [] },
+    { "metric": "toggle", "config": "default", "result": 97.2, "target": 95, "met": true,
+      "exclusions": [ { "item": "apb.PPROT", "reason": "Accepted but unused (I2C spec 1.2)" } ] }
+  ],
+  "not_run": []
+}
