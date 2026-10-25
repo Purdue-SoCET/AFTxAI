@@ -17,7 +17,7 @@ Off-chip asynchronous SRAM controller. It connects to the system via the generic
 ### 4.1. System Interface
 - **Clocks & Resets:** `HCLK` (system clock) and `nRST` (active-low asynchronous reset).
 - **Bus Interface:** Uses `bus_protocol_if` comprising the following handshake signals:
-  - `valid`, `ready`, `write`, `wdata`, `rdata`, `addr`, `strobe`, `error`.
+  - `wen`, `ren`, `wdata`, `rdata`, `addr`, `strobe`, `error`, `request_stall`.
   - Bridges to AHB upstream.
   - The `error` signal is never asserted by the SRAM controller.
 
