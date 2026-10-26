@@ -1,0 +1,45 @@
+TOOL:	xrun(64)	23.03-s004: Started on Oct 21, 2026 at 16:23:07 EDT
+xrun(64): 23.03-s004: (c) Copyright 1995-2023 Cadence Design Systems, Inc.
+		Caching library 'worklib' ....... Done
+	Elaborating the design hierarchy:
+	Top level design units:
+		tb_ahb2apb
+	Building instance overlay tables: .................... Done
+	Generating native compiled code:
+		worklib.async_fifo:sv <0x69702413>
+			streams:  19, words:  5756
+		worklib.async_fifo:sv <0x0bc953aa>
+			streams:  19, words:  6043
+		worklib.ahb2apb:sv <0x0afd5334>
+			streams:  44, words: 15543
+		worklib.tb_ahb2apb:sv <0x7c344d0f>
+			streams:  28, words: 25484
+	Building instance specific data structures.
+	Loading native compiled code:     .................... Done
+	Design hierarchy summary:
+		                 Instances  Unique
+		Modules:                 4       3
+		Interfaces:              2       2
+		Registers:             100      84
+		Scalar wires:           35       -
+		Vectored wires:         17       -
+		Always blocks:          25      18
+		Initial blocks:          9       9
+		Cont. assignments:      25      27
+		Pseudo assignments:     10       -
+		Covergroup Instances:    0       1
+		Simulation timescale:  1ps
+	Writing initial simulation snapshot: worklib.tb_ahb2apb:sv
+Loading snapshot worklib.tb_ahb2apb:sv .................... Done
+xcelium> source /package/eda/cadence/XCELIUM2303/tools/xcelium/files/xmsimrc
+xcelium> run
+Starting AHB-to-APB Bridge Tests...
+T01: Basic Write (Aligned, In Range)
+T02: Basic Read (Aligned, In Range)
+T03: Address Out of Range
+T04: Address Misaligned
+T05: APB Target Error
+PASS: All tests completed successfully.
+./tb_ahb2apb.sv:196         $finish(fails != 0);
+xcelium> exit
+TOOL:	xrun(64)	23.03-s004: Exiting on Oct 21, 2026 at 16:23:09 EDT  (total: 00:00:02)
