@@ -22,4 +22,16 @@ lint:
 	verilator --lint-only -Wall -Wno-UNDRIVEN -Wno-UNUSEDSIGNAL --top-module plic -I$(BUS_INC) -I$(INC_DIR) $(INC_DIR)/plic_if.sv $(BUS_INC)/bus_protocol_if.sv $(RTL_DIR)/plic.sv
 
 clean:
-	rm -rf build
+	rm -rf build xcelium.d xrun.log xrun.history
+
+# UVM execution using Xcelium
+XRUN_ARGS = -64bit -sv -uvm -timescale 1ns/1ps
+XRUN_ARGS += +incdir+$(INC_DIR) +incdir+$(BUS_INC) +incdir+uvm
+XRUN_ARGS += $(BUS_INC)/bus_protocol_if.sv $(INC_DIR)/plic_if.sv
+XRUN_ARGS += $(RTL_DIR)/plic.sv
+XRUN_ARGS += uvm/plic_uvm_pkg.sv uvm/tb_uvm_top.sv
+XRUN_ARGS += -access +rwc
+XRUN_ARGS += +UVM_TESTNAME=plic_sanity_test
+
+sim_uvm:
+	xrun $(XRUN_ARGS)
