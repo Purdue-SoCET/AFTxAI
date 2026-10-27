@@ -13,6 +13,6 @@ package apb_pkg;
     `include "env/apb_coverage.sv"
     `include "env/apb_env.sv"
     
-    `include "seq/apb_master_seqs.sv"
-    `include "seq/apb_slave_resp_seq.sv"
+    `include "sequences/apb_master_seqs.sv"
+    `include "sequences/apb_slave_resp_seq.sv"
 endpackage

@@ -47,7 +47,7 @@ Translates APB4 requests to downstream `bus_protocol_if` peripheral accesses.
 - **Requirements:**
   - `APB-COM-001`: Converts APB4 ACCESS phase (`PSEL` & `PENABLE`) to `bus_protocol_if` access.
   - `APB-COM-002`: Handles downstream `request_stall` by holding `PREADY` low.
-  - `APB-COM-003`: Error Handling: `PSLVERR` asserts when in the ERROR state or if `request_error` is high. 
+  - `APB-COM-003`: Error Handling: `PSLVERR` asserts when in the ERROR state, if `request_error` is high, or during the ACCESS phase (`PSEL && PENABLE`) when the downstream `bus_protocol_if.error` is high.
   - `APB-COM-004`: `request_error` asserts when `PSEL && (range_error || align_error)`.
 
 ### 2.3 Interconnect (`apb_interconnect`)
@@ -78,6 +78,7 @@ Decodes addresses from the single requester and routes to `NCOMPLETERS` complete
 | `T05` | Misaligned access to trigger error | `APB-COM-003`, `APB-COM-004` |
 | `T06` | Out-of-bounds access to trigger error | `APB-COM-003`, `APB-COM-004` |
 | `T07` | Unmapped address handling | `APB-INT-003`, `APB-REQ-003` |
+| `T08` | Downstream peripheral error reported on PSLVERR, with and without wait states | `APB-COM-002`, `APB-COM-003` |
 
 ### 3.2 Coverage Bins
 - **Address Target:** 
@@ -91,6 +92,7 @@ Decodes addresses from the single requester and routes to `NCOMPLETERS` complete
 - **Errors:** 
   - `PSLVERR` generation from align error.
   - `PSLVERR` generation from range error.
+  - `PSLVERR` generation from downstream `bus_protocol_if.error`.
 - **Transitions:** 
   - Back-to-back writes.
   - Back-to-back reads.

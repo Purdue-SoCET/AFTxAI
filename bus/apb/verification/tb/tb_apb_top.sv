@@ -67,13 +67,15 @@ module tb_apb;
     // -----------------------------------------------------
     logic stall_override_0 = 0;
     logic stall_override_1 = 0;
+    logic error_override_0 = 0;
+    logic error_override_1 = 0;
 
     always_comb begin
         periph_bus_0.rdata = periph_bus_0.ren ? ~periph_bus_0.addr : 32'h0;
         periph_bus_1.rdata = periph_bus_1.ren ? ~periph_bus_1.addr : 32'h0;
         
-        periph_bus_0.error = 1'b0;
-        periph_bus_1.error = 1'b0;
+        periph_bus_0.error = error_override_0;
+        periph_bus_1.error = error_override_1;
         
         periph_bus_0.request_stall = stall_override_0;
         periph_bus_1.request_stall = stall_override_1;
@@ -259,6 +261,48 @@ module tb_apb;
         end else begin
             $display("PASS T07: Unmapped read access error flagged");
         end
+        
+        // ------------------------------------------
+        // T08: Downstream peripheral error reporting
+        // ------------------------------------------
+        // (a) no wait states
+        error_override_0 = 1;
+        bus_write(32'h8000_000C, 32'hAABBCCDD, 4'hF);
+        if (cpu_bus.error !== 1'b1) begin
+            $display("FAIL T08: Downstream error not reported on write");
+            $finish(1);
+        end
+        bus_read(32'h8000_000C, rdata, err);
+        if (err !== 1'b1) begin
+            $display("FAIL T08: Downstream error not reported on read");
+            $finish(1);
+        end
+        
+        // (b) with wait state
+        fork
+            begin
+                bus_write(32'h8000_000C, 32'h11223344, 4'hF);
+            end
+            begin
+                stall_override_0 = 1;
+                repeat(2) @(posedge PCLK);
+                stall_override_0 = 0;
+            end
+        join
+        if (cpu_bus.error !== 1'b1) begin
+            $display("FAIL T08: Downstream error not reported with wait states");
+            $finish(1);
+        end
+        @(posedge PCLK); // Wait one cycle before next test to ensure clear separation
+        
+        // (c) normal access after error
+        error_override_0 = 0;
+        bus_write(32'h8000_000C, 32'h55667788, 4'hF);
+        if (cpu_bus.error !== 1'b0) begin
+            $display("FAIL T08: Normal access reported error after override disabled. error=%b", cpu_bus.error);
+            $finish(1);
+        end
+        $display("PASS T08: Downstream peripheral error properly mapped to PSLVERR");
         
         #50;
         $display("ALL TESTS COMPLETED");

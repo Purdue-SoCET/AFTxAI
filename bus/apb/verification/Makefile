@@ -1,22 +1,34 @@
-SIM_OPTS = -access +rwc -uvm -timescale 1ns/1ps
+SIM_OPTS = -access +rwc -uvm -timescale 1ns/1ps +incdir+agent+env+sequences
+
 COV_OPTS = -covoverwrite -coverage all
 
-SRC = ../../include/apb_if.sv \
-      ../../rtl/apb_interconnect.sv \
-      apb_sva.sv \
-      apb_pkg.sv \
-      tb_top.sv
+UVM_SRC = ../include/apb_if.sv \
+      ../rtl/apb_interconnect.sv \
+      tb/apb_sva.sv \
+      apb_uvm_pkg.sv \
+      tb/tb_uvm_top.sv
+
+DIRECTED_SRC = ../../generic/bus_protocol_if.sv \
+               ../include/apb_if.sv \
+               ../rtl/apb_interconnect.sv \
+               ../rtl/apb_requester.sv \
+               ../rtl/apb_completer.sv \
+               tb/tb_apb_top.sv
 
 TEST ?= sanity_test
 
-.PHONY: all sim regress cov clean
+.PHONY: all sim sim_directed regress cov clean
 
 all: sim
 
 sim:
-	xrun $(SIM_OPTS) $(COV_OPTS) -covtest $(TEST) $(SRC) +UVM_TESTNAME=$(TEST)
+	xrun $(SIM_OPTS) $(COV_OPTS) -covtest $(TEST) $(UVM_SRC) +UVM_TESTNAME=$(TEST)
+
+sim_directed:
+	xrun -access +rwc -timescale 1ns/1ps $(COV_OPTS) -covtest directed $(DIRECTED_SRC)
 
 regress:
+	-make sim_directed
 	-make sim TEST=sanity_test
 	-make sim TEST=unmapped_test
 	-make sim TEST=boundary_test
