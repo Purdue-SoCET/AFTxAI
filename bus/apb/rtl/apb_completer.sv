@@ -75,7 +75,7 @@ module apb_completer #(
         endcase
     end
 
-    assign apb.PSLVERR = (state == ERROR) || request_error;
+    assign apb.PSLVERR = (state == ERROR) || request_error || ((state == ACCESS) && apb.PSEL && apb.PENABLE && bus.error);
     assign apb.PRDATA = bus.rdata;
     
     // Convert absolute PADDR to offset
