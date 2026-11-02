@@ -1,1 +1,9 @@
 */work/*
+# Simulation artifacts
+xcelium.d/
+xrun.log
+xrun.history
+xrun.key
+cov_work/
+sim.log
+coverage_summary.txt
