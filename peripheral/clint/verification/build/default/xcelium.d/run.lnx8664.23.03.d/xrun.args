@@ -1,0 +1,15 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
+-64bit
+-sv
+-timescale
+1ns/1ns
+-coverage
+all
+-covoverwrite
++incdir+../../../include
++incdir+../../../../../bus/generic
+../../../rtl/clint.sv
+../../tb_clint.sv
