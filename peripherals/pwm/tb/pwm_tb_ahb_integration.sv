@@ -195,12 +195,49 @@ module pwm_tb_ahb_integration;
         ahb_write(PWM_ABS + 'h08, 32'h00000005, 4'hF, err);
         ahb_write(PWM_ABS + 'h00, 32'h00000001, 4'hF, err);
         
-        // Wait a few cycles, then spam dummy reads
-        #1000;
-        for (int i=0; i<10; i++) begin
-            ahb_read(DUMMY_ABS, rdata, err);
+        begin
+            int toggle_count = 0;
+            int dummy_read_done = 0;
+            int waveform_errors = 0;
+            
+            fork
+                begin
+                    // align to falling edge then rising edge to find phase 0
+                    wait (pwm_out[0] == 0);
+                    wait (pwm_out[0] == 1);
+                    @(posedge pclk); // move past the edge to phase 1
+                    
+                    begin
+                        int phase = 1;
+                        while (!dummy_read_done) begin
+                            if (phase < 5) begin
+                                if (pwm_out[0] !== 1) begin
+                                    waveform_errors++;
+                                end
+                            end else begin
+                                if (pwm_out[0] !== 0) begin
+                                    waveform_errors++;
+                                end
+                            end
+                            if (pwm_oe[0] !== 1) waveform_errors++;
+                            
+                            phase = (phase + 1) % 10;
+                            if (phase == 0) toggle_count++;
+                            @(posedge pclk);
+                            #1;
+                        end
+                    end
+                end
+                begin
+                    for (int i=0; i<10; i++) begin
+                        ahb_read(DUMMY_ABS, rdata, err);
+                    end
+                    dummy_read_done = 1;
+                end
+            join
+            
+            check_ok("Waveform continues during dummy reads", toggle_count > 0 && waveform_errors == 0);
         end
-        check_ok("Waveform continues during dummy reads", 1); // We visually/logically verify by lack of hang and correct output sequence
         
         $display("Checks executed: %0d", tested_checks);
         if (failed_checks > 0) begin

@@ -27,7 +27,7 @@ module pwm_apb_wrapper #(
 
     // For accesses outside our 4KB window but where PSEL is still asserted (due to interconnect decode granularity),
     // we should respond with PSLVERR.
-    assign apb.PSLVERR = (apb.PSEL && !valid_addr) ? 1'b1 : pslverr_core;
+    assign apb.PSLVERR = (apb.PSEL && apb.PENABLE && !valid_addr) ? 1'b1 : pslverr_core;
     // If not valid_addr, we just tie PRDATA to 0 and PREADY to 1. 
     // Wait, the core already handles accesses nicely, but we shouldn't even trigger the core if not valid_addr.
     

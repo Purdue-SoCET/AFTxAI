@@ -148,12 +148,12 @@ module pwm_tb_apb_integration;
         // 5. Correct PSTRB behavior
         apb_write(PWM_BASE + 'h44, 32'hAABBCCDD, 4'h2, err); // Write only byte 1 of CH2 PERIOD
         apb_read(PWM_BASE + 'h44, rdata, err);
-        check_ok("PSTRB behavior", !err && rdata == 32'h0000CC00 || rdata == 32'h0000CC01); // Defaults to 1, overlaid with CC
+        check_ok("PSTRB behavior", !err && (rdata == 32'h0000CC01));
 
         // 6. Zero-strobe legal no-op
         apb_write(PWM_BASE + 'h44, 32'h11223344, 4'h0, err);
         apb_read(PWM_BASE + 'h44, rdata, err);
-        check_ok("Zero-strobe no-op", !err && rdata == 32'h0000CC00 || rdata == 32'h0000CC01);
+        check_ok("Zero-strobe no-op", !err && (rdata == 32'h0000CC01));
 
         // 7. Misaligned access error
         apb_read(PWM_BASE + 'h01, rdata, err);

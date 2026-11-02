@@ -3,7 +3,7 @@
 ## 1. Commits and Source Information
 - **Integration Base Commit (origin/main):** `6a689dbb8a66aa12cb319c6662444acb3c6a811a`
 - **Source PWM Commit (origin/feat/pwm-peripheral):** `4d49268248d36b68a33ff7e235602ec5d86e1363`
-- **Actual Git commit SHA:** `478547fff2b4bbc04339bf98059713d84c761a0d`
+- **Actual Git commit SHA:** `d35d5b5848bceb212f7551d5340885135c02fbd5`
 - **Clean-tree status:** Yes (after commit)
 
 ## 2. PWM Wrapper and Interface Implementation

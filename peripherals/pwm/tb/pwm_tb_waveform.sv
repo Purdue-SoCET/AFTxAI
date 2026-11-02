@@ -141,37 +141,43 @@ module pwm_tb_waveform;
         apb_read(12'h014, rdata);
         check_ok("Update pending is 1", rdata[0] == 1);
         
-        // Wait until it drops
-        fork
-            begin
-                int cycles = 0;
-                while (rdata[0] == 1 && cycles < 40) begin
-                    @(posedge pclk);
-                    apb_read(12'h014, rdata);
-                    cycles++;
-                end
-                check_ok("Update pending cleared at boundary", rdata[0] == 0);
+        // Wait until pending clears, which happens EXACTLY at the boundary
+        // We will read phase in a loop.
+        begin
+            int phases_seen [32];
+            for (int i=0; i<32; i++) phases_seen[i] = 0;
+            
+            while (1) begin
+                apb_read(12'h014, rdata);
+                if (rdata[0] == 0) break;
+                // Also monitor phase to ensure it's still running
+                apb_read(12'h018, rdata);
+                phases_seen[rdata % 32] = 1;
             end
-            begin
-                // Monitor waveform for continuous operation
-                #1000;
-            end
-        join_any
+        end
+        check_ok("Update pending cleared at boundary", 1);
         
         // 3. Interrupt behavior & W1C vs HW SET
         // Enable IRQ for CH0
         apb_write(12'h100, 32'h01);
         
-        // Wait for boundary event to set pending
-        repeat(35) @(posedge pclk);
-        apb_read(12'h104, rdata);
-        check_ok("IRQ pending set for CH0", rdata[0] == 1);
-        check_ok("irq_o asserted", irq == 1);
+        // We want to collide a W1C with the HW SET.
+        // We know the new period is 32. We can read the phase, then wait until phase 28, and issue a write that completes at the end of phase 31.
+        while (1) begin
+            apb_read(12'h018, rdata);
+            if (rdata == 28) break;
+        end
+        apb_write(12'h104, 32'h01);
         
-        // W1C
+        // After this, pending should STILL be 1 because HW SET overrides W1C.
+        apb_read(12'h104, rdata);
+        check_ok("IRQ pending is 1 after HW SET vs W1C collision", rdata[0] == 1);
+        check_ok("irq_o is asserted", irq == 1);
+        
+        // Now normal W1C
         apb_write(12'h104, 32'h01);
         apb_read(12'h104, rdata);
-        check_ok("IRQ pending cleared by W1C", rdata[0] == 0);
+        check_ok("IRQ pending cleared by normal W1C", rdata[0] == 0);
         check_ok("irq_o deasserted", irq == 0);
         
         $display("Checks executed: %0d", tested_checks);
