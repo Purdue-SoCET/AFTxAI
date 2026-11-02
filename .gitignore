@@ -1,4 +1,17 @@
 */work/*
+
+# EDA / Simulation generated files
+xcelium.d/
+INCA_libs/
+*.log
+*.history
+*.key
+*.vcd
+*.vpd
+*.fsdb
+cov_work/
+work_cov/
+.simvision/
 obj_dir/
 *.elf
 *.hex
