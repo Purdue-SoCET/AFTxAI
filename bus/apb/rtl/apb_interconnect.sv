@@ -36,6 +36,9 @@ module apb_interconnect #(
 
         // Detect overlapping selections
         if ($countones(sel_completer) > 1) begin
+            // verilator lint_off UNOPTFLAT
+            assert(0) else $error("Overlapping APB selection detected");
+            // verilator lint_on UNOPTFLAT
             sel_completer = '0;
             decode_error = requester.PSEL;
         end

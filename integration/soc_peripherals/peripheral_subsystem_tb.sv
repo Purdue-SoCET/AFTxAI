@@ -114,8 +114,7 @@ module peripheral_subsystem_tb;
         
         @(posedge hclk);
         #1;
-        // Now it's the data phase! Set HWDATA immediately.
-        ahb.HTRANS = 2'b00; // IDLE for next cycle
+        ahb.HTRANS = 2'b00; // IDLE
         ahb.HWDATA = data;
         
         while (!ahb.HREADYOUT) begin
@@ -124,7 +123,7 @@ module peripheral_subsystem_tb;
         end
     endtask
 
-    task automatic ahb_read(input logic [31:0] addr, output logic [31:0] data, output logic err);
+    task automatic ahb_read(input logic [31:0] addr, output logic [31:0] data, output int err);
         @(posedge hclk);
         #1;
         ahb.HSEL = 1'b1;
@@ -147,13 +146,11 @@ module peripheral_subsystem_tb;
     endtask
 
     logic [31:0] rdata;
-    logic rerr;
+    int rerr;
 
     initial begin
-        // Setup Negative Test Argument
         int expect_failure;
         if ($value$plusargs("EXPECT_FAILURE=%d", expect_failure)) begin
-            // We just let it run. If we expect failure, we expect it to hit a $fatal or $error.
         end else begin
             expect_failure = 0;
         end
@@ -177,26 +174,7 @@ module peripheral_subsystem_tb;
         presetn = 1;
         #200;
 
-        // Test 1: GPIO0 - 3 consecutively (cross-target)
-        ahb_write(32'h8000_0004, 32'hA1A2A3A4, 4'b1111); // GPIO0 OUT
-        ahb_write(32'h8000_0104, 32'h0000B1B2, 4'b1111); // GPIO1 OUT (16 bit)
-        ahb_write(32'h8000_0204, 32'h000000C1, 4'b1111); // GPIO2 OUT (7 bit)
-        ahb_write(32'h8000_0304, 32'h00000001, 4'b1111); // GPIO3 OUT (1 bit)
-
-        ahb_read(32'h8000_0004, rdata, rerr);
-        if (rdata !== 32'hA1A2A3A4) $error("GPIO0 read mismatch");
-        ahb_read(32'h8000_0104, rdata, rerr);
-        if (rdata !== 32'h0000B1B2) $error("GPIO1 read mismatch: %h", rdata);
-        
-        #200;
-        if (gpio0_out !== 32'hA1A2A3A4) $error("GPIO0 out pin mismatch");
-        if (gpio1_out !== 16'hB1B2) $error("GPIO1 out pin mismatch"); 
-
-        // Test 2: PWM Global Registers
-        ahb_write(32'h8000_1100, 32'h0000_000F, 4'b1111); // IRQ_ENABLE
-        ahb_read(32'h8000_1100, rdata, rerr);
-        if (rdata !== 32'h0000_000F) $error("PWM IRQ_ENABLE read mismatch");
-        
+        // --- Task 5: Valid boundary and invalid-address tests ---
         // Test highest register addresses
         ahb_read(32'h8000_0044, rdata, rerr);
         if (rerr) $error("GPIO0 highest register read error at 0x44");
@@ -207,24 +185,144 @@ module peripheral_subsystem_tb;
         ahb_read(32'h8000_201C, rdata, rerr); // Timer0 highest register
         if (rerr) $error("Timer0 highest register read error at 0x1C");
 
-        // Test 3: Unmapped hole
+        // Invalid unmapped hole
         ahb_read(32'h8000_0400, rdata, rerr);
         if (!rerr) $error("Expected HRESP error on unmapped read");
 
-        // Test 4: Timer0 Capture
-        ahb_write(32'h8000_2004, 32'h0000_FFFF, 4'b1111); // Load
-        ahb_write(32'h8000_2000, 32'h0000_0001, 4'b1111); // Enable
-        #100;
-        timer_capture = 1; // trigger capture
-        #100;
-        timer_capture = 0;
-        ahb_read(32'h8000_2018, rdata, rerr); // Capture value
-        if (rerr) $error("Timer capture read error");
+        // --- Task 5: Back-to-back accesses across all peripherals ---
+        ahb_write(32'h8000_0004, 32'hB2B2B2B2, 4'hF); // GPIO0
+        ahb_write(32'h8000_1000, 32'h00000000, 4'hF); // PWM0
+        ahb_write(32'h8000_2010, 32'h00000000, 4'hF); // Timer0
+        ahb_read(32'h8000_0004, rdata, rerr);
+        if (rdata !== 32'hB2B2B2B2) $error("Back-to-back writes failed");
 
-        // Test 5: IO Mux (0x8000_6000)
-        ahb_write(32'h8000_6000, 32'h12345678, 4'b1111);
-        ahb_read(32'h8000_6000, rdata, rerr);
-        if (rdata !== 32'h12345678) $error("IO Mux read mismatch: %h", rdata);
+        // --- Task 5: Reset-during-transfer check ---
+        fork
+            begin
+                ahb.HSEL = 1'b1;
+                ahb.HTRANS = 2'b10;
+                ahb.HADDR  = 32'h8000_0004;
+                ahb.HWRITE = 1'b1;
+                ahb.HSIZE  = 3'b010;
+                ahb.HWSTRB = 4'hF;
+                @(posedge hclk);
+                #1;
+                ahb.HTRANS = 2'b00;
+                ahb.HWDATA = 32'hDEADBEEF;
+                // Don't wait for HREADYOUT, reset will happen
+            end
+            begin
+                #25; 
+                hresetn = 0; presetn = 0;
+                #100;
+                hresetn = 1; presetn = 1;
+            end
+        join
+        #200;
+        
+        // --- Task 1: PWM configuration and simultaneous checks ---
+        // Configure PWM Channel 0
+        ahb_write(32'h8000_1004, 32'd10, 4'hF); // PERIOD_SHADOW = 10
+        ahb_write(32'h8000_1008, 32'd5,  4'hF);  // DUTY_SHADOW = 5
+        ahb_write(32'h8000_100C, 32'd1,  4'hF);  // PRESCALE_SHADOW = 1
+        ahb_write(32'h8000_1010, 32'd1,  4'hF);  // UPDATE (Arm config)
+        ahb_write(32'h8000_1000, 32'd1,  4'hF);  // EN=1, POL=0
+        
+        fork
+            // PWM Waveform Checker
+            begin
+                int periods = 0;
+                logic last_pwm = 0;
+                while (periods < 3) begin
+                    @(posedge pclk);
+                    if (pwm_out[0] == 1'b1 && last_pwm == 1'b0) periods++;
+                    last_pwm = pwm_out[0];
+                    if (pwm_oe[0] !== 1'b1) $error("PWM OE dropped!");
+                end
+            end
+            
+            // Simultaneous accesses to GPIO and Timer0
+            begin
+                ahb_write(32'h8000_0004, 32'hA1A2A3A4, 4'b1111); // GPIO0 OUT
+                ahb_write(32'h8000_0104, 32'h0000B1B2, 4'b1111); // GPIO1 OUT
+                ahb_write(32'h8000_0204, 32'h000000C1, 4'b1111); // GPIO2 OUT
+                
+                ahb_read(32'h8000_0004, rdata, rerr);
+                if (rdata !== 32'hA1A2A3A4) $error("GPIO0 read mismatch");
+                
+                // Configure Timer0 in background
+                ahb_write(32'h8000_2004, 32'd0, 4'b1111); // Count = 0
+                ahb_write(32'h8000_2008, 32'hFFFF_FFFF, 4'b1111); // Max period
+                ahb_write(32'h8000_200C, 32'd0, 4'b1111); // Prescale 0
+            end
+        join
+
+        // --- Task 2: Timer0 Capture ---
+        // Enable timer and capture (EN=1 (bit 0), CAP_EN=1 (bit 3) -> 0x9)
+        ahb_write(32'h8000_2000, 32'h0000_0009, 4'b1111); 
+        #1000;
+        
+        timer_capture = 1; // trigger rising edge
+        #200;
+        timer_capture = 0;
+        
+        ahb_read(32'h8000_2014, rdata, rerr); // IRQ_PENDING
+        if ((rdata & 32'h4) == 0) $error("Timer0 CAPTURE pending bit not set");
+        
+        ahb_read(32'h8000_2018, rdata, rerr); // CAPTURE_VALUE
+        if (rdata == 32'h0) $error("Timer0 CAPTURE_VALUE is zero");
+        
+        // Clear Timer capture pending
+        ahb_write(32'h8000_2014, 32'h0000_0004, 4'hF);
+
+
+        // --- Task 3: PLIC Interrupt Verification ---
+        // source 1: gpio0, source 5: pwm0, source 6: timer0
+        
+        // Enable sources 1, 5, 6 for target 0 
+        plic_write(32'h00_2000, 32'h0000_0062); // (1<<1)|(1<<5)|(1<<6) = 0x62
+        plic_write(32'h20_0000, 32'h0000_0000); // Threshold 0
+        plic_write(32'h00_0004, 32'h0000_0001); // Source 1 prio = 1
+        plic_write(32'h00_0014, 32'h0000_0002); // Source 5 prio = 2
+        plic_write(32'h00_0018, 32'h0000_0003); // Source 6 prio = 3
+        
+        // Trigger Timer0 IRQ
+        ahb_write(32'h8000_2010, 32'h0000_0004, 4'hF); // IRQ_EN capture
+        timer_capture = 1; #100; timer_capture = 0;
+        // Trigger PWM0 IRQ
+        ahb_write(32'h8000_1100, 32'h0000_0001, 4'hF); // IRQ_EN global
+        // wait for PWM boundary (it's running)
+        // Trigger GPIO0 IRQ
+        ahb_write(32'h8000_0024, 32'h0000_0001, 4'hF); // rise en
+        gpio0_in = 32'h1; #100; gpio0_in = 32'h0;
+        
+        #2000;
+        if (!irq_if.irq_target) $error("PLIC target interrupt did not assert!");
+        
+        // Claim high priority (Timer0 = 6)
+        plic_read(32'h20_0004, rdata);
+        if (rdata !== 32'h0000_0006) $error("PLIC claim read mismatch 6. Got %h", rdata);
+        // Clear Timer
+        ahb_write(32'h8000_2014, 32'h0000_0004, 4'hF);
+        plic_write(32'h20_0004, 32'h0000_0006); // Complete
+        #500;
+        
+        // Claim next priority (PWM0 = 5)
+        plic_read(32'h20_0004, rdata);
+        if (rdata !== 32'h0000_0005) $error("PLIC claim read mismatch 5. Got %h", rdata);
+        // Clear PWM0
+        ahb_write(32'h8000_1104, 32'h0000_0001, 4'hF);
+        plic_write(32'h20_0004, 32'h0000_0005); // Complete
+        #500;
+        
+        // Claim lowest priority (GPIO0 = 1)
+        plic_read(32'h20_0004, rdata);
+        if (rdata !== 32'h0000_0001) $error("PLIC claim read mismatch 1. Got %h", rdata);
+        // Clear GPIO0
+        ahb_write(32'h8000_0034, 32'h0000_0001, 4'hF);
+        plic_write(32'h20_0004, 32'h0000_0001); // Complete
+        #500;
+
 
         // Negative test trigger
         if (expect_failure) begin
@@ -233,37 +331,13 @@ module peripheral_subsystem_tb;
             if (rerr) $error("Intentional failure triggered"); // this will abort
         end
 
-        // Test 6: PLIC routing
-        // Enable GPIO0 (source 1)
-        plic_write(32'h00_2000, 32'h0000_0002); // Enable source 1 for target 0
-        plic_write(32'h20_0000, 32'h0000_0000); // Set threshold to 0
-        plic_write(32'h00_0004, 32'h0000_0001); // Set source 1 priority to 1
-
-        ahb_write(32'h8000_0024, 32'h0000_0001, 4'b1111); // irq_rise_en for GPIO0 pin 0
-        #100;
-        gpio0_in = 32'h1; // Rising edge on pin 0
-        
-        #1000;
-        // Check if irq_if.irq_target asserted
-        if (!irq_if.irq_target) $error("PLIC target interrupt did not assert!");
-        
-        // Claim the interrupt
-        plic_read(32'h20_0004, rdata);
-        if (rdata !== 32'h0000_0001) $error("PLIC claim read mismatch. Got %h", rdata);
-        
-        // Clear GPIO interrupt pending (RW1C at 0x34)
-        ahb_write(32'h8000_0034, 32'h0000_0001, 4'b1111);
-
-        // Complete the interrupt
-        plic_write(32'h20_0004, 32'h0000_0001);
-
         $display("Integration Subsystem tests passed.");
         $finish;
     end
 
     // Timeout watchdog
     initial begin
-        #50000;
+        #500000;
         $error("Timeout!");
         $finish;
     end

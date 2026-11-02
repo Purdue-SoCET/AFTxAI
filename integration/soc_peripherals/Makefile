@@ -28,7 +28,8 @@ run:
 
 run_neg:
 	verilator --binary -j 0 --trace $(VFLAGS) $(INCDIRS) $(SRCS) --top-module peripheral_subsystem_tb
-	! ./obj_dir/Vperipheral_subsystem_tb +EXPECT_FAILURE=1
+	-./obj_dir/Vperipheral_subsystem_tb +EXPECT_FAILURE=1 > run_neg.log 2>&1 || true
+	grep "Intentional failure triggered" run_neg.log
 
 clean:
 	rm -rf obj_dir
