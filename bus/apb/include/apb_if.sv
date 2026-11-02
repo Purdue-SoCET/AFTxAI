@@ -1,35 +1,33 @@
-`ifndef __APB_IF_SV__
-`define __APB_IF_SV__
+`ifndef APB_IF_SV
+`define APB_IF_SV
 
 interface apb_if #(
     parameter int ADDR_WIDTH = 32,
     parameter int DATA_WIDTH = 32
-)(
-    input logic PCLK,
-    input logic PRESETn
+) (
+    input logic pclk,
+    input logic presetn
 );
-
-    logic [ADDR_WIDTH-1:0]     PADDR;
-    logic [2:0]                PPROT;
-    logic                      PSEL;
-    logic                      PENABLE;
-    logic                      PWRITE;
-    logic [DATA_WIDTH-1:0]     PWDATA;
-    logic [(DATA_WIDTH/8)-1:0] PSTRB;
-    logic                      PREADY;
-    logic [DATA_WIDTH-1:0]     PRDATA;
-    logic                      PSLVERR;
+    logic [ADDR_WIDTH-1:0]     paddr;
+    logic                      psel;
+    logic                      penable;
+    logic                      pwrite;
+    logic [DATA_WIDTH-1:0]     pwdata;
+    logic [(DATA_WIDTH/8)-1:0] pstrb;
+    logic [2:0]                pprot;
+    logic [DATA_WIDTH-1:0]     prdata;
+    logic                      pready;
+    logic                      pslverr;
 
     modport requester (
-        input  PCLK, PRESETn, PREADY, PRDATA, PSLVERR,
-        output PADDR, PPROT, PSEL, PENABLE, PWRITE, PWDATA, PSTRB
+        output paddr, psel, penable, pwrite, pwdata, pstrb, pprot,
+        input  prdata, pready, pslverr
     );
 
     modport completer (
-        input  PCLK, PRESETn, PADDR, PPROT, PSEL, PENABLE, PWRITE, PWDATA, PSTRB,
-        output PREADY, PRDATA, PSLVERR
+        input  paddr, psel, penable, pwrite, pwdata, pstrb, pprot,
+        output prdata, pready, pslverr
     );
-
 endinterface
 
-`endif
+`endif // APB_IF_SV

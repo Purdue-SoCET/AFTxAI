@@ -1,0 +1,2 @@
+var g_data = {"data":[{"n":"work.digital_io_mux","id":4,"zf":1,"tc":100.00,"s":100.00},{"n":"work.digital_io_mux_apb","id":5,"zf":1,"tc":83.56,"s":75.00,"b":59.25,"fc":100.00,"fe":100.00},{"n":"work.digital_io_mux_cell","id":7,"zf":1,"tc":66.66,"s":100.00,"b":100.00,"fc":0.00},{"n":"work.sync_2ff","id":8,"zf":1,"tc":100.00,"s":100.00,"b":100.00},{"n":"work.tb_digital_io_mux","id":1,"zf":1,"tc":46.52,"s":89.58,"b":50.00,"fc":0.00}]};
+processDuData(g_data);
