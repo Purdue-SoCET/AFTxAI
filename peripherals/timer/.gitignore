@@ -1,0 +1,4 @@
+build/
+modelsim.ini
+*.do
+transcript
