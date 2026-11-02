@@ -96,6 +96,9 @@ module registers #(
             // Clear SR on read
             if (clear_status) reg_sr <= '0;
             
+            if (hw_error) $display("REGS: hw_error=1, reg_sr=%b", reg_sr);
+            if (reg_sr[1]) $display("REGS: reg_sr[1]=1!");
+            
             // Software Writes
             if (wr_en) begin
                 case (paddr[7:0])
