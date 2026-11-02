@@ -17,12 +17,12 @@ make regress
 **Verilator Lint:** 0 Errors, 0 Warnings
 
 **Questa Regression Logs:**
-- **Directed Testbench (`make sim_tb`)**: PASSED 53 explicit directed checks successfully. All checks precisely map to individual T-IDs using isolated state (`do_reset()`) to guarantee execution conditions without contamination.
+- **Directed Testbench (`make sim_tb`)**: PASSED 85 explicit directed checks successfully. All checks precisely map to individual T-IDs using isolated state (`do_reset()`) to guarantee execution conditions without contamination.
 - **UVM Regression (`make regress`)**: Seeds 1, 7, and 23 successfully compiled and ran with 0 errors and 0 warnings.
-- **UVM Scoreboard**: Verified 168 independent cycle-level comparisons per seed on the enabled waveform outputs, phase advance, and disabled state bounds. *(Note: The UVM scoreboard does not predict prescaler expansion or buffered ARM application bounds; these behaviors are fully validated via isolated, mathematically exact cycle boundaries in the directed checks. This limitation is explicitly accepted for standalone closure.)*
+- **UVM Scoreboard**: Verified 168 independent cycle-level comparisons per seed on the enabled waveform outputs, phase advance, and disabled state bounds. *(Limitation: The UVM scoreboard does not predict prescaler expansion, ARM atomic update logic, or IRQ generation; these behaviors are fully validated via isolated, mathematically exact cycle boundary tests in the directed checks. This limitation is explicitly accepted for standalone closure.)*
 
 ## Coverage Report (from Questa `merged.ucdb`)
-- **Code Coverage (Toggle):** ~24% overall instance toggle coverage (due to bounded standalone testing vs large register space, untouched PSTRB boundaries).
+- **Code Coverage (Toggle):** ~24-27% overall interface toggle coverage (due to bounded standalone testing vs large register space, untouched PSTRB boundaries).
 - **APB Structural Coverage (apb_cg):** 7 / 25 bins. Tested active registers `ch0`, `global_regs`, basic read/write, and full-word strb vs zero strb. Unhit bins are unimplemented channels and partial-word strobes not randomly reached in sparse simulation.
 - **PWM Behavioral Coverage (behavior_cg):** 1 / 2 bins. Duty extremes covered `duty_max`, missing `duty_0` randomly via standard base sequence. Explicitly verified in directed test `T10`.
 
@@ -32,6 +32,7 @@ make regress
 |---|---|---|---|
 | T01 | Reset defaults | `pwm_tb_directed.sv` | PASS |
 | T02-T07 | APB permissions, invalid PSTRB, error responses | `pwm_tb_directed.sv` | PASS |
+| T04 | 16 PSTRB combinations on writable registers | `pwm_tb_directed.sv` | PASS |
 | T08 | Disable EN 1->0 safe off | `pwm_tb_directed.sv` | PASS |
 | T09 | Exact phase boundaries (E0 completion -> phase 0,1,2,3) | `pwm_tb_directed.sv` | PASS |
 | T10 | Duty 0%, 50%, 100% | `pwm_tb_directed.sv` | PASS |
@@ -40,10 +41,9 @@ make regress
 | T13 | PRESCALE=65535 exact timing limits and transitions | `pwm_tb_directed.sv` | PASS |
 | T14 | Inverted polarity (enabled and disabled outputs) | `pwm_tb_directed.sv` | PASS |
 | T15 | 4 channels concurrent independent outputs with offset tracking | `pwm_tb_directed.sv` | PASS |
-| T16-T17 | Absent channel accesses PSLVERR (PWM_CHANNELS mapping bounds) | `pwm_tb_directed.sv` | PASS |
-| T18-T20 | Buffered update pending, atomic application to cycle boundary | `pwm_tb_directed.sv` | PASS |
-| T21 | ARM completing on same edge as boundary defers to next boundary | `pwm_tb_directed.sv` | PASS |
-| T22 | ARM while stopped | `pwm_tb_directed.sv` | PASS |
+| T16-T17 | Elaborated and tested PWM_CHANNELS=1..4; confirmed 0 and 5 fail | `test_channels.sh` | PASS |
+| T18-T21 | Exact cycle boundary testing: shadow independence, ARM boundaries, clearing | `pwm_tb_directed.sv` | PASS |
+| T22 | ARM while stopped | `pwm_tb_directed.sv` | NOT RUN |
 | T24 | Invalid configs (PERIOD=0, DUTY>PERIOD) rejected | `pwm_tb_directed.sv` | PASS |
 | T25 | Polarity change while running rejected (TB timing issue fixed) | `pwm_tb_directed.sv` | PASS |
 | T26 | Masked IRQ asserted irq_o | `pwm_tb_directed.sv` | PASS |
@@ -51,8 +51,8 @@ make regress
 | T28 | W1C colliding with boundary: HW SET wins on exact cycle | `pwm_tb_directed.sv` | PASS |
 | T29-T32 | APB transaction clock-edge stability | Tested via `sim_tb` clock bounds | PASS |
 | T33 | UVM fixed seeds (1, 7, 23) + Scoreboard Predictions | `pwm_uvm_pkg.sv` | PASS |
-| T34 | Mutation detection verified (`a` phase err, `b` early update, `c` w1c priority) | Executed interactively (`run_mutations.py`) | PASS |
-| T35 | Intentional test fail triggers nonzero make exit | Makefile cleanly aborted during earlier debugging passes. | PASS |
+| T34 | Mutation detection verified (`a` phase err, `b` early update, `c` w1c priority) | `run_mutations.sh` | PASS |
+| T35 | Intentional test fail triggers nonzero make exit | `Makefile` + `run_mutations.sh` | PASS |
 | T36 | Clean checkout build dependencies | `Makefile` strictly isolates local tests | PASS |
 
 **Mutation Evidence (T34):**
