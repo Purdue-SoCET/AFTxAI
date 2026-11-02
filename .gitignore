@@ -12,3 +12,12 @@ INCA_libs/
 cov_work/
 work_cov/
 .simvision/
+obj_dir/
+*.elf
+*.hex
+*.vcd
+xcelium.d/
+xrun.history
+xrun.log
+xrun*.log
+build/
