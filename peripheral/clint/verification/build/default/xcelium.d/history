@@ -1,7 +1,0 @@
-//
-// File created by:  xrun
-// Do not modify this file
-
-s1::(02Nov2026:17:52:01):( xrun -64bit -sv -timescale 1ns/1ns -coverage all -covoverwrite +incdir+../../../include +incdir+../../../../../bus/generic ../../../../../bus/generic/bus_protocol_if.sv ../../../include/clint_if.sv ../../../rtl/clint.sv ../../tb_clint.sv )
-s2::(02Nov2026:17:52:33):( xrun -64bit -sv -timescale 1ns/1ns -coverage all -covoverwrite +incdir+../../../include +incdir+../../../../../bus/generic ../../../rtl/clint.sv ../../tb_clint.sv )
-s3::(02Nov2026:17:55:03):( xrun -64bit -sv -timescale 1ns/1ns -coverage all -covoverwrite +incdir+../../../include +incdir+../../../../../bus/generic ../../../rtl/clint.sv ../../tb_clint.sv )
