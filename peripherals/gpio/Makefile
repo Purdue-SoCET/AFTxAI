@@ -16,7 +16,7 @@ LIB_INC = ../../digital_lib/src
 # Source files
 RTL_SRC = $(LIB_INC)/sync_2ff.sv $(SRC_DIR)/gpio_apb.sv $(SRC_DIR)/gpio_apb_wrapper.sv
 TB_SRC = $(TB_DIR)/gpio_tb.sv
-UVM_TB_SRC = $(BUS_INC)/apb4_if.sv $(TB_DIR)/gpio_pad_if.sv $(TB_DIR)/gpio_uvm_pkg.sv $(TB_DIR)/gpio_uvm_tb.sv
+UVM_TB_SRC = $(TB_DIR)/apb4_if.sv $(TB_DIR)/gpio_pad_if.sv $(TB_DIR)/gpio_uvm_pkg.sv $(TB_DIR)/gpio_uvm_tb.sv
 INTEGRATION_TB_SRC = $(TB_DIR)/integration/gpio_integration_tb.sv
 BUS_SRC = ../../bus/generic/bus_protocol_if.sv ../../bus/ahb/include/ahb_if.sv ../../bus/apb/include/apb_if.sv ../../bus/apb/rtl/apb_interconnect.sv ../../bus/bus/apb_ahb_bridge/ahb2apb.sv ../../peripherals/interrupt_controller/plic/include/plic_if.sv ../../peripherals/interrupt_controller/plic/rtl/plic.sv
 
@@ -50,13 +50,13 @@ build_sim:
 # Run one test
 .PHONY: sim
 sim: build_sim
-	cd $(BUILD_DIR) && $(VSIM) -c -do "onbreak {quit -f -code 1}; onerror {quit -f -code 1}; run -all; quit -code 0" \
+	cd $(BUILD_DIR) && env TMPDIR=. $(VSIM) -c -do "onbreak {quit -f -code 1}; onerror {quit -f -code 1}; run -all; quit -code 0" \
 		work.gpio_uvm_tb -gGPIO_WIDTH=$(WIDTH) +UVM_TESTNAME=$(TEST) +UVM_MAX_QUIT_COUNT=1 -sv_seed $(SEED) -l sim.log
 	@awk '/^# UVM_FATAL / && !/: +[0-9]+$$/ {f=1} /^# UVM_ERROR / && !/: +[0-9]+$$/ {e=1} /^# \*\* (Error|Fatal):/ {r=1} END {if(f||e||r) {print "Errors detected in log"; exit 1}}' $(BUILD_DIR)/sim.log
 
 .PHONY: sim_tb
 sim_tb: build_sim
-	cd $(BUILD_DIR) && $(VSIM) -c -do "onbreak {quit -f -code 1}; onerror {quit -f -code 1}; run -all; quit -code 0" \
+	cd $(BUILD_DIR) && env TMPDIR=. $(VSIM) -c -do "onbreak {quit -f -code 1}; onerror {quit -f -code 1}; run -all; quit -code 0" \
 		work.gpio_tb -gGPIO_WIDTH=$(WIDTH) -sv_seed $(SEED) -l sim_tb.log
 	@awk '/^# \*\* (Error|Fatal):/ {r=1} END {if(r) {print "Errors detected in log"; exit 1}}' $(BUILD_DIR)/sim_tb.log
 
@@ -87,10 +87,10 @@ wave: build_sim
 # Coverage
 .PHONY: cov
 cov: build_cov
-	cd $(BUILD_DIR) && $(VSIM) -c -coverage -do "onbreak {quit -f -code 1}; onerror {quit -f -code 1}; coverage save -onexit cov_tb.ucdb; run -all; quit -code 0" \
+	cd $(BUILD_DIR) && env TMPDIR=. $(VSIM) -c -coverage -do "onbreak {quit -f -code 1}; onerror {quit -f -code 1}; coverage save -onexit cov_tb.ucdb; run -all; quit -code 0" \
 		work.gpio_tb -sv_seed $(SEED) -l cov_tb.log
 	@awk '/^# \*\* (Error|Fatal):/ {r=1} END {if(r) {print "Errors detected in log"; exit 1}}' $(BUILD_DIR)/cov_tb.log
-	cd $(BUILD_DIR) && $(VSIM) -c -coverage -do "onbreak {quit -f -code 1}; onerror {quit -f -code 1}; coverage save -onexit cov_uvm.ucdb; run -all; quit -code 0" \
+	cd $(BUILD_DIR) && env TMPDIR=. $(VSIM) -c -coverage -do "onbreak {quit -f -code 1}; onerror {quit -f -code 1}; coverage save -onexit cov_uvm.ucdb; run -all; quit -code 0" \
 		work.gpio_uvm_tb +UVM_TESTNAME=$(TEST) +UVM_MAX_QUIT_COUNT=1 -sv_seed $(SEED) -l cov_uvm.log
 	@awk '/^# UVM_FATAL / && !/: +[0-9]+$$/ {f=1} /^# UVM_ERROR / && !/: +[0-9]+$$/ {e=1} /^# \*\* (Error|Fatal):/ {r=1} END {if(f||e||r) {print "Errors detected in log"; exit 1}}' $(BUILD_DIR)/cov_uvm.log
 	cd $(BUILD_DIR) && vcover merge cov.ucdb cov_tb.ucdb cov_uvm.ucdb
@@ -98,30 +98,37 @@ cov: build_cov
 
 # Regression
 .PHONY: regress
-	regress:
-		@echo "Running regression..."
-		$(MAKE) sim_tb WIDTH=1
-		$(MAKE) sim_tb WIDTH=7
-		$(MAKE) sim_tb WIDTH=16
-		$(MAKE) sim_tb WIDTH=31
-		$(MAKE) sim_tb WIDTH=32
-		$(MAKE) sim TEST=gpio_base_test WIDTH=1
-		$(MAKE) sim TEST=gpio_base_test WIDTH=7
-		$(MAKE) sim TEST=gpio_base_test WIDTH=16
-		$(MAKE) sim TEST=gpio_base_test WIDTH=31
-		$(MAKE) sim TEST=gpio_base_test WIDTH=32
+regress:
+	@echo "Running regression..."
+	$(MAKE) sim_tb WIDTH=1
+	$(MAKE) sim_tb WIDTH=7
+	$(MAKE) sim_tb WIDTH=16
+	$(MAKE) sim_tb WIDTH=31
+	$(MAKE) sim_tb WIDTH=32
+	$(MAKE) sim TEST=gpio_base_test WIDTH=1
+	$(MAKE) sim TEST=gpio_base_test WIDTH=7
+	$(MAKE) sim TEST=gpio_base_test WIDTH=16
+	$(MAKE) sim TEST=gpio_base_test WIDTH=31
+	$(MAKE) sim TEST=gpio_base_test WIDTH=32
 
 .PHONY: integration
 integration:
-		mkdir -p $(BUILD_DIR)
-		vlib $(WORK_DIR)
-		$(VLOG) -work $(WORK_DIR) -sv -mfcu -suppress 2892 +incdir+$(INC_DIR) +incdir+$(BUS_INC) +incdir+$(LIB_INC) \
-			+incdir+../../bus/generic +incdir+../../bus/ahb/include +incdir+../../bus/apb/include \
-			+incdir+../../peripherals/interrupt_controller/plic/include \
-			$(BUS_SRC) $(RTL_SRC) $(INTEGRATION_TB_SRC)
-		cd $(BUILD_DIR) && env TMPDIR=. $(VSIM) -c -do "onbreak {quit -f -code 1}; onerror {quit -f -code 1}; run -all; quit -code 0" \
-			work.gpio_integration_tb -l sim_integration.log
-		@awk '/^# \*\* (Error|Fatal):/ {r=1} END {if(r) {print "Errors detected in log"; exit 1}}' $(BUILD_DIR)/sim_integration.log
+	mkdir -p $(BUILD_DIR)
+	vlib $(WORK_DIR)
+	$(VLOG) -work $(WORK_DIR) -sv -mfcu -suppress 2892 +incdir+$(INC_DIR) +incdir+$(BUS_INC) +incdir+$(LIB_INC) \
+		+incdir+../../bus/generic +incdir+../../bus/ahb/include +incdir+../../bus/apb/include \
+		+incdir+../../peripherals/interrupt_controller/plic/include \
+		$(BUS_SRC) $(RTL_SRC) $(INTEGRATION_TB_SRC)
+	cd $(BUILD_DIR) && env TMPDIR=. $(VSIM) -c -do "onbreak {quit -f -code 1}; onerror {quit -f -code 1}; run -all; quit -code 0" \
+		work.gpio_integration_tb -l sim_integration.log
+	@awk '/^# \*\* (Error|Fatal):/ {r=1} END {if(r) {print "Errors detected in log"; exit 1}}' $(BUILD_DIR)/sim_integration.log
+
+.PHONY: integration_neg
+integration_neg:
+	cd $(BUILD_DIR) && env TMPDIR=. $(VSIM) -c -do "onbreak {quit -f -code 1}; onerror {quit -f -code 1}; run -all; quit -code 0" \
+		work.gpio_integration_tb +EXPECT_FAILURE -l sim_integration_neg.log
+	@echo "Checking that the negative test failed as expected..."
+	@awk '/^# \*\* (Error|Fatal):/ {r=1} END {if(r) {print "Expected error detected (Success)"; exit 0} else {print "Failed to detect expected error!"; exit 1}}' $(BUILD_DIR)/sim_integration_neg.log
 
 .PHONY: clean
 clean:

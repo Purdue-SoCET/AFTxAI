@@ -30,6 +30,21 @@ module gpio_integration_tb;
     apb_if #( .ADDR_WIDTH(32), .DATA_WIDTH(32) ) apb ( .PCLK(pclk), .PRESETn(presetn) );
     apb_if #( .ADDR_WIDTH(32), .DATA_WIDTH(32) ) apb_comp[4] ( .PCLK(pclk), .PRESETn(presetn) );
 
+    // Tracking variables for accepted vs completed transactions
+    int ahb_requests = 0;
+    int ahb_completions = 0;
+
+    always @(posedge hclk) begin
+        if (hresetn) begin
+            if (ahb.HSEL && ahb.HREADY && (ahb.HTRANS == 2'b10 || ahb.HTRANS == 2'b11)) begin
+                ahb_requests++;
+            end
+            if (ahb.HREADYOUT && ahb.HTRANS != 2'b00 && ahb.HTRANS != 2'b01) begin
+                ahb_completions++;
+            end
+        end
+    end
+
     // AHB to APB Bridge
     ahb2apb #(
         .ADDR_WIDTH(32),
@@ -64,13 +79,12 @@ module gpio_integration_tb;
     logic [31:0] gpio_pull_up[4];
     logic [31:0] gpio_pull_down[4];
     logic [3:0]  gpio_irq;
+    logic [3:0]  gpio_irq_sync;
 
     // 4 GPIO Banks
     genvar i;
     generate
         for (i = 0; i < 4; i++) begin : gen_gpio
-            // Using different widths for verification: 32, 16, 7, 1
-            localparam int WIDTHS[4] = '{32, 16, 7, 1}; // index 0 is 1, etc. Wait, we want GPIO0=32, GPIO1=16, GPIO2=7, GPIO3=1. Let's do that explicitly.
             localparam int W = (i==0) ? 32 : (i==1) ? 16 : (i==2) ? 7 : 1;
             
             logic [W-1:0] w_in, w_out, w_oe, w_pu, w_pd;
@@ -78,7 +92,7 @@ module gpio_integration_tb;
             gpio_apb_wrapper #(
                 .GPIO_WIDTH(W)
             ) wrapper (
-                .apb(apb_comp[3-i].completer), // apb_comp[3] is mapped to 0x000, which is GPIO0
+                .apb(apb_comp[3-i].completer),
                 .gpio_in_i(w_in),
                 .gpio_out_o(w_out),
                 .gpio_oe_o(w_oe),
@@ -92,6 +106,16 @@ module gpio_integration_tb;
             assign gpio_oe[i] = { {(32-W){1'b0}}, w_oe };
             assign gpio_pull_up[i] = { {(32-W){1'b0}}, w_pu };
             assign gpio_pull_down[i] = { {(32-W){1'b0}}, w_pd };
+            
+            // Proper CDC synchronizer for GPIO IRQ (PCLK domain) to PLIC (HCLK domain)
+            sync_2ff #(
+                .WIDTH(1)
+            ) irq_sync (
+                .clk(hclk),
+                .rst_n(hresetn),
+                .d_in(gpio_irq[i]),
+                .d_out(gpio_irq_sync[i])
+            );
         end
     endgenerate
 
@@ -99,8 +123,8 @@ module gpio_integration_tb;
     bus_protocol_if #( .ADDR_WIDTH(32), .DATA_WIDTH(32) ) plic_bus ();
     plic_if irq_if ();
     
-    // Assign interrupts to PLIC (1-4)
-    assign irq_if.irq_source = {27'd0, gpio_irq, 1'b0};
+    // Assign synchronized interrupts to PLIC (1-4)
+    assign irq_if.irq_source = {27'd0, gpio_irq_sync, 1'b0};
     
     plic i_plic (
         .clk(hclk),
@@ -110,10 +134,9 @@ module gpio_integration_tb;
     );
 
     // Test sequence
-    
-    // Tasks for AHB reads and writes
     task ahb_write(input logic [31:0] addr, input logic [31:0] data, input logic [3:0] strb);
         @(posedge hclk);
+        while (!ahb.HREADYOUT) @(posedge hclk);
         ahb.HADDR <= addr;
         ahb.HTRANS <= 2'b10; // NONSEQ
         ahb.HWRITE <= 1;
@@ -121,11 +144,10 @@ module gpio_integration_tb;
         ahb.HBURST <= 3'b000; // SINGLE
         ahb.HWSTRB <= strb;
         ahb.HSEL <= 1;
-        ahb.HREADY <= 1; // From master
+        ahb.HREADY <= 1;
         
         @(posedge hclk);
         while (!ahb.HREADYOUT) @(posedge hclk);
-        
         ahb.HTRANS <= 2'b00; // IDLE
         ahb.HWDATA <= data;
         
@@ -135,6 +157,7 @@ module gpio_integration_tb;
     
     task ahb_read(input logic [31:0] addr, output logic [31:0] data, output logic err);
         @(posedge hclk);
+        while (!ahb.HREADYOUT) @(posedge hclk);
         ahb.HADDR <= addr;
         ahb.HTRANS <= 2'b10; // NONSEQ
         ahb.HWRITE <= 0;
@@ -146,8 +169,8 @@ module gpio_integration_tb;
         
         @(posedge hclk);
         while (!ahb.HREADYOUT) @(posedge hclk);
-        
         ahb.HTRANS <= 2'b00; // IDLE
+        ahb.HWSTRB <= 0;
         
         @(posedge hclk);
         while (!ahb.HREADYOUT) @(posedge hclk);
@@ -155,13 +178,14 @@ module gpio_integration_tb;
         err = ahb.HRESP;
     endtask
 
-    // Tasks for PLIC accesses directly on its bus interface
+    // PLIC accesses
     task plic_write(input logic [31:0] addr, input logic [31:0] data);
         @(posedge hclk);
         plic_bus.addr = addr;
         plic_bus.wdata = data;
         plic_bus.wen = 1;
         plic_bus.ren = 0;
+        plic_bus.strobe = 4'hf;
         @(posedge hclk);
         plic_bus.wen = 0;
         @(posedge hclk);
@@ -183,7 +207,6 @@ module gpio_integration_tb;
     int test_fails = 0;
     
     initial begin
-        // Initialize
         ahb.HADDR = 0;
         ahb.HTRANS = 0;
         ahb.HWRITE = 0;
@@ -202,16 +225,17 @@ module gpio_integration_tb;
         
         for (int j=0; j<4; j++) gpio_in[j] = 0;
 
-        #200; // Wait for resets
+        #200;
         
+        if ($test$plusargs("EXPECT_FAILURE")) begin
+            $display("Running Intentional Failure Check Mode");
+            $error("Intentional Error for regression validation.");
+            $finish(1);
+        end
+
         // 1. Basic AHB write to GPIO0 DIR
         $display("Test 1: Write to GPIO0 DIR (0x8000_0008)");
         ahb_write(32'h8000_0008, 32'hA5A5_5A5A, 4'hF);
-        
-        // Let it propagate to APB
-        #100;
-        
-        // Read back
         ahb_read(32'h8000_0008, rdata, err);
         if (err || rdata !== 32'hA5A5_5A5A) begin
             $error("Test 1 Failed: expected A5A5_5A5A, got %h, err %b", rdata, err);
@@ -247,68 +271,57 @@ module gpio_integration_tb;
         
         // 5. Test Interrupt flow (GPIO2 -> PLIC)
         $display("Test 5: Interrupt Flow (GPIO2 High Level)");
-        // Configure GPIO2 (width 7) IRQ High Enable for bit 3
-        ahb_write(32'h8000_022C, 32'h0000_0008, 4'hF); 
+        ahb_write(32'h8000_022C, 32'h0000_0008, 4'hF); // IRQ High Enable bit 3
+        plic_write(32'h0000_0010, 32'h0000_0007);      // Priority of src 4 to 7
+        plic_write(32'h0020_0000, 32'h0000_0000);      // Threshold to 0
+        plic_write(32'h0000_2000, 32'h0000_0010);      // Enable Source 4
         
-        // Configure PLIC for Source 4 (GPIO2 = source 4)
-        // Set priority of src 4 to 7
-        plic_write(32'h0000_0010, 32'h0000_0007); 
-        // Set Threshold to 0
-        plic_write(32'h0020_0000, 32'h0000_0000);
-        // Enable Source 4 (bit 4)
-        plic_write(32'h0000_2000, 32'h0000_0010);
-        
-        // Trigger GPIO2 bit 3
         #100;
-        gpio_in[2] = 32'h0000_0008; // This crosses sync_2ff
-        
-        // Wait for propagation
+        gpio_in[2] = 32'h0000_0008; // Crosses sync_2ff
         #500;
-        
-        $display("DEBUG: gpio_irq = %b, irq_source = %b, irq_target = %b", gpio_irq, irq_if.irq_source, irq_if.irq_target);
-        $display("DEBUG: PLIC state: pending=%b, enable=%b, claimed=%b, priority[3]=%d", 
-                 i_plic.pending_q, i_plic.enable_q, i_plic.claimed_q, i_plic.priority_q[3]);
         
         if (!irq_if.irq_target) begin
             $error("Test 5 Failed: PLIC irq_target did not assert");
             test_fails++;
         end
         
-        // Claim interrupt
-        plic_read(32'h0020_0004, rdata);
+        plic_read(32'h0020_0004, rdata); // Claim
         if (rdata !== 32'h0000_0004) begin
             $error("Test 5 Failed: Claimed ID was %d, expected 4", rdata);
             test_fails++;
         end
         
-        // Clear GPIO2 condition
         gpio_in[2] = 32'h0000_0000;
         #500;
         
-        // Complete interrupt
-        plic_write(32'h0020_0004, 32'h0000_0004);
+        plic_write(32'h0020_0004, 32'h0000_0004); // Complete
         #100;
-        
         if (irq_if.irq_target) begin
             $error("Test 5 Failed: PLIC irq_target still asserted after complete");
             test_fails++;
         end
         
-        // INTENTIONAL FAILURE as requested: "At least one intentional error proving the integration regression exits nonzero"
-        $display("Test 6: Intentional Failure Check");
-        if (1) begin
-            $error("Intentional Error for regression validation.");
+        // 6. Test Unmapped / high-alias address handling
+        $display("Test 6: Unmapped/high-alias address");
+        // GPIO0 is at 0x8000_0000 - 0x8000_00FF. 
+        // 0x8000_0800 should be unmapped in our 4-completer layout.
+        ahb_read(32'h8000_0800, rdata, err);
+        if (!err) begin
+            $error("Test 6 Failed: Expected error for unmapped APB region 0x8000_0800");
             test_fails++;
         end
         
-        if (test_fails > 1) begin
-            $display("TEST FAILED with %d errors (including 1 expected)", test_fails);
+        // 7. Verify AHB Transaction Count
+        $display("Test 7: Verification of accepted transaction count");
+        if (ahb_requests != ahb_completions) begin
+            $error("Test 7 Failed: ahb_requests (%d) != ahb_completions (%d)", ahb_requests, ahb_completions);
+            test_fails++;
+        end
+        
+        if (test_fails > 0) begin
+            $display("TEST FAILED with %d errors", test_fails);
             $finish(1);
-        end else if (test_fails == 1) begin
-            $display("TEST PASSED (only intentional error occurred)");
-            $finish(0);
         end else begin
-            // Should not reach here because of the intentional error
             $display("TEST PASSED");
             $finish(0);
         end

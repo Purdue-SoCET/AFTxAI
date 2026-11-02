@@ -29,17 +29,19 @@ The testbench mapping aligns with the current proposed memory map using a 256-by
 | Asynchronous GPIO inputs crossing synchronizer   | PASS   | IRQ edges reliably detected after `sync_2ff`. |
 | Width configuration and masking                  | PASS   | W=1, 7, 16, 32 instanced and tested. |
 | IRQ persistence, PLIC routing, and W1C clearance | PASS   | Level IRQ asserted, claimed, and completed. |
-| Intentional nonzero failure detection            | PASS   | Make target captures intentional `$error`. |
+| Intentional nonzero failure detection            | PASS   | Make target `integration_neg` captures intentional `$error` and exits nonzero. |
 | Digital I/O Mux Pads integration                 | BLOCKED| Depends on final `feat/digital-io-mux` interface contract. |
 
 ## 5. Unresolved Gates & System-Level Decisions
 1. **`apb_interconnect` Address Decoder**: By default, `COMPLETER_ADDR_BITS=16` which cannot decode peripherals spaced 256 bytes apart. For GPIO, the integration test overrides it to `8`. A permanent shared-bus update is required (e.g., an array of masks per peripheral) to mix large and small peripheral windows safely on the same interconnect.
-2. **PLIC CDC**: GPIO IRQs originate on `pclk` (12.5 MHz) but the PLIC is on `hclk` (100 MHz). A formal CDC strategy (e.g., level synchronizer) is required before final signoff, as currently `irq_o` directly drives `irq_source`.
+2. **PLIC CDC**: GPIO IRQs originate on `pclk` (12.5 MHz) but the PLIC is on `hclk` (100 MHz). A `sync_2ff` was added to the GPIO integration test fixture as a stopgap. The central SoC agent must finalize the approved CDC strategy for the production SoC.
 3. **Mux Integration**: Final pad assignments and OE/pull routing must be agreed upon with the system owner.
 
 ## 6. Test Commands
-To run the end-to-end integration regression:
+To run the end-to-end integration regressions:
 ```bash
 module load siemens/questa/2021.4
-make integration
+make regress          # Standalone peripheral regression
+make integration      # Valid AHB->APB integration tests
+make integration_neg  # Negative tests confirming failure detection
 ```
