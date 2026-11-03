@@ -117,21 +117,21 @@ Move or adapt `integration/soc_peripherals/peripheral_subsystem.sv` into `top_le
 |---|---|---|---|---|---|---|
 | Core | `riscv` | AHB mgr 0 (highest prio) | New shim to `ahb_manager` | HCLK | - | - |
 | DMA data | `dma_controller.mem_bus` | AHB mgr 1 | None | HCLK | - | - |
-| Boot ROM | `ff_ram` (`ROM=1`) | AHB subord | `ahb_subordinate` | HCLK | **TBD** | - |
-| On-chip RAM | `ff_ram` | AHB subord | `ahb_subordinate` | HCLK | **TBD** | - |
-| Off-chip SRAM | `sram_controller` | AHB subord | `ahb_subordinate` | HCLK | **TBD** | - |
-| APB bridge | `ahb2apb` | AHB subord | None | HCLK, PCLK | **TBD** | - |
-| DMA registers | `dma_controller.reg_bus` | AHB subord | Per D-09 | HCLK | **TBD** | **TBD** |
-| UART | `uart_top` | APB completer | None | PCLK | **TBD** | **TBD** |
-| CLINT | `clint` | AHB subord | `ahb_subordinate` | HCLK | **TBD** | **TBD** |
-| PLIC | `plic` | AHB subord | `ahb_subordinate` | HCLK | **TBD** | - |
-| Printer | TB model only | AHB subord | None | HCLK | **TBD** | - |
-| GPIO0-3, GPIOBOOT | `gpio_apb_wrapper` | APB completer | None | PCLK | **TBD** | **TBD** |
-| PWM0 | `pwm_apb_wrapper` | APB completer | None | PCLK | **TBD** | **TBD** |
-| Timer0 | `timer_apb_wrapper` | APB completer | None | PCLK | **TBD** | **TBD** |
-| SPI0 | `spi_wrapper` | APB completer | None | PCLK | **TBD** | **TBD** |
-| I2C0 | `i2c` | APB completer | None | PCLK | **TBD** | **TBD** |
-| I/O Mux | `digital_io_mux` | APB completer | None | PCLK | **TBD** | - |
+| Boot ROM | `ff_ram` (`ROM=1`) | AHB subord | `ahb_subordinate` | HCLK | `0x0000_0400` | - |
+| On-chip RAM | `ff_ram` | AHB subord | `ahb_subordinate` | HCLK | `0x0000_8400` | - |
+| Off-chip SRAM | `sram_controller` | AHB subord | `ahb_subordinate` | HCLK | `0x0002_0000` | - |
+| APB bridge | `ahb2apb` | AHB subord | None | HCLK, PCLK | `0x8000_0000` | - |
+| DMA registers | `dma_controller.reg_bus` | AHB subord | Per D-09 | HCLK | `0x9000_1000` | 10 |
+| UART | `uart_top` | APB completer | None | PCLK | `0x8000_6000` | 9 |
+| CLINT | `clint` | AHB subord | `ahb_subordinate` | HCLK | `0x9001_0000` | - |
+| PLIC | `plic` | AHB subord | `ahb_subordinate` | HCLK | `0xA000_0000` | - |
+| Printer | TB model only | AHB subord | None | HCLK | `0xB000_0000` | - |
+| GPIO0-3, GPIOBOOT | `gpio_apb_wrapper` | APB completer | None | PCLK | `0x8000_0000` (See 6.3) | 1-4, 11 |
+| PWM0 | `pwm_apb_wrapper` | APB completer | None | PCLK | `0x8000_1000` | 5 |
+| Timer0 | `timer_apb_wrapper` | APB completer | None | PCLK | `0x8000_2000` | 6 |
+| SPI0 | `spi_wrapper` | APB completer | None | PCLK | `0x8000_4000` | 7 |
+| I2C0 | `i2c` | APB completer | None | PCLK | `0x8000_5000` | 8 |
+| I/O Mux | `digital_io_mux` | APB completer | None | PCLK | `0x8000_7000` | - |
 
 - **[TOP-ARCH-001]** `aft_top` contains structural wiring only: no behavioral logic beyond tie-offs and instantiation.
 - **[TOP-ARCH-002]** `aft_top` contains nothing simulation-only. The Printer and external-device models attach from the testbench. In synthesis, Printer addresses return a bus error.
