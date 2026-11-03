@@ -21,3 +21,6 @@ xrun.history
 xrun.log
 xrun*.log
 build/
+out.txt
+*.log
+obj_dir/
