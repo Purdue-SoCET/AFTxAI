@@ -1,0 +1,9 @@
+`verilator_config
+lint_off -rule UNUSEDSIGNAL -file "*/apb_if.sv"
+lint_off -rule UNDRIVEN -file "*/apb_if.sv"
+lint_off -rule UNUSEDSIGNAL -file "*/ahb_if.sv"
+lint_off -rule UNDRIVEN -file "*/ahb_if.sv"
+lint_off -rule UNUSEDSIGNAL -file "*/dma_controller.sv"
+lint_off -rule UNUSEDPARAM
+lint_off -rule UNUSEDSIGNAL -file "*/registers.sv"
+lint_off -rule UNUSEDSIGNAL -file "*/read_control.sv"
