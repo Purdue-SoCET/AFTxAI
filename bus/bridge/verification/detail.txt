@@ -1,0 +1,75 @@
+<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+<> User: mathure
+
+Host: asicfab.ecn.purdue.edu
+
+Report date: Tue 03 Nov 2026 13:43:55 EST
+
+Report options: -detail -out detail.txt -type all
+
+Coverage database path: /home/asicfab/a/mathure/AFTxAI/bus/bridge/verification/cov_work/scope/test
+
+Coverage model files: /home/asicfab/a/mathure/AFTxAI/bus/bridge/verification/cov_work/scope/icc_7947534e_2d240020.ucm
+
+Coverage data files: /home/asicfab/a/mathure/AFTxAI/bus/bridge/verification/cov_work/scope/test/icc_7947534e_2d240020.ucd
+
+CCF files:  None
+
+
+Coverage database date: Tue 03 Nov 2026 13:43:38 EST
+
+*** There were no refinement files applied ***
+
+  <>
+<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+Coverage Table Legend
+---------------------
+  EXCL       excluded using refinement rule
+  P-EXCL     excluded from parent
+  U-EXCL     excluded and unreachable by IEV
+  T-EXCL     excluded from type
+  S-EXCL     smart excluded using refinement rule
+  EXCL(S)    smart indirect excluded
+  EMPTY      all children are excluded
+  CONST      marked constant during simulation
+  IGN        marked ignored during simulation
+  UNG        marked ungradeable during simulation
+  DES        marked deselected during simulation
+  UNR        marked unreachable by IEV
+  UNG-Expr   expression marked ungradeable during simulation
+  UNG-Toggle toggle marked ungradeable during simulation
+
+
+Uncovered Block Detail Report, Type Based
+=========================================
+
+Uncovered Expression Detail Report, Type Based
+==============================================
+
+Expression coverage Table Legend
+---------------------
+  -      don't care
+  e      event for event-or expressions
+  O (odd), E (even), B (both), X (not scored),
+         I (marked ignore) for parity trees
+  Y (covered), N (not covered), C (constant), 
+  P (one or more inputs for this bit have been padded) for vector scoring, 
+  d=== , b=== shows which bit differs in vector scoring 
+  rval   Resulting value of the expression for coverage purposes given
+         the input values
+  <-n->  Shows the n-th term composition
+
+
+Uncovered Toggle Detail Report, Type Based
+==========================================
+
+Uncovered Fsm Detail Report, Type Based
+=======================================
+
+Uncovered Assertion Detail Report, Type Based
+=============================================
+
+Uncovered CoverGroup Detail Report, Type Based
+==============================================
+
