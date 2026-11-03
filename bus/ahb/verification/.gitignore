@@ -1,0 +1,16 @@
+# Cadence Xcelium simulation artifacts
+xcelium.d/
+xrun.history
+xrun.log
+xrun.key
+sim/
+cov_work/
+cov_report/
+regression_logs/
+imc.key
+imc.log
+mdv.log
+cov_report_text.txt
+*.vcd
+run.log
+run.history

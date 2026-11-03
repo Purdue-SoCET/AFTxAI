@@ -1,20 +1,45 @@
 `ifndef UART_IF_SV
 `define UART_IF_SV
 
-/* verilator lint_off UNUSEDSIGNAL */
-/* verilator lint_off UNDRIVEN */
-// Reason: Signals in interfaces are driven/used by connected modules, not necessarily within the interface itself.
+interface uart_if #(
+    parameter ADDR_WIDTH = 8,
+    parameter DATA_WIDTH = 32
+) (
+    input logic clk,
+    input logic rst_n
+);
+    // Generic Bus Interface (similar to APB)
+    logic                  psel;
+    logic                  penable;
+    logic                  pwrite;
+    logic [ADDR_WIDTH-1:0] paddr;
+    logic [DATA_WIDTH-1:0] pwdata;
+    logic [DATA_WIDTH-1:0] prdata;
+    logic                  pready;
+    logic                  pslverr;
 
-interface uart_if;
-    logic tx;
+    // Serial lines
     logic rx;
-    logic rts_n;
+    logic tx;
     logic cts_n;
+    logic rts_n;
+
+    // Interrupt
     logic irq;
 
-    modport port(
-        output tx, rts_n, irq,
-        input  rx, cts_n
+    modport target (
+        input  psel, penable, pwrite, paddr, pwdata,
+        output prdata, pready, pslverr,
+        input  rx, cts_n,
+        output tx, rts_n,
+        output irq
+    );
+
+    modport initiator (
+        output psel, penable, pwrite, paddr, pwdata,
+        input  prdata, pready, pslverr,
+        output rx, cts_n,
+        input  tx, rts_n, irq
     );
 endinterface
 

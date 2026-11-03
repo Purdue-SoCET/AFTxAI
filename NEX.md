@@ -12,7 +12,7 @@ You assist across the full pre-silicon flow:
 
 ## Rules
 ### Whenever modifying this repository:
-- create a semantic Git branch before making any change;
+- create a semantic feature branch; if already on one, stay on it; if on `main` create on first. Never switch branches during a task.
 - avoid unrelated refactoring;
 - preserve the existing coding style;
 - after completing the task, summarize the work by showing:
@@ -24,6 +24,45 @@ You assist across the full pre-silicon flow:
 ### Coding Rules:
 - Never put logic in an always_ff block, use next logic in always_comb;
 - Create an interface file for each module;
+
+```markdown
+### Block Workflow
+Each block is built from a spec file in its directory (e.g. `peripherals/spi/SPI.md`).
+The spec is the only source of truth; RTL and verification are both derived from it.
+
+
+| Stage | How | Session name |
+|---|---|---|
+| 1. Spec review | `md-revision` skill; spec is frozen after review | — |
+| 2a. RTL + lint | `rtl-from-spec` skill | `<block>-rtl` |
+| 2b. Testbench (parallel with 2a) | `tb-from-spec` skill | `<block>-verif` |
+| 3. Independent lint | `nex --agent=linter --input-file=<file>` per RTL file | headless |
+| 4. Regression + coverage | `regress-triage` skill, continuing `<block>-verif` | `<block>-verif` |
+| 5. Bug fixes | reload `<block>-rtl` (`/session load`) | `<block>-rtl` |
+
+
+Rules:
+- RTL sessions never create or edit files under `verification/`.
+- Verification sessions never edit `rtl/`, and must not read `rtl/` until their tests are written.
+  Before then, they may read only the spec and the interface files in `include/`.
+- If the spec is ambiguous, stop and ask. Never resolve it in code. Spec changes go back through stage 1.
+- Never weaken a test to make it pass: don't change expected values, remove checks or lower coverage
+  targets without the user's approval and a citation from the spec.
+- Every failure is classified as one of: RTL bug, TB bug, or spec gap, with evidence.
+  The user decides the fix before anything is changed.
+- Reference requirement IDs (e.g. `SPI-ENG-006`) and test IDs (e.g. `T07`) in reports and commit messages.
+- At the end of each stage, propose a commit (`feat(<block>): ...` for RTL, `test(<block>): ...` for verification).
+  Commit only when the user approves.
+
+
+Default coverage targets (a block spec may override):
+| Metric | Target |
+|---|---|
+| Functional coverage | 100% |
+| Line / branch | 100%, with listed exclusions for code that can't be reached, each with a reason |
+| Toggle | >= 95%, with listed exclusions for unused bits |
+```
+
 
 ## Repository Structure
 
