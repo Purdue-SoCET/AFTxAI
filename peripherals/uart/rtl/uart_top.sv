@@ -44,7 +44,7 @@ module uart_top #(
     // Instantiations
     uart_fifo #(.DATA_WIDTH(8), .DEPTH(FIFO_DEPTH)) tx_fifo (
         .clk(vif.clk), .rst_n(vif.rst_n), .clear(1'b0), // Tie off clear for now
-        .wr_en(tx_fifo_wr), .wr_data(vif.pwdata[7:0]),
+        .wr_en(tx_fifo_wr), .wr_data(vif.PWDATA[7:0]),
         .rd_en(tx_fifo_rd), .rd_data(tx_fifo_rdata),
         .full(tx_fifo_full), .empty(tx_fifo_empty)
     );
@@ -111,18 +111,18 @@ module uart_top #(
         tx_fifo_wr   = 1'b0;
         rx_fifo_rd   = 1'b0;
 
-        if (vif.psel && vif.penable) begin
-            if (vif.pwrite) begin
-                case (vif.paddr)
+        if (vif.PSEL && vif.PENABLE) begin
+            if (vif.PWRITE) begin
+                case (vif.PADDR)
                     8'h00: tx_fifo_wr = ~tx_fifo_full;
-                    8'h04: int_enable_d = vif.pwdata;
-                    8'h0C: line_ctrl_d  = vif.pwdata;
-                    8'h10: mode_ctrl_d  = vif.pwdata;
-                    8'h1C: baud_div_d   = vif.pwdata;
+                    8'h04: int_enable_d = vif.PWDATA;
+                    8'h0C: line_ctrl_d  = vif.PWDATA;
+                    8'h10: mode_ctrl_d  = vif.PWDATA;
+                    8'h1C: baud_div_d   = vif.PWDATA;
                     default: ;
                 endcase
             end else begin
-                case (vif.paddr)
+                case (vif.PADDR)
                     8'h00: rx_fifo_rd = ~rx_fifo_empty;
                     default: ;
                 endcase
@@ -130,21 +130,24 @@ module uart_top #(
         end
 
         // Combinational APB read data
-        vif.prdata = 32'h0;
-        if (vif.psel && !vif.pwrite) begin
-            case (vif.paddr)
-                8'h00: vif.prdata = {24'h0, rx_fifo_rdata};
-                8'h04: vif.prdata = int_enable_q;
-                8'h0C: vif.prdata = line_ctrl_q;
-                8'h10: vif.prdata = mode_ctrl_q;
-                8'h14: vif.prdata = {25'h0, tx_fifo_empty && tx_ready, tx_fifo_empty, 4'h0, ~rx_fifo_empty}; 
-                8'h1C: vif.prdata = baud_div_q;
-                default: vif.prdata = 32'h0;
+        vif.PRDATA = 32'h0;
+        if (vif.PSEL && !vif.PWRITE) begin
+            case (vif.PADDR)
+                8'h00: vif.PRDATA = {24'h0, rx_fifo_rdata};
+                8'h04: vif.PRDATA = int_enable_q;
+                8'h0C: vif.PRDATA = line_ctrl_q;
+                8'h10: vif.PRDATA = mode_ctrl_q;
+                8'h14: vif.PRDATA = {25'h0, tx_fifo_empty && tx_ready, tx_fifo_empty, 4'h0, ~rx_fifo_empty}; 
+                8'h1C: vif.PRDATA = baud_div_q;
+                default: vif.PRDATA = 32'h0;
             endcase
         end
 
         // Basic IRQ implementation
         vif.irq = (int_enable_q[0] && ~rx_fifo_empty) || (int_enable_q[1] && tx_fifo_empty);
+        
+        vif.PREADY = pready_d;
+        vif.PSLVERR = 1'b0;
     end
 
     // FF
@@ -158,9 +161,6 @@ module uart_top #(
             os_tick_q    <= '0;
             baud_tick_cnt_q <= '0;
             baud_tick_q  <= '0;
-            vif.prdata   <= '0;
-            vif.pready   <= '0;
-            vif.pslverr  <= '0;
         end else begin
             int_enable_q <= int_enable_d;
             line_ctrl_q  <= line_ctrl_d;
@@ -170,8 +170,6 @@ module uart_top #(
             os_tick_q    <= os_tick_d;
             baud_tick_cnt_q <= baud_tick_cnt_d;
             baud_tick_q  <= baud_tick_d;
-            vif.pready   <= pready_d;
-            vif.pslverr  <= 1'b0;
         end
     end
 

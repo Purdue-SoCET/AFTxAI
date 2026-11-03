@@ -8,25 +8,25 @@ interface apb_if #(
     input logic pclk,
     input logic presetn
 );
-    logic [ADDR_WIDTH-1:0]     paddr;
-    logic                      psel;
-    logic                      penable;
-    logic                      pwrite;
-    logic [DATA_WIDTH-1:0]     pwdata;
-    logic [(DATA_WIDTH/8)-1:0] pstrb;
-    logic [2:0]                pprot;
-    logic [DATA_WIDTH-1:0]     prdata;
-    logic                      pready;
-    logic                      pslverr;
+    logic [ADDR_WIDTH-1:0]     PADDR;
+    logic                      PSEL;
+    logic                      PENABLE;
+    logic                      PWRITE;
+    logic [DATA_WIDTH-1:0]     PWDATA;
+    logic [(DATA_WIDTH/8)-1:0] PSTRB;
+    logic [2:0]                PPROT;
+    logic [DATA_WIDTH-1:0]     PRDATA;
+    logic                      PREADY;
+    logic                      PSLVERR;
 
     modport requester (
-        output paddr, psel, penable, pwrite, pwdata, pstrb, pprot,
-        input  prdata, pready, pslverr
+        output PADDR, PSEL, PENABLE, PWRITE, PWDATA, PSTRB, PPROT,
+        input  PRDATA, PREADY, PSLVERR
     );
 
     modport completer (
-        input  paddr, psel, penable, pwrite, pwdata, pstrb, pprot,
-        output prdata, pready, pslverr
+        input  PADDR, PSEL, PENABLE, PWRITE, PWDATA, PSTRB, PPROT,
+        output PRDATA, PREADY, PSLVERR
     );
 endinterface
 

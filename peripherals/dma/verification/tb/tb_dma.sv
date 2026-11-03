@@ -117,33 +117,33 @@ module tb_dma;
     // ------------------------------------------------------------------------
     task apb_write(input logic [31:0] addr, input logic [31:0] data);
         @(posedge clk);
-        reg_bus.paddr <= addr;
-        reg_bus.pwdata <= data;
-        reg_bus.pwrite <= 1'b1;
-        reg_bus.psel <= 1'b1;
-        reg_bus.penable <= 1'b0;
+        reg_bus.PADDR <= addr;
+        reg_bus.PWDATA <= data;
+        reg_bus.PWRITE <= 1'b1;
+        reg_bus.PSEL <= 1'b1;
+        reg_bus.PENABLE <= 1'b0;
         @(posedge clk);
-        reg_bus.penable <= 1'b1;
-        wait(reg_bus.pready);
+        reg_bus.PENABLE <= 1'b1;
+        wait(reg_bus.PREADY);
         @(posedge clk);
-        reg_bus.psel <= 1'b0;
-        reg_bus.penable <= 1'b0;
+        reg_bus.PSEL <= 1'b0;
+        reg_bus.PENABLE <= 1'b0;
     endtask
 
     task apb_read(input logic [31:0] addr, output logic [31:0] data);
         @(posedge clk);
-        reg_bus.paddr <= addr;
-        reg_bus.pwrite <= 1'b0;
-        reg_bus.psel <= 1'b1;
-        reg_bus.penable <= 1'b0;
+        reg_bus.PADDR <= addr;
+        reg_bus.PWRITE <= 1'b0;
+        reg_bus.PSEL <= 1'b1;
+        reg_bus.PENABLE <= 1'b0;
         @(posedge clk);
-        reg_bus.penable <= 1'b1;
-        wait(reg_bus.pready);
-        data = reg_bus.prdata;
-        $display("APB_READ: paddr=%x prdata=%x", addr, reg_bus.prdata);
+        reg_bus.PENABLE <= 1'b1;
+        wait(reg_bus.PREADY);
+        data = reg_bus.PRDATA;
+        $display("APB_READ: paddr=%x prdata=%x", addr, reg_bus.PRDATA);
         @(posedge clk);
-        reg_bus.psel <= 1'b0;
-        reg_bus.penable <= 1'b0;
+        reg_bus.PSEL <= 1'b0;
+        reg_bus.PENABLE <= 1'b0;
     endtask
 
     // ------------------------------------------------------------------------

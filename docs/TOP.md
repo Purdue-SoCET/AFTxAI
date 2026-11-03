@@ -69,8 +69,8 @@ Nex must confirm each item during S0 and report any that no longer apply. These 
 | ID | Issue | Evidence |
 |---|---|---|
 | K-01 | GPIO, PWM, and Timer are not on `main`. | No `peripherals/{gpio,pwm,timer}`. They exist on `integration/soc-peripherals`. |
-| K-02 | `apb_if` on `main` is lower case, but the APB RTL uses upper case. The APB RTL does not elaborate on `main`. | `bus/apb/include/apb_if.sv`; `bus/apb/rtl/*`; `ahb2apb.sv` |
-| K-03 | Merging `integration/soc-peripherals` reports no text conflicts but flips `apb_if` to upper case, which breaks the lower-case users. | `dma_controller.sv`, `spi_wrapper.sv` |
+| K-02 | Resolved. Changed `apb_if` to use uppercase signal names across the codebase per D-01. | `apb_if.sv`, `dma_controller.sv`, `spi_wrapper.sv`, `uart_top.sv` |
+| K-03 | Resolved. Case mismatch fixed by resolving K-02. | `dma_controller.sv`, `spi_wrapper.sv` |
 | K-04 | Module names collide with different ports: `fifo` (DMA, SPI) and `counter` (`digital_lib`, DMA). | `peripherals/{dma,spi}/rtl/fifo.sv`; `digital_lib/counter.sv`; `peripherals/dma/rtl/counter.sv` |
 | K-05 | The merged tree has two `sync_2ff` modules with different ports. | `digital_lib/sync_2ff.sv` (`pclk, presetn, d, q`); `digital_lib/src/sync_2ff.sv` (`clk, rst_n, d_in, d_out`) |
 | K-06 | Include-guard and elaboration errors: `bus_protocol_if` has its guard commented out, `clint_if` has none, and `ahb_manager` assigns to interface input ports. | `bus_protocol_if.sv`; `clint_if.sv`; `ahb_manager.sv:31-32` |

@@ -31,47 +31,47 @@ module tb_uart_top;
     // --- BFM Tasks ---
     task automatic apb_write(input logic [31:0] addr, input logic [31:0] data);
         @(posedge clk);
-        uif.psel <= 1'b1;
-        uif.paddr <= addr;
-        uif.pwrite <= 1'b1;
-        uif.pwdata <= data;
-        uif.penable <= 1'b0;
+        uif.PSEL <= 1'b1;
+        uif.PADDR <= addr;
+        uif.PWRITE <= 1'b1;
+        uif.PWDATA <= data;
+        uif.PENABLE <= 1'b0;
         
         @(posedge clk);
-        uif.penable <= 1'b1;
+        uif.PENABLE <= 1'b1;
         
         @(posedge clk);
-        while (!uif.pready) @(posedge clk);
-        uif.psel <= 1'b0;
-        uif.penable <= 1'b0;
+        while (!uif.PREADY) @(posedge clk);
+        uif.PSEL <= 1'b0;
+        uif.PENABLE <= 1'b0;
     endtask
 
     task automatic apb_read(input logic [31:0] addr, output logic [31:0] data);
         @(posedge clk);
-        uif.psel <= 1'b1;
-        uif.paddr <= addr;
-        uif.pwrite <= 1'b0;
-        uif.penable <= 1'b0;
+        uif.PSEL <= 1'b1;
+        uif.PADDR <= addr;
+        uif.PWRITE <= 1'b0;
+        uif.PENABLE <= 1'b0;
         
         @(posedge clk);
-        uif.penable <= 1'b1;
+        uif.PENABLE <= 1'b1;
         
         @(posedge clk);
-        while (!uif.pready) @(posedge clk);
-        data = uif.prdata;
-        uif.psel <= 1'b0;
-        uif.penable <= 1'b0;
+        while (!uif.PREADY) @(posedge clk);
+        data = uif.PRDATA;
+        uif.PSEL <= 1'b0;
+        uif.PENABLE <= 1'b0;
     endtask
 
     // Initial block
     initial begin
         clk = 0;
         rst_n = 0;
-        uif.psel = 0;
-        uif.penable = 0;
-        uif.pwrite = 0;
-        uif.paddr = 0;
-        uif.pwdata = 0;
+        uif.PSEL = 0;
+        uif.PENABLE = 0;
+        uif.PWRITE = 0;
+        uif.PADDR = 0;
+        uif.PWDATA = 0;
         uif.rx = 1;
         uif.cts_n = 0;
 
