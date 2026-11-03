@@ -11,7 +11,7 @@ module uart #(
     parameter int FIFO_DEPTH = 16
 ) (
     ahb_if.subordinate ahb,
-    uart_if.port uif
+    uart_if.target uif
 );
 
     logic clk;

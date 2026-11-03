@@ -2,7 +2,7 @@
 
 **Location:** `top_level/TOP.md`
 **Status:** DRAFT. Not frozen until every decision in Section 3 is closed and this file has passed `md-revision`.
-**Repo snapshot reviewed:** `main` at `372acf9` (2026-11-03). Re-check Section 4 against the current tree before relying on it.
+**Repo snapshot reviewed:** `main` at `372acf9` (2024-11-03). Re-check Section 4 against the current tree before relying on it.
 **Authority:** `NEX.md` -> this file -> `docs/memory_map.md` / `docs/memory_structure.md` -> block specs. Stop and report any conflict. Do not resolve a conflict in code.
 
 ---
@@ -46,19 +46,19 @@ The owner fills in the last column. These decisions are system-level, so Nex mus
 
 | ID | Blocks stage | Question | Recommendation | Owner decision |
 |---|---|---|---|---|
-| D-01 | S1 | `apb_if` signals: upper case (`PADDR`) or lower case (`paddr`)? | Upper case. It matches AMBA, the APB RTL, the bridge, and `integration/soc-peripherals`. Update `dma_controller`, `spi_wrapper`, and their testbenches. | |
-| D-02 | S1 | Which document wins when the system spec and `docs/memory_map.md` disagree? Which core spec wins on TLBs? | Commit the system spec as `docs/AiFT_spec.md`. `docs/memory_map.md` wins on addresses. `riscv/SPEC.md` wins on the core (no TLB). | |
-| D-03 | S2 | Corrected implemented sizes in `docs/memory_map.md` (see Section 6.3)? | Accept the sizes in Section 6.3. | |
-| D-04 | S3 | Reset PC: `0x0000_8400` (`docs/memory_map.md`) or Boot ROM `0x0000_0400`? RAM has no contents at reset in silicon, unless something loads it. | Reset to Boot ROM at `0x0000_0400`. Boot code jumps to RAM. Simulation may preload both. | |
-| D-05 | S3 | Clock source, and how PCLK relates to HCLK? | External HCLK input; PCLK = HCLK / 8 from a `soc_clk_rst` block. Treat the domains as asynchronous for CDC. | |
-| D-06 | S4 | Which regions can the caches hold? The core currently caches every address, including peripherals. | D-cache: Boot ROM and off-chip SRAM only. I-cache: Boot ROM, on-chip RAM, and off-chip SRAM. All other accesses use a new uncached path with correct `HSIZE` and `HWSTRB`. | |
-| D-07 | S4 | Core configuration: `RV32I` or `RV32E`, and cache sizes? | `RV32I`, with the existing `l1_cache` defaults until performance data justifies a change. | |
-| D-08 | S6 | Which UART RTL is the real one, and how does it attach to AHB? | Audit first. `uart_top` looks more complete; `uart.sv` does not compile against the current `uart_if`. Whichever is chosen needs a passing testbench. | |
-| D-09 | S6 | How do DMA registers attach, given they are an APB port in an AHB address slot? What drives `drq`? | Use a dedicated `ahb2apb` instance on HCLK at `0x9000_1000`. Tie `drq` low until a peripheral request source is specified. | |
-| D-10 | S6 | How is DMA kept coherent with the write-back D-cache, given there is no flush instruction? | DMA buffers live in on-chip RAM, which D-06 makes uncached. Document this as a firmware rule. | |
-| D-11 | S5, S6 | Final PLIC source IDs? | Use the table in Section 8.1. | |
-| D-12 | S5 | Pin list: GPIO widths, total pads, mux functions per pad, and whether `GPIOBOOT` is instantiated? | Connect peripherals directly to `aft_top` ports until a pin table is approved. Mux routing tests stay blocked until then. | |
-| D-13 | S7 | Does the core gain interrupts? `riscv/SPEC.md` excludes `Zicsr` and interrupts, but the system spec relies on trap handlers. | Add machine-mode `Zicsr`, `mret`, and timer, software, and external interrupts as a separately specified core change. Use polling tests until then. | |
+| D-01 | S1 | `apb_if` signals: upper case (`PADDR`) or lower case (`paddr`)? | Upper case. It matches AMBA, the APB RTL, the bridge, and `integration/soc-peripherals`. Update `dma_controller`, `spi_wrapper`, and their testbenches. | Approved as recommended. |
+| D-02 | S1 | Which document wins when the system spec and `docs/memory_map.md` disagree? Which core spec wins on TLBs? | Commit the system spec as `docs/AiFT_spec.md`. `docs/memory_map.md` wins on addresses. `riscv/SPEC.md` wins on the core (no TLB). | Approved as recommended. |
+| D-03 | S2 | Corrected implemented sizes in `docs/memory_map.md` (see Section 6.3)? | Accept the sizes in Section 6.3. | Approved as recommended. |
+| D-04 | S3 | Reset PC: `0x0000_8400` (`docs/memory_map.md`) or Boot ROM `0x0000_0400`? RAM has no contents at reset in silicon, unless something loads it. | Reset to Boot ROM at `0x0000_0400`. Boot code jumps to RAM. Simulation may preload both. | Approved as recommended. |
+| D-05 | S3 | Clock source, and how PCLK relates to HCLK? | External HCLK input; PCLK = HCLK / 8 from a `soc_clk_rst` block. Treat the domains as asynchronous for CDC. | Approved as recommended. |
+| D-06 | S4 | Which regions can the caches hold? The core currently caches every address, including peripherals. | D-cache: Boot ROM and off-chip SRAM only. I-cache: Boot ROM, on-chip RAM, and off-chip SRAM. All other accesses use a new uncached path with correct `HSIZE` and `HWSTRB`. | Approved as recommended. |
+| D-07 | S4 | Core configuration: `RV32I` or `RV32E`, and cache sizes? | `RV32I`, with the existing `l1_cache` defaults until performance data justifies a change. | Approved as recommended. |
+| D-08 | S6 | Which UART RTL is the real one, and how does it attach to AHB? | `uart_top` is more complete. It uses APB, so it should sit behind the APB bridge rather than attaching directly to AHB. | Selected `uart_top.sv`. Moved to APB subsystem. |
+| D-09 | S6 | How do DMA registers attach, given they are an APB port in an AHB address slot? What drives `drq`? | Use a dedicated `ahb2apb` instance on HCLK at `0x9000_1000`. Tie `drq` low until a peripheral request source is specified. | Approved as recommended. |
+| D-10 | S6 | How is DMA kept coherent with the write-back D-cache, given there is no flush instruction? | DMA buffers live in on-chip RAM, which D-06 makes uncached. Document this as a firmware rule. | Approved as recommended. |
+| D-11 | S5, S6 | Final PLIC source IDs? | Use the table in Section 8.1. | Approved as recommended. |
+| D-12 | S5 | Pin list: GPIO widths, total pads, mux functions per pad, and whether `GPIOBOOT` is instantiated? | Connect peripherals directly to `aft_top` ports until a pin table is approved. Mux routing tests stay blocked until then. | Approved as recommended. |
+| D-13 | S7 | Does the core gain interrupts? `riscv/SPEC.md` excludes `Zicsr` and interrupts, but the system spec relies on trap handlers. | Add machine-mode `Zicsr`, `mret`, and timer, software, and external interrupts as a separately specified core change. Use polling tests until then. | Approved as recommended. |
 
 ---
 
@@ -113,25 +113,25 @@ Move or adapt `integration/soc_peripherals/peripheral_subsystem.sv` into `top_le
 
 ### 5.2 Blocks
 
-| Instance | Module | Fabric connection | Adapter | Clock |
-|---|---|---|---|---|
-| Core | `riscv` | AHB manager 0 (highest priority) | New shim to `ahb_manager` | HCLK |
-| DMA data | `dma_controller.mem_bus` | AHB manager 1 | None | HCLK |
-| Boot ROM | `ff_ram` (`ROM=1`) | AHB subordinate | `ahb_subordinate` | HCLK |
-| On-chip RAM | `ff_ram` | AHB subordinate | `ahb_subordinate` | HCLK |
-| Off-chip SRAM | `sram_controller` | AHB subordinate | `ahb_subordinate` | HCLK |
-| APB bridge | `ahb2apb` | AHB subordinate | None | HCLK, PCLK |
-| DMA registers | `dma_controller.reg_bus` | AHB subordinate | Per D-09 | HCLK |
-| UART | Per D-08 | AHB subordinate | Per D-08 | HCLK |
-| CLINT | `clint` | AHB subordinate | `ahb_subordinate` | HCLK |
-| PLIC | `plic` | AHB subordinate | `ahb_subordinate` | HCLK |
-| Printer | TB model only | AHB subordinate | None | HCLK |
-| GPIO0-3, GPIOBOOT | `gpio_apb_wrapper` | APB completer | None | PCLK |
-| PWM0 | `pwm_apb_wrapper` | APB completer | None | PCLK |
-| Timer0 | `timer_apb_wrapper` | APB completer | None | PCLK |
-| SPI0 | `spi_wrapper` | APB completer | None | PCLK |
-| I2C0 | `i2c` | APB completer | None | PCLK |
-| I/O Mux | `digital_io_mux` | APB completer | None | PCLK |
+| Instance | Module | Fabric connection | Adapter | Clock | Base Addr | IRQ |
+|---|---|---|---|---|---|---|
+| Core | `riscv` | AHB mgr 0 (highest prio) | New shim to `ahb_manager` | HCLK | - | - |
+| DMA data | `dma_controller.mem_bus` | AHB mgr 1 | None | HCLK | - | - |
+| Boot ROM | `ff_ram` (`ROM=1`) | AHB subord | `ahb_subordinate` | HCLK | **TBD** | - |
+| On-chip RAM | `ff_ram` | AHB subord | `ahb_subordinate` | HCLK | **TBD** | - |
+| Off-chip SRAM | `sram_controller` | AHB subord | `ahb_subordinate` | HCLK | **TBD** | - |
+| APB bridge | `ahb2apb` | AHB subord | None | HCLK, PCLK | **TBD** | - |
+| DMA registers | `dma_controller.reg_bus` | AHB subord | Per D-09 | HCLK | **TBD** | **TBD** |
+| UART | `uart_top` | APB completer | None | PCLK | **TBD** | **TBD** |
+| CLINT | `clint` | AHB subord | `ahb_subordinate` | HCLK | **TBD** | **TBD** |
+| PLIC | `plic` | AHB subord | `ahb_subordinate` | HCLK | **TBD** | - |
+| Printer | TB model only | AHB subord | None | HCLK | **TBD** | - |
+| GPIO0-3, GPIOBOOT | `gpio_apb_wrapper` | APB completer | None | PCLK | **TBD** | **TBD** |
+| PWM0 | `pwm_apb_wrapper` | APB completer | None | PCLK | **TBD** | **TBD** |
+| Timer0 | `timer_apb_wrapper` | APB completer | None | PCLK | **TBD** | **TBD** |
+| SPI0 | `spi_wrapper` | APB completer | None | PCLK | **TBD** | **TBD** |
+| I2C0 | `i2c` | APB completer | None | PCLK | **TBD** | **TBD** |
+| I/O Mux | `digital_io_mux` | APB completer | None | PCLK | **TBD** | - |
 
 - **[TOP-ARCH-001]** `aft_top` contains structural wiring only: no behavioral logic beyond tie-offs and instantiation.
 - **[TOP-ARCH-002]** `aft_top` contains nothing simulation-only. The Printer and external-device models attach from the testbench. In synthesis, Printer addresses return a bus error.
@@ -159,7 +159,7 @@ Move or adapt `integration/soc_peripherals/peripheral_subsystem.sv` into `top_le
 | Off-chip SRAM | `0x0002_0000 - 0x7FFF_FFFF` | 524,288 words |
 | APB bridge | `0x8000_0000 - 0x9000_0FFF` | `0x8000_0000 - 0x8000_7FFF` |
 | DMA | `0x9000_1000 - 0x9000_1FFF` | 5 words |
-| UART | `0x9000_2000 - 0x9000_FFFF` | Per D-08 |
+| UART | Moved to APB (See Section 6.3) | Per D-08 |
 | CLINT | `0x9001_0000 - 0x9FFF_FFFF` | See 6.3 |
 | PLIC | `0xA000_0000 - 0xAFFF_FFFF` | 16,777,216 words |
 | Printer (simulation only) | `0xB000_0000 - 0xBFFF_FFFF` | 1 word |
@@ -174,8 +174,9 @@ Move or adapt `integration/soc_peripherals/peripheral_subsystem.sv` into `top_le
 | Timer0 | `0x8000_2000` | 8 KiB | 20 words | 8 words (through `0x1C`) |
 | SPI0 | `0x8000_4000` | 4 KiB | 8 words | Confirm in S0 |
 | I2C0 | `0x8000_5000` | 4 KiB | TBD | 6 words (`NWORDS` default) |
-| I/O Mux | `0x8000_6000` | 4 KiB | 1-2 words | 2 words |
-| GPIOBOOT | `0x8000_7000` | 256 B | 8 words | 18 words, if instantiated |
+| UART | `0x8000_6000` | 4 KiB | TBD | 9 words (through `0x20`) |
+| I/O Mux | `0x8000_7000` | 4 KiB | 1-2 words | 2 words |
+| GPIOBOOT | `0x8000_8000` | 256 B | 8 words | 18 words, if instantiated |
 
 CLINT also needs correcting: `memory_map.md` gives 8,192 words, but `MTIME` is at `0xBFF8`, which requires at least 12,288 words. `ahb_subordinate` would reject those registers at the documented size.
 

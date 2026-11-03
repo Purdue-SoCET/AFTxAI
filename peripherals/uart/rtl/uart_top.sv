@@ -107,7 +107,6 @@ module uart_top #(
         end
 
         // Bus Interface
-        prdata_d     = '0;
         pready_d     = 1'b1;
         tx_fifo_wr   = 1'b0;
         rx_fifo_rd   = 1'b0;
@@ -124,19 +123,24 @@ module uart_top #(
                 endcase
             end else begin
                 case (vif.paddr)
-                    8'h00: begin
-                        prdata_d = {24'h0, rx_fifo_rdata};
-                        rx_fifo_rd = ~rx_fifo_empty;
-                    end
-                    8'h04: prdata_d = int_enable_q;
-                    8'h0C: prdata_d = line_ctrl_q;
-                    8'h10: prdata_d = mode_ctrl_q;
-                    // THRE (bit 5) = empty, TEMT (bit 6) = empty && ready
-                    8'h14: prdata_d = {25'h0, tx_fifo_empty && tx_ready, tx_fifo_empty, 4'h0, ~rx_fifo_empty}; 
-                    8'h1C: prdata_d = baud_div_q;
-                    default: prdata_d = 32'h0;
+                    8'h00: rx_fifo_rd = ~rx_fifo_empty;
+                    default: ;
                 endcase
             end
+        end
+
+        // Combinational APB read data
+        vif.prdata = 32'h0;
+        if (vif.psel && !vif.pwrite) begin
+            case (vif.paddr)
+                8'h00: vif.prdata = {24'h0, rx_fifo_rdata};
+                8'h04: vif.prdata = int_enable_q;
+                8'h0C: vif.prdata = line_ctrl_q;
+                8'h10: vif.prdata = mode_ctrl_q;
+                8'h14: vif.prdata = {25'h0, tx_fifo_empty && tx_ready, tx_fifo_empty, 4'h0, ~rx_fifo_empty}; 
+                8'h1C: vif.prdata = baud_div_q;
+                default: vif.prdata = 32'h0;
+            endcase
         end
 
         // Basic IRQ implementation
@@ -166,7 +170,6 @@ module uart_top #(
             os_tick_q    <= os_tick_d;
             baud_tick_cnt_q <= baud_tick_cnt_d;
             baud_tick_q  <= baud_tick_d;
-            vif.prdata   <= prdata_d;
             vif.pready   <= pready_d;
             vif.pslverr  <= 1'b0;
         end

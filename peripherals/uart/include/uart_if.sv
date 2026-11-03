@@ -28,6 +28,7 @@ interface uart_if #(
     logic irq;
 
     modport target (
+        input  clk, rst_n,
         input  psel, penable, pwrite, paddr, pwdata,
         output prdata, pready, pslverr,
         input  rx, cts_n,
@@ -36,6 +37,7 @@ interface uart_if #(
     );
 
     modport initiator (
+        input  clk, rst_n,
         output psel, penable, pwrite, paddr, pwdata,
         input  prdata, pready, pslverr,
         output rx, cts_n,
