@@ -84,7 +84,7 @@ Nex must confirm each item during S0 and report any that no longer apply. These 
 | K-14 | The core has no CSRs, trap entry, or interrupt inputs. | `riscv/SPEC.md`; `riscv/rtl/riscv.sv` |
 | K-15 | `BOOT_ADDR` defaults to `0`, and `link.ld` places code at `0x0`. Both fall in an unmapped region. | `riscv.sv`; `riscv/verification/cFiles/link.ld` |
 | K-16 | `peripheral_subsystem` omits SPI0, I2C0, and `GPIOBOOT`, and has only the mux's APB registers. It does not include the PLIC. | `integration/soc_peripherals/peripheral_subsystem.sv` |
-| K-17 | `uart.sv` uses a nonexistent `uart_if.port` modport and ties `irq` to 0. The testbench found instantiates `uart`, not `uart_top`. | `uart.sv:14,240`; `tb_uart.sv:29` |
+| K-17 | Resolved in `feat/uart-integration` (Selected `uart_top` and fixed APB read logic). | `uart_top.sv` |
 | K-18 | No Printer RTL or model exists. | Named only in `docs/memory_map.md` |
 | K-19 | `spi_if.irq` is 6 bits, but each PLIC source is 1 bit. | `spi_if.sv`; `interrupt_control.sv` |
 | K-20 | Timer and PWM use the same temporary PLIC source (15) in their testbenches. | `peripherals/timer/INTEGRATION.md` |
