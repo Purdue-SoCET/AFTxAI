@@ -1,5 +1,11 @@
 `ifndef AHB_IF_SV
 `define AHB_IF_SV
+
+/* verilator lint_off UNUSEDSIGNAL */
+/* verilator lint_off UNDRIVEN */
+/* verilator lint_off EOFNEWLINE */
+// Reason: Interfaces contain signals driven by connected modules; EOFNEWLINE is a formatting artifact.
+
 interface ahb_if #(
     parameter int ADDR_WIDTH = 32,
     parameter int DATA_WIDTH = 32
