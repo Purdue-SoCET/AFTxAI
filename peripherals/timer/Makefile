@@ -12,7 +12,7 @@ BUILD_DIR = build
 TB_DIR = tb
 SRC_DIR = src
 
-RTL_SRC = ../../bus/apb/include/apb_if.sv ../../digital_lib/src/sync_2ff.sv $(SRC_DIR)/timer_apb.sv $(SRC_DIR)/timer_apb_wrapper.sv
+RTL_SRC = ../../bus/apb/include/apb_if.sv ../../digital_lib/sync_2ff.sv $(SRC_DIR)/timer_apb.sv $(SRC_DIR)/timer_apb_wrapper.sv
 TB_SRC = $(TB_DIR)/timer_tb.sv
 UVM_TB_SRC = $(TB_DIR)/timer_uvm_pkg.sv $(TB_DIR)/timer_uvm_tb.sv
 INT_RTL_SRC = ../../bus/apb/rtl/apb_interconnect.sv ../../bus/ahb/include/ahb_if.sv ../../bus/bus/apb_ahb_bridge/ahb2apb.sv ../../bus/generic/bus_protocol_if.sv ../../peripherals/interrupt_controller/plic/include/plic_if.sv ../../peripherals/interrupt_controller/plic/rtl/plic.sv

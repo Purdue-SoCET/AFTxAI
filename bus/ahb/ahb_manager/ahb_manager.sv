@@ -28,9 +28,6 @@ module ahb_manager #(
     logic saved_wen;
     logic saved_ren;
 
-    assign ahb.HCLK = HCLK;
-    assign ahb.HRESETn = HRESETn;
-
     always_ff @(posedge HCLK or negedge HRESETn) begin
         if (!HRESETn) begin
             state <= IDLE;

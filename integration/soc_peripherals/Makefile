@@ -3,7 +3,7 @@ VFLAGS = --timing -Wall -Wno-fatal -Wno-TIMESCALEMOD -Wno-WIDTHEXPAND -Wno-WIDTH
 INCDIRS = -I../../bus/apb/include -I../../bus/ahb/include -I../../peripherals/gpio/src -I../../peripherals/pwm/src -I../../peripherals/timer/src -I../../peripherals/digital_io_mux/rtl -I../../bus/apb/rtl -I../../bus/bus/apb_ahb_bridge -I../../digital_lib/src -I../../bus/generic -I../../peripherals/interrupt_controller/plic/include -I../../peripherals/interrupt_controller/plic/rtl
 
 SRCS = \
-	../../digital_lib/src/sync_2ff.sv \
+		../../digital_lib/sync_2ff.sv \
 	../../bus/apb/rtl/apb_interconnect.sv \
 	../../bus/bus/apb_ahb_bridge/ahb2apb.sv \
 	../../peripherals/gpio/src/gpio_apb.sv \

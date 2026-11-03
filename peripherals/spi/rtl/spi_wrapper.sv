@@ -29,8 +29,8 @@ module spi_wrapper #(
   logic rx_full, rx_empty;
   logic [$clog2(FIFO_DEPTH+1)-1:0] rx_cnt;
 
-  fifo #(FIFO_DEPTH) tx_fifo (.clk(clk), .nRST(nRST), .push(tx_push), .pop(tx_pop), .data_in(tx_data_in), .data_out(tx_data_out), .full(tx_full), .empty(tx_empty), .count(tx_cnt));
-  fifo #(FIFO_DEPTH) rx_fifo (.clk(clk), .nRST(nRST), .push(rx_push), .pop(rx_pop), .data_in(rx_data_in), .data_out(rx_data_out), .full(rx_full), .empty(rx_empty), .count(rx_cnt));
+  spi_fifo #(FIFO_DEPTH) tx_fifo (.clk(clk), .nRST(nRST), .push(tx_push), .pop(tx_pop), .data_in(tx_data_in), .data_out(tx_data_out), .full(tx_full), .empty(tx_empty), .count(tx_cnt));
+  spi_fifo #(FIFO_DEPTH) rx_fifo (.clk(clk), .nRST(nRST), .push(rx_push), .pop(rx_pop), .data_in(rx_data_in), .data_out(rx_data_out), .full(rx_full), .empty(rx_empty), .count(rx_cnt));
 
   logic sr_load, sr_shift, ser_out;
   logic [7:0] sr_par_out;

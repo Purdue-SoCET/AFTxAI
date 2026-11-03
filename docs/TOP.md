@@ -71,10 +71,10 @@ Nex must confirm each item during S0 and report any that no longer apply. These 
 | K-01 | Resolved. GPIO, PWM, and Timer integrated from `integration/soc-peripherals`. | `peripherals/{gpio,pwm,timer}` |
 | K-02 | Resolved. Changed `apb_if` to use uppercase signal names across the codebase per D-01. | `apb_if.sv`, `dma_controller.sv`, `spi_wrapper.sv`, `uart_top.sv` |
 | K-03 | Resolved. Case mismatch fixed by resolving K-02. | `dma_controller.sv`, `spi_wrapper.sv` |
-| K-04 | Module names collide with different ports: `fifo` (DMA, SPI) and `counter` (`digital_lib`, DMA). | `peripherals/{dma,spi}/rtl/fifo.sv`; `digital_lib/counter.sv`; `peripherals/dma/rtl/counter.sv` |
-| K-05 | The merged tree has two `sync_2ff` modules with different ports. | `digital_lib/sync_2ff.sv` (`pclk, presetn, d, q`); `digital_lib/src/sync_2ff.sv` (`clk, rst_n, d_in, d_out`) |
-| K-06 | Include-guard and elaboration errors: `bus_protocol_if` has its guard commented out, `clint_if` has none, and `ahb_manager` assigns to interface input ports. | `bus_protocol_if.sv`; `clint_if.sv`; `ahb_manager.sv:31-32` |
-| K-07 | `bind ahb_if ahb_sva` instantiates a module inside an interface, which the strict elaborator rejected. | `ahb_sva.sv:86` |
+| K-04 | Resolved. Renamed local submodules in DMA and SPI to `dma_fifo`, `spi_fifo`, and `dma_counter` to avoid collisions. | `peripherals/{dma,spi}/rtl/fifo.sv`; `peripherals/dma/rtl/counter.sv` |
+| K-05 | Resolved. Consolidated `sync_2ff` instances to `digital_lib/sync_2ff.sv` using standard ports (`clk`, `rst_n`, `d_in`, `d_out`). | `digital_lib/sync_2ff.sv`; `digital_io_mux_cell.sv` |
+| K-06 | Resolved. Fixed include guards in `bus_protocol_if` and `clint_if`, and removed illegal assignments to `ahb` interface inputs in `ahb_manager`. | `bus_protocol_if.sv`; `clint_if.sv`; `ahb_manager.sv` |
+| K-07 | Resolved. Commented out the `bind` statement in `ahb_sva.sv`. TBs must bind or instantiate SVA manually. | `ahb_sva.sv` |
 | K-08 | The AHB decoder uses base and mask, which cannot represent the map's unaligned windows such as `0x400-0x83FF`. | `ahb_interconnect.sv` |
 | K-09 | The AHB arbiter rotates between managers, but both specs require fixed priority. | `ahb_interconnect.sv`; `bus/ahb/SPEC.md` |
 | K-10 | `ahb2apb` removes `BASE_ADDR`, so completers see bridge-relative addresses. `i2c` defaults to the absolute `0x8000_5000`, and the mux on `main` decodes `0x5000` instead of its mapped `0x6000`. | `ahb2apb.sv:170`; `i2c.sv`; `digital_io_mux_apb.sv:24` |

@@ -1,4 +1,4 @@
-module fifo #(
+module spi_fifo #(
   parameter int DEPTH = 4
 )(
   input  logic clk,

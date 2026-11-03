@@ -1,5 +1,5 @@
-//`ifndef __BUS_PROTOCOL_IF__
-//`define __BUS_PROTOCOL_IF__
+`ifndef __BUS_PROTOCOL_IF__
+`define __BUS_PROTOCOL_IF__
     
     interface bus_protocol_if #(
         parameter ADDR_WIDTH = 32, 
@@ -40,4 +40,4 @@
         );
 
     endinterface
-//`endif
+`endif

@@ -66,7 +66,7 @@ module dma_controller #(
     logic fifo_full, fifo_empty, fifo_push, fifo_pop, fifo_clear;
     logic [FIFO_PKT_W-1:0] fifo_data_in, fifo_data_out;
     
-    fifo #(
+    dma_fifo #(
         .WIDTH(FIFO_PKT_W),
         .DEPTH(FIFO_DEPTH)
     ) i_fifo (
@@ -84,7 +84,7 @@ module dma_controller #(
     logic cnt_clear, cnt_inc;
     logic [COUNT_W-1:0] count;
     
-    counter #(
+    dma_counter #(
         .COUNT_W(COUNT_W)
     ) i_counter (
         .clk(clk),
