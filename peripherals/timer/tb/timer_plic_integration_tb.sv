@@ -18,7 +18,7 @@ module timer_plic_integration_tb;
     end
 
     // APB Interface for Timer
-    apb_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) apb_req (.PCLK(clk), .PRESETn(rst_n));
+    apb_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) apb_req (.pclk(clk), .presetn(rst_n));
 
     // Bus Protocol Interface for PLIC
     bus_protocol_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) plic_bus ();
@@ -55,18 +55,18 @@ module timer_plic_integration_tb;
     // BFM Tasks for APB
     task apb_write(input logic [31:0] addr, input logic [31:0] data, input logic [3:0] strb);
         @(posedge clk);
-        apb_req.PADDR <= addr;
-        apb_req.PWRITE <= 1'b1;
-        apb_req.PSEL <= 1'b1;
-        apb_req.PENABLE <= 1'b0;
-        apb_req.PWDATA <= data;
-        apb_req.PSTRB <= strb;
+        apb_req.paddr <= addr;
+        apb_req.pwrite <= 1'b1;
+        apb_req.psel <= 1'b1;
+        apb_req.penable <= 1'b0;
+        apb_req.pwdata <= data;
+        apb_req.pstrb <= strb;
         @(posedge clk);
-        apb_req.PENABLE <= 1'b1;
+        apb_req.penable <= 1'b1;
         @(posedge clk);
-        while (!apb_req.PREADY) @(posedge clk);
-        apb_req.PSEL <= 1'b0;
-        apb_req.PENABLE <= 1'b0;
+        while (!apb_req.pready) @(posedge clk);
+        apb_req.psel <= 1'b0;
+        apb_req.penable <= 1'b0;
     endtask
 
     // BFM Tasks for PLIC Bus
@@ -98,13 +98,13 @@ module timer_plic_integration_tb;
     initial begin
         capture_i = 0;
         
-        apb_req.PADDR = 0;
-        apb_req.PWRITE = 0;
-        apb_req.PSEL = 0;
-        apb_req.PENABLE = 0;
-        apb_req.PWDATA = 0;
-        apb_req.PSTRB = 0;
-        apb_req.PPROT = 0;
+        apb_req.paddr = 0;
+        apb_req.pwrite = 0;
+        apb_req.psel = 0;
+        apb_req.penable = 0;
+        apb_req.pwdata = 0;
+        apb_req.pstrb = 0;
+        apb_req.pprot = 0;
 
         plic_bus.wen = 0;
         plic_bus.ren = 0;

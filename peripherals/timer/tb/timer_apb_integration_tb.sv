@@ -19,8 +19,8 @@ module timer_apb_integration_tb;
     end
 
     // APB Interface
-    apb_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) apb_req (.PCLK(pclk), .PRESETn(presetn));
-    apb_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) apb_comp[2] (.PCLK(pclk), .PRESETn(presetn));
+    apb_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) apb_req (.pclk(pclk), .presetn(presetn));
+    apb_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) apb_comp[2] (.pclk(pclk), .presetn(presetn));
 
     // Interconnect
     // Timer0 at 0x8000_2000, Dummy at 0x8000_3000
@@ -43,49 +43,51 @@ module timer_apb_integration_tb;
     timer_apb_wrapper #(
         .BASE_ADDR(32'h8000_2000)
     ) u_timer_wrapper (
+        .pclk(pclk),
+        .presetn(presetn),
         .apb(apb_comp[0].completer),
         .capture_i(capture_i),
         .irq_o(irq_o)
     );
 
     // Dummy Completer
-    assign apb_comp[1].PREADY = 1'b1;
-    assign apb_comp[1].PRDATA = 32'hDEADBEEF;
-    assign apb_comp[1].PSLVERR = 1'b0;
+    assign apb_comp[1].pready = 1'b1;
+    assign apb_comp[1].prdata = 32'hDEADBEEF;
+    assign apb_comp[1].pslverr = 1'b0;
 
     // BFM Tasks
     task apb_write(input logic [31:0] addr, input logic [31:0] data, input logic [3:0] strb, output logic err);
         @(posedge pclk);
-        apb_req.PADDR <= addr;
-        apb_req.PWRITE <= 1'b1;
-        apb_req.PSEL <= 1'b1;
-        apb_req.PENABLE <= 1'b0;
-        apb_req.PWDATA <= data;
-        apb_req.PSTRB <= strb;
+        apb_req.paddr <= addr;
+        apb_req.pwrite <= 1'b1;
+        apb_req.psel <= 1'b1;
+        apb_req.penable <= 1'b0;
+        apb_req.pwdata <= data;
+        apb_req.pstrb <= strb;
         @(posedge pclk);
-        apb_req.PENABLE <= 1'b1;
+        apb_req.penable <= 1'b1;
         @(posedge pclk);
-        while (!apb_req.PREADY) @(posedge pclk);
-        err = apb_req.PSLVERR;
-        apb_req.PSEL <= 1'b0;
-        apb_req.PENABLE <= 1'b0;
+        while (!apb_req.pready) @(posedge pclk);
+        err = apb_req.pslverr;
+        apb_req.psel <= 1'b0;
+        apb_req.penable <= 1'b0;
     endtask
 
     task apb_read(input logic [31:0] addr, output logic [31:0] data, output logic err);
         @(posedge pclk);
-        apb_req.PADDR <= addr;
-        apb_req.PWRITE <= 1'b0;
-        apb_req.PSEL <= 1'b1;
-        apb_req.PENABLE <= 1'b0;
-        apb_req.PSTRB <= 4'h0;
+        apb_req.paddr <= addr;
+        apb_req.pwrite <= 1'b0;
+        apb_req.psel <= 1'b1;
+        apb_req.penable <= 1'b0;
+        apb_req.pstrb <= 4'h0;
         @(posedge pclk);
-        apb_req.PENABLE <= 1'b1;
+        apb_req.penable <= 1'b1;
         @(posedge pclk);
-        while (!apb_req.PREADY) @(posedge pclk);
-        data = apb_req.PRDATA;
-        err = apb_req.PSLVERR;
-        apb_req.PSEL <= 1'b0;
-        apb_req.PENABLE <= 1'b0;
+        while (!apb_req.pready) @(posedge pclk);
+        data = apb_req.prdata;
+        err = apb_req.pslverr;
+        apb_req.psel <= 1'b0;
+        apb_req.penable <= 1'b0;
     endtask
 
     logic [31:0] rdata;
@@ -93,13 +95,13 @@ module timer_apb_integration_tb;
 
     initial begin
         capture_i = 0;
-        apb_req.PADDR = 0;
-        apb_req.PWRITE = 0;
-        apb_req.PSEL = 0;
-        apb_req.PENABLE = 0;
-        apb_req.PWDATA = 0;
-        apb_req.PSTRB = 0;
-        apb_req.PPROT = 0;
+        apb_req.paddr = 0;
+        apb_req.pwrite = 0;
+        apb_req.psel = 0;
+        apb_req.penable = 0;
+        apb_req.pwdata = 0;
+        apb_req.pstrb = 0;
+        apb_req.pprot = 0;
 
         wait(presetn);
         #100;
