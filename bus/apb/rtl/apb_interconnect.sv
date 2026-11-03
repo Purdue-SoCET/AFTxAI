@@ -17,11 +17,11 @@ module apb_interconnect #(
     
     always_comb begin
         sel_completer = '0;
-        decode_error = requester.PSEL; 
+        decode_error = requester.psel; 
         
         for (int i = 0; i < NCOMPLETERS; i++) begin
-            if (requester.PADDR[ADDR_WIDTH-1 : COMPLETER_ADDR_BITS] == APB_MAP[i][ADDR_WIDTH-1 : COMPLETER_ADDR_BITS]) begin
-                sel_completer[i] = requester.PSEL;
+            if (requester.paddr[ADDR_WIDTH-1 : COMPLETER_ADDR_BITS] == APB_MAP[i][ADDR_WIDTH-1 : COMPLETER_ADDR_BITS]) begin
+                sel_completer[i] = requester.psel;
                 decode_error = 1'b0;
             end
         end
@@ -34,7 +34,7 @@ module apb_interconnect #(
     always_comb begin
         mux_prdata = '0;
         mux_pready = 1'b1;
-        mux_pslverr = decode_error && requester.PSEL;
+        mux_pslverr = decode_error && requester.psel;
     end
 
     // Use generate for array of interfaces to avoid constant indexing issues
@@ -48,17 +48,17 @@ module apb_interconnect #(
     genvar i;
     generate
         for (i = 0; i < NCOMPLETERS; i++) begin : gen_completers
-            assign completers[i].PADDR   = requester.PADDR;
-            assign completers[i].PPROT   = requester.PPROT;
-            assign completers[i].PSEL    = sel_completer[i];
-            assign completers[i].PENABLE = requester.PENABLE && sel_completer[i];
-            assign completers[i].PWRITE  = requester.PWRITE;
-            assign completers[i].PWDATA  = requester.PWDATA;
-            assign completers[i].PSTRB   = requester.PSTRB;
+            assign completers[i].paddr   = requester.paddr;
+            assign completers[i].pprot   = requester.pprot;
+            assign completers[i].psel    = sel_completer[i];
+            assign completers[i].penable = requester.penable && sel_completer[i];
+            assign completers[i].pwrite  = requester.pwrite;
+            assign completers[i].pwdata  = requester.pwdata;
+            assign completers[i].pstrb   = requester.pstrb;
             
-            assign agg_prdata[i]  = sel_completer[i] ? completers[i].PRDATA : '0;
-            assign agg_pready[i]  = sel_completer[i] ? completers[i].PREADY : 1'b0;
-            assign agg_pslverr[i] = sel_completer[i] ? completers[i].PSLVERR : 1'b0;
+            assign agg_prdata[i]  = sel_completer[i] ? completers[i].prdata : '0;
+            assign agg_pready[i]  = sel_completer[i] ? completers[i].pready : 1'b0;
+            assign agg_pslverr[i] = sel_completer[i] ? completers[i].pslverr : 1'b0;
         end
     endgenerate
 
@@ -80,8 +80,8 @@ module apb_interconnect #(
         end
     end
 
-    assign requester.PRDATA  = final_prdata;
-    assign requester.PREADY  = final_pready;
-    assign requester.PSLVERR = final_pslverr;
+    assign requester.prdata  = final_prdata;
+    assign requester.pready  = final_pready;
+    assign requester.pslverr = final_pslverr;
 
 endmodule

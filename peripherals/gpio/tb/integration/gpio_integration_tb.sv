@@ -92,6 +92,8 @@ module gpio_integration_tb;
             gpio_apb_wrapper #(
                 .GPIO_WIDTH(W)
             ) wrapper (
+                .pclk(pclk),
+                .presetn(presetn),
                 .apb(apb_comp[3-i].completer),
                 .gpio_in_i(w_in),
                 .gpio_out_o(w_out),
