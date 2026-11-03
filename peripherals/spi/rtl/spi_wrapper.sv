@@ -87,7 +87,9 @@ module spi_wrapper #(
     .transfer_complete(tc)
   );
 
-  interrupt_control irq_ctrl (.ctrl(ctrl), .status(status), .irq(phy.irq));
+  logic [5:0] irq_internal;
+  interrupt_control irq_ctrl (.ctrl(ctrl), .status(status), .irq(irq_internal));
+  assign phy.irq = |irq_internal;
   
   always_comb begin
     status_next = status;
@@ -120,31 +122,43 @@ module spi_wrapper #(
     
     // Read operations
     if (apb.psel && !apb.pwrite) begin
-        case (apb.paddr[7:0])
-          8'h00: apb.prdata = ctrl;
-          8'h04: apb.prdata = status;
-          8'h08: apb.prdata = {16'h0, clkdiv};
-          8'h10: apb.prdata = {24'h0, rx_data_out};
-          default: apb.prdata = '0;
-        endcase
+        if (apb.paddr[11:8] != 4'h0) begin
+            apb.prdata = '0;
+            apb.pslverr = 1'b1;
+        end else begin
+            case (apb.paddr[7:0])
+              8'h00: apb.prdata = ctrl;
+              8'h04: apb.prdata = status;
+              8'h08: apb.prdata = {16'h0, clkdiv};
+              8'h10: apb.prdata = {24'h0, rx_data_out};
+              default: begin
+                  apb.prdata = '0;
+                  apb.pslverr = 1'b1;
+              end
+            endcase
+        end
         if (apb.penable) begin
-          if (apb.paddr[7:0] == 8'h10 && !rx_empty) rx_pop = 1'b1;
+          if (apb.paddr[11:0] == 12'h010 && !rx_empty) rx_pop = 1'b1;
         end
     end
     
     // Write operations
     if (apb.psel && apb.penable && apb.pwrite) begin
-        case (apb.paddr[7:0])
-          8'h00: ctrl_next = apb.pwdata;
-          8'h08: clkdiv_next = apb.pwdata[15:0];
-          8'h0C: begin
-            if (!tx_full) begin
-                tx_push = 1'b1;
-                tx_data_in = apb.pwdata[7:0];
-            end
-          end
-          default: apb.pslverr = 1'b1; // Unmapped address
-        endcase
+        if (apb.paddr[11:8] != 4'h0) begin
+            apb.pslverr = 1'b1;
+        end else begin
+            case (apb.paddr[7:0])
+              8'h00: ctrl_next = apb.pwdata;
+              8'h08: clkdiv_next = apb.pwdata[15:0];
+              8'h0C: begin
+                if (!tx_full) begin
+                    tx_push = 1'b1;
+                    tx_data_in = apb.pwdata[7:0];
+                end
+              end
+              default: apb.pslverr = 1'b1; // Unmapped address
+            endcase
+        end
     end
   end
 
@@ -157,5 +171,8 @@ module spi_wrapper #(
       clkdiv <= clkdiv_next;
     end
   end
+
+  // Tie pready to 1 (no wait states for APB operations)
+  assign apb.pready = 1'b1;
 
 endmodule

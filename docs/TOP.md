@@ -86,10 +86,10 @@ Nex must confirm each item during S0 and report any that no longer apply. These 
 | K-16 | `peripheral_subsystem` omits SPI0, I2C0, and `GPIOBOOT`, and has only the mux's APB registers. It does not include the PLIC. | `integration/soc_peripherals/peripheral_subsystem.sv` |
 | K-17 | Resolved in `feat/uart-integration` (Selected `uart_top` and fixed APB read logic). | `uart_top.sv` |
 | K-18 | No Printer RTL or model exists. | Named only in `docs/memory_map.md` |
-| K-19 | `spi_if.irq` is 6 bits, but each PLIC source is 1 bit. | `spi_if.sv`; `interrupt_control.sv` |
+| K-19 | Resolved. ORed the 6 internal IRQ bits to drive a 1-bit `spi_if.irq`. | `spi_wrapper.sv`; `spi_if.sv` |
 | K-20 | Timer and PWM use the same temporary PLIC source (15) in their testbenches. | `peripherals/timer/INTEGRATION.md` |
 | K-21 | `riscv/SPEC.md` expects AHB `INCR` bursts, but `ahb_manager` issues single transfers. Functionally acceptable; report any performance impact. | `riscv/SPEC.md` §4.1; `ahb_manager.sv` |
-| K-22 | SPI decodes only `paddr[7:0]`, so its registers would alias inside the 4 KiB window. Fix the window or the decode to meet TOP-MAP-003. | `spi_wrapper.sv:123,137` |
+| K-22 | Resolved. Added APB address window checks and full 12-bit address decoding. | `spi_wrapper.sv` |
 
 ---
 
