@@ -56,7 +56,7 @@ module peripheral_subsystem_tb;
     bus_protocol_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) plic_bus();
     plic_if irq_if();
     
-    assign irq_if.irq_source = {25'd0, timer0_irq, pwm0_irq, gpio3_irq, gpio2_irq, gpio1_irq, gpio0_irq};
+    assign irq_if.irq_source = {25'd0, timer0_irq, pwm0_irq, gpio3_irq, gpio2_irq, gpio1_irq, gpio0_irq, 1'b0};
 
     plic u_plic (
         .clk(hclk),

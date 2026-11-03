@@ -68,7 +68,7 @@ Nex must confirm each item during S0 and report any that no longer apply. These 
 
 | ID | Issue | Evidence |
 |---|---|---|
-| K-01 | GPIO, PWM, and Timer are not on `main`. | No `peripherals/{gpio,pwm,timer}`. They exist on `integration/soc-peripherals`. |
+| K-01 | Resolved. GPIO, PWM, and Timer integrated from `integration/soc-peripherals`. | `peripherals/{gpio,pwm,timer}` |
 | K-02 | Resolved. Changed `apb_if` to use uppercase signal names across the codebase per D-01. | `apb_if.sv`, `dma_controller.sv`, `spi_wrapper.sv`, `uart_top.sv` |
 | K-03 | Resolved. Case mismatch fixed by resolving K-02. | `dma_controller.sv`, `spi_wrapper.sv` |
 | K-04 | Module names collide with different ports: `fifo` (DMA, SPI) and `counter` (`digital_lib`, DMA). | `peripherals/{dma,spi}/rtl/fifo.sv`; `digital_lib/counter.sv`; `peripherals/dma/rtl/counter.sv` |
@@ -87,7 +87,7 @@ Nex must confirm each item during S0 and report any that no longer apply. These 
 | K-17 | Resolved in `feat/uart-integration` (Selected `uart_top` and fixed APB read logic). | `uart_top.sv` |
 | K-18 | No Printer RTL or model exists. | Named only in `docs/memory_map.md` |
 | K-19 | Resolved. ORed the 6 internal IRQ bits to drive a 1-bit `spi_if.irq`. | `spi_wrapper.sv`; `spi_if.sv` |
-| K-20 | Timer and PWM use the same temporary PLIC source (15) in their testbenches. | `peripherals/timer/INTEGRATION.md` |
+| K-20 | Resolved. Timer and PWM PLIC integration testbenches updated to use their final IRQ assignments (Timer=6, PWM=5). | `peripherals/timer/tb/timer_plic_integration_tb.sv`, `peripherals/pwm/tb/pwm_tb_plic.sv` |
 | K-21 | `riscv/SPEC.md` expects AHB `INCR` bursts, but `ahb_manager` issues single transfers. Functionally acceptable; report any performance impact. | `riscv/SPEC.md` §4.1; `ahb_manager.sv` |
 | K-22 | Resolved. Added APB address window checks and full 12-bit address decoding. | `spi_wrapper.sv` |
 

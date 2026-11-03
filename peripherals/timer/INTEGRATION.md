@@ -16,8 +16,7 @@ The Timer sits behind the `apb_interconnect`, connected via an `ahb2apb` bridge 
 - **Alias Rejection:** Accesses to `0x8000_2000 + offset` where `offset >= 8 KB` result in `PSLVERR`.
 
 ## 4. Interrupt Routing
-- Timer `irq_o` is routed to PLIC source ID 15 in the testbench.
-- **TEST-ONLY:** PLIC source 15 is temporary and overlaps with PWM. The central integrator must choose distinct source indices for the combined fixture. Final system IRQ synchronization and IDs belong to the central integrator.
+- Timer `irq_o` is routed to PLIC source ID 6 in the testbench.
 - The wrapper and PLIC integration testbench confirms that Timer interrupts successfully hit the PLIC, evaluate priority against thresholds, and can be claimed and completed by a CPU target.
 
 ## 5. Input Capture

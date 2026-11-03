@@ -46,7 +46,7 @@ The wrapper translates Bridge-Relative APB addresses into a 12-bit local offset 
 - The I/O mux block (`feat/digital-io-mux`) implementation is assumed as a black box and physically integrating pins is pending global approval. PWM respects the logical `output`/`oe` protocol without physically commanding IO pads.
 
 ## 10. PLIC Interrupt Routing
-- **Test-Only Assignment:** IRQ Source `15`.
+- **Assignment:** IRQ Source `5`.
 - Implemented and verified a 2-flop synchronizer since PLIC and PWM exist in separate clock domains. 
 - *Persistence justification:* The PWM `irq_pending` signal uses sticky registers that remain asserted until cleared by an explicit W1C access. It therefore intrinsically spans the cross-domain gap without loss.
 
