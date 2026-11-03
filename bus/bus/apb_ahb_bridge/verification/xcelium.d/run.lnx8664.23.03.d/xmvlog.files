@@ -1,0 +1,8 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
+/home/asicfab/a/mathure/AFTxAI/bus/ahb/include/ahb_if.sv
+/home/asicfab/a/mathure/AFTxAI/bus/apb/include/apb_if.sv
+/home/asicfab/a/mathure/AFTxAI/bus/bus/apb_ahb_bridge/ahb2apb.sv
+/home/asicfab/a/mathure/AFTxAI/bus/bus/apb_ahb_bridge/verification/tb_ahb2apb.sv

@@ -1,0 +1,12 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
+-sv
+-64bit
+-timescale
+1ns/1ps
+/home/asicfab/a/mathure/AFTxAI/bus/ahb/include/ahb_if.sv
+/home/asicfab/a/mathure/AFTxAI/bus/apb/include/apb_if.sv
+../ahb2apb.sv
+tb_ahb2apb.sv
