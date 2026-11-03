@@ -44,6 +44,8 @@ module pwm_tb_apb_integration;
         .PWM_CHANNELS(PWM_CHANNELS),
         .BASE_ADDR(PWM_BASE)
     ) dut (
+        .pclk      (pclk),
+        .presetn   (presetn),
         .apb(apb_comp[0].completer),
         .pwm_out_o(pwm_out),
         .pwm_oe_o(pwm_oe),
@@ -51,49 +53,49 @@ module pwm_tb_apb_integration;
     );
     
     // Completer 1: Dummy to test isolation
-    assign apb_comp[1].PREADY = 1'b1;
-    assign apb_comp[1].PRDATA = 32'hDEADBEEF;
-    assign apb_comp[1].PSLVERR = 1'b0;
+    assign apb_comp[1].pready = 1'b1;
+    assign apb_comp[1].prdata = 32'hDEADBEEF;
+    assign apb_comp[1].pslverr = 1'b0;
 
     int tested_checks = 0;
     int failed_checks = 0;
 
     task apb_write(input logic [31:0] addr, input logic [31:0] data, input logic [3:0] strb = 4'hF, output logic slverr);
         @(posedge pclk);
-        apb_req.PADDR <= addr;
-        apb_req.PWRITE <= 1'b1;
-        apb_req.PSEL <= 1'b1;
-        apb_req.PWDATA <= data;
-        apb_req.PSTRB <= strb;
-        apb_req.PENABLE <= 1'b0;
+        apb_req.paddr <= addr;
+        apb_req.pwrite <= 1'b1;
+        apb_req.psel <= 1'b1;
+        apb_req.pwdata <= data;
+        apb_req.pstrb <= strb;
+        apb_req.penable <= 1'b0;
         @(posedge pclk);
-        apb_req.PENABLE <= 1'b1;
+        apb_req.penable <= 1'b1;
         do begin
             @(posedge pclk);
-        end while (!apb_req.PREADY);
-        slverr = apb_req.PSLVERR;
-        apb_req.PSEL <= 1'b0;
-        apb_req.PENABLE <= 1'b0;
-        apb_req.PSTRB <= 4'h0;
+        end while (!apb_req.pready);
+        slverr = apb_req.pslverr;
+        apb_req.psel <= 1'b0;
+        apb_req.penable <= 1'b0;
+        apb_req.pstrb <= 4'h0;
     endtask
 
     task apb_read(input logic [31:0] addr, output logic [31:0] data, output logic slverr);
         @(posedge pclk);
-        apb_req.PADDR <= addr;
-        apb_req.PWRITE <= 1'b0;
-        apb_req.PSEL <= 1'b1;
-        apb_req.PWDATA <= '0;
-        apb_req.PSTRB <= 4'h0;
-        apb_req.PENABLE <= 1'b0;
+        apb_req.paddr <= addr;
+        apb_req.pwrite <= 1'b0;
+        apb_req.psel <= 1'b1;
+        apb_req.pwdata <= '0;
+        apb_req.pstrb <= 4'h0;
+        apb_req.penable <= 1'b0;
         @(posedge pclk);
-        apb_req.PENABLE <= 1'b1;
+        apb_req.penable <= 1'b1;
         do begin
             @(posedge pclk);
-        end while (!apb_req.PREADY);
-        data = apb_req.PRDATA;
-        slverr = apb_req.PSLVERR;
-        apb_req.PSEL <= 1'b0;
-        apb_req.PENABLE <= 1'b0;
+        end while (!apb_req.pready);
+        data = apb_req.prdata;
+        slverr = apb_req.pslverr;
+        apb_req.psel <= 1'b0;
+        apb_req.penable <= 1'b0;
     endtask
 
     task check_ok(input string msg, input logic condition);
@@ -112,13 +114,13 @@ module pwm_tb_apb_integration;
     initial begin
         $display("Starting APB Integration Test...");
         
-        apb_req.PADDR = '0;
-        apb_req.PPROT = '0;
-        apb_req.PSEL = '0;
-        apb_req.PENABLE = '0;
-        apb_req.PWRITE = '0;
-        apb_req.PWDATA = '0;
-        apb_req.PSTRB = '0;
+        apb_req.paddr = '0;
+        apb_req.pprot = '0;
+        apb_req.psel = '0;
+        apb_req.penable = '0;
+        apb_req.pwrite = '0;
+        apb_req.pwdata = '0;
+        apb_req.pstrb = '0;
 
         presetn = 0;
         #100 presetn = 1;

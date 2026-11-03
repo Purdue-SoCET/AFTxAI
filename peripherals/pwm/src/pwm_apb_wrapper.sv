@@ -5,6 +5,8 @@ module pwm_apb_wrapper #(
     // Bridge-relative base address for PWM
     parameter logic [31:0] BASE_ADDR = 32'h0000_1000
 ) (
+    input logic pclk,
+    input logic presetn,
     apb_if.completer apb,
     output logic [PWM_CHANNELS-1:0] pwm_out_o,
     output logic [PWM_CHANNELS-1:0] pwm_oe_o,
@@ -14,20 +16,20 @@ module pwm_apb_wrapper #(
     // Validate that the request address falls within the PWM 4KB window (12-bit offset)
     logic valid_addr;
     // We check if the address (with the lower 12 bits masked out) matches the BASE_ADDR (also masked)
-    assign valid_addr = ((apb.PADDR & ~32'hFFF) == (BASE_ADDR & ~32'hFFF));
+    assign valid_addr = ((apb.paddr & ~32'hFFF) == (BASE_ADDR & ~32'hFFF));
 
     // Internal signals matching the core's scalar ports
     logic [11:0] paddr_local;
     logic        psel_local;
     logic        pslverr_core;
 
-    assign paddr_local = apb.PADDR[11:0];
+    assign paddr_local = apb.paddr[11:0];
     // Only forward PSEL if the address matches our expected 4KB window base
-    assign psel_local  = apb.PSEL && valid_addr;
+    assign psel_local  = apb.psel && valid_addr;
 
     // For accesses outside our 4KB window but where PSEL is still asserted (due to interconnect decode granularity),
     // we should respond with PSLVERR.
-    assign apb.PSLVERR = (apb.PSEL && apb.PENABLE && !valid_addr) ? 1'b1 : pslverr_core;
+    assign apb.pslverr = (apb.psel && apb.penable && !valid_addr) ? 1'b1 : pslverr_core;
     // If not valid_addr, we just tie PRDATA to 0 and PREADY to 1. 
     // Wait, the core already handles accesses nicely, but we shouldn't even trigger the core if not valid_addr.
     
@@ -37,19 +39,19 @@ module pwm_apb_wrapper #(
         .ADDR_WIDTH(12),
         .DATA_WIDTH(32)
     ) core (
-        .pclk      (apb.PCLK),
-        .presetn   (apb.PRESETn),
+        .pclk      (pclk),
+        .presetn   (presetn),
         
         .paddr     (paddr_local),
         .psel      (psel_local),
-        .penable   (apb.PENABLE),
-        .pwrite    (apb.PWRITE),
-        .pwdata    (apb.PWDATA),
-        .pstrb     (apb.PSTRB),
-        .pprot     (apb.PPROT),
+        .penable   (apb.penable),
+        .pwrite    (apb.pwrite),
+        .pwdata    (apb.pwdata),
+        .pstrb     (apb.pstrb),
+        .pprot     (apb.pprot),
         
-        .prdata    (apb.PRDATA),
-        .pready    (apb.PREADY),
+        .prdata    (apb.prdata),
+        .pready    (apb.pready),
         .pslverr   (pslverr_core),
         
         .pwm_out_o (pwm_out_o),
