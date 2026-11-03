@@ -79,6 +79,28 @@ module peripheral_subsystem (
     );
     
     // Interconnect configuration
+`ifdef TEST_OVERLAP
+    localparam logic [31:0] APB_MAP [NCOMPLETERS] = '{
+        32'h0000_0000,
+        32'h0000_0100,
+        32'h0000_0200,
+        32'h0000_0300,
+        32'h0000_1000,
+        32'h0000_2000,
+        32'h0000_2000  // OVERLAP IO MUX WITH TIMER0!
+    };
+`else
+`ifdef TEST_OVERLAP
+    localparam logic [31:0] APB_MAP [NCOMPLETERS] = '{
+        32'h0000_0000, // GPIO0
+        32'h0000_0100, // GPIO1
+        32'h0000_0200, // GPIO2
+        32'h0000_0300, // GPIO3
+        32'h0000_1000, // PWM0
+        32'h0000_2000, // Timer0
+        32'h0000_2000  // OVERLAP IO MUX WITH TIMER0
+    };
+`else
     localparam logic [31:0] APB_MAP [NCOMPLETERS] = '{
         32'h0000_0000, // GPIO0
         32'h0000_0100, // GPIO1
@@ -88,6 +110,8 @@ module peripheral_subsystem (
         32'h0000_2000, // Timer0
         32'h0000_6000  // IO MUX
     };
+`endif
+`endif
     
     localparam logic [31:0] APB_MAP_MASK [NCOMPLETERS] = '{
         32'hFFFF_FF00, // GPIO0: 256B

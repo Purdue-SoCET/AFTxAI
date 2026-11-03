@@ -48,52 +48,52 @@ module tb_digital_io_mux;
     // APB Write Task
     task apb_write(input logic [31:0] addr, input logic [31:0] data, input logic [3:0] strb);
         @(posedge pclk);
-        apb.psel <= 1;
-        apb.penable <= 0;
-        apb.pwrite <= 1;
-        apb.paddr <= addr;
-        apb.pwdata <= data;
-        apb.pstrb <= strb;
-        apb.pprot <= '0;
+        apb.PSEL <= 1;
+        apb.PENABLE <= 0;
+        apb.PWRITE <= 1;
+        apb.PADDR <= addr;
+        apb.PWDATA <= data;
+        apb.PSTRB <= strb;
+        apb.PPROT <= '0;
         @(posedge pclk);
-        apb.penable <= 1;
+        apb.PENABLE <= 1;
         do begin
             @(posedge pclk);
-        end while (!apb.pready);
-        apb.psel <= 0;
-        apb.penable <= 0;
+        end while (!apb.PREADY);
+        apb.PSEL <= 0;
+        apb.PENABLE <= 0;
     endtask
 
     // APB Read Task
     task apb_read(input logic [31:0] addr, output logic [31:0] data, output logic err);
         @(posedge pclk);
-        apb.psel <= 1;
-        apb.penable <= 0;
-        apb.pwrite <= 0;
-        apb.paddr <= addr;
-        apb.pwdata <= '0;
-        apb.pstrb <= '0;
-        apb.pprot <= '0;
+        apb.PSEL <= 1;
+        apb.PENABLE <= 0;
+        apb.PWRITE <= 0;
+        apb.PADDR <= addr;
+        apb.PWDATA <= '0;
+        apb.PSTRB <= '0;
+        apb.PPROT <= '0;
         @(posedge pclk);
-        apb.penable <= 1;
+        apb.PENABLE <= 1;
         do begin
             @(posedge pclk);
-        end while (!apb.pready);
-        data = apb.prdata;
-        err = apb.pslverr;
-        apb.psel <= 0;
-        apb.penable <= 0;
+        end while (!apb.PREADY);
+        data = apb.PRDATA;
+        err = apb.PSLVERR;
+        apb.PSEL <= 0;
+        apb.PENABLE <= 0;
     endtask
 
     // Initialize interfaces
     initial begin
-        apb.psel = 0;
-        apb.penable = 0;
-        apb.pwrite = 0;
-        apb.paddr = '0;
-        apb.pwdata = '0;
-        apb.pstrb = '0;
-        apb.pprot = '0;
+        apb.PSEL = 0;
+        apb.PENABLE = 0;
+        apb.PWRITE = 0;
+        apb.PADDR = '0;
+        apb.PWDATA = '0;
+        apb.PSTRB = '0;
+        apb.PPROT = '0;
 
         vif.from_module = '0;
         vif.output_enable = '0;
@@ -174,12 +174,12 @@ module tb_digital_io_mux;
         apb_read(32'h5008, rdata, err); // just to grab the err from the write if we could, but our apb_write doesn't capture err
         // Let's modify apb_write to check err or just do it inline
         @(posedge pclk);
-        apb.psel <= 1; apb.penable <= 0; apb.pwrite <= 1; apb.paddr <= 32'h500C; apb.pwdata <= 32'h123; apb.pstrb <= 4'hF;
+        apb.PSEL <= 1; apb.PENABLE <= 0; apb.PWRITE <= 1; apb.PADDR <= 32'h500C; apb.PWDATA <= 32'h123; apb.PSTRB <= 4'hF;
         @(posedge pclk);
-        apb.penable <= 1;
-        do @(posedge pclk); while (!apb.pready);
-        if (!apb.pslverr) $error("T04 Failed: No pslverr on 0x500C write");
-        apb.psel <= 0; apb.penable <= 0;
+        apb.PENABLE <= 1;
+        do @(posedge pclk); while (!apb.PREADY);
+        if (!apb.PSLVERR) $error("T04 Failed: No pslverr on 0x500C write");
+        apb.PSEL <= 0; apb.PENABLE <= 0;
         
         // T05: Invalid FSEL condition coverage
         $display("Running T05: Invalid FSEL (fsel >= NUM_FUNCS)");

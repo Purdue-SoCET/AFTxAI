@@ -1,0 +1,4 @@
+IRQs at PLIC: GPIO0=1, PWM0=1, Timer0=1
+[17166000] %Error: peripheral_subsystem_tb.sv:334: Assertion failed in peripheral_subsystem_tb.unnamedblk1: PLIC claim read mismatch 5. Got 00000006
+%Error: peripheral_subsystem_tb.sv:334: Verilog $stop
+Aborting...

@@ -46,25 +46,25 @@ package pwm_uvm_pkg;
         endfunction
         
         task run_phase(uvm_phase phase);
-            vif.psel <= 0;
-            vif.penable <= 0;
+            vif.PSEL <= 0;
+            vif.PENABLE <= 0;
             forever begin
                 seq_item_port.get_next_item(req);
                 @(posedge vif.pclk);
-                vif.psel <= 1;
-                vif.paddr <= req.paddr;
-                vif.pwrite <= req.pwrite;
-                vif.pwdata <= req.pwdata;
-                vif.pstrb <= req.pstrb;
-                vif.pprot <= req.pprot;
+                vif.PSEL <= 1;
+                vif.PADDR <= req.PADDR;
+                vif.PWRITE <= req.PWRITE;
+                vif.PWDATA <= req.PWDATA;
+                vif.PSTRB <= req.PSTRB;
+                vif.PPROT <= req.PPROT;
                 @(posedge vif.pclk);
-                vif.penable <= 1;
-                wait(vif.pready);
-                req.prdata = vif.prdata;
-                req.pslverr = vif.pslverr;
+                vif.PENABLE <= 1;
+                wait(vif.PREADY);
+                req.PRDATA = vif.PRDATA;
+                req.PSLVERR = vif.PSLVERR;
                 @(posedge vif.pclk);
-                vif.psel <= 0;
-                vif.penable <= 0;
+                vif.PSEL <= 0;
+                vif.PENABLE <= 0;
                 seq_item_port.item_done();
             end
         endtask
@@ -91,15 +91,15 @@ package pwm_uvm_pkg;
             apb_item item;
             forever begin
                 @(posedge vif.pclk);
-                if (vif.psel && vif.penable && vif.pready) begin
+                if (vif.PSEL && vif.PENABLE && vif.PREADY) begin
                     item = apb_item::type_id::create("item");
-                    item.paddr = vif.paddr;
-                    item.pwrite = vif.pwrite;
-                    item.pwdata = vif.pwdata;
-                    item.pstrb = vif.pstrb;
-                    item.pprot = vif.pprot;
-                    item.prdata = vif.prdata;
-                    item.pslverr = vif.pslverr;
+                    item.PADDR = vif.PADDR;
+                    item.PWRITE = vif.PWRITE;
+                    item.PWDATA = vif.PWDATA;
+                    item.PSTRB = vif.PSTRB;
+                    item.PPROT = vif.PPROT;
+                    item.PRDATA = vif.PRDATA;
+                    item.PSLVERR = vif.PSLVERR;
                     ap.write(item);
                 end
             end
@@ -164,14 +164,14 @@ package pwm_uvm_pkg;
         endfunction
         
         virtual function void write(apb_item item);
-            if (item.pwrite && !item.pslverr && item.paddr < 12'h100) begin
-                int ch = item.paddr[8:5];
-                if (item.paddr[4:0] == 5'h00 && item.pstrb[0]) begin
-                    exp_en[ch] = item.pwdata[0];
-                    exp_pol[ch] = item.pwdata[1];
+            if (item.PWRITE && !item.PSLVERR && item.PADDR < 12'h100) begin
+                int ch = item.PADDR[8:5];
+                if (item.PADDR[4:0] == 5'h00 && item.PSTRB[0]) begin
+                    exp_en[ch] = item.PWDATA[0];
+                    exp_pol[ch] = item.PWDATA[1];
                 end
-                if (item.paddr[4:0] == 5'h04) exp_period[ch] = item.pwdata;
-                if (item.paddr[4:0] == 5'h08) exp_duty[ch] = item.pwdata;
+                if (item.PADDR[4:0] == 5'h04) exp_period[ch] = item.PWDATA;
+                if (item.PADDR[4:0] == 5'h08) exp_duty[ch] = item.PWDATA;
             end
         endfunction
         
@@ -208,23 +208,23 @@ class pwm_coverage extends uvm_subscriber #(apb_item);
         `uvm_component_utils(pwm_coverage)
         
         covergroup apb_cg;
-            cp_addr: coverpoint p_item.paddr[11:0] {
+            cp_addr: coverpoint p_item.PADDR[11:0] {
                 bins ch0 = {[12'h000:12'h01C]};
                 bins ch1 = {[12'h020:12'h03C]};
                 bins ch2 = {[12'h040:12'h05C]};
                 bins ch3 = {[12'h060:12'h07C]};
                 bins global_regs = {[12'h100:12'h108]};
             }
-            cp_write: coverpoint p_item.pwrite;
-            cp_err: coverpoint p_item.pslverr;
-            cp_strb: coverpoint p_item.pstrb {
+            cp_write: coverpoint p_item.PWRITE;
+            cp_err: coverpoint p_item.PSLVERR;
+            cp_strb: coverpoint p_item.PSTRB {
                 bins all_strb[] = {[0:15]};
             }
         endgroup
 
         covergroup behavior_cg;
             // Sampling event occurrences
-            cp_duty_extreme: coverpoint p_item.pwdata {
+            cp_duty_extreme: coverpoint p_item.PWDATA {
                 bins duty_0 = {0};
                 bins duty_max = {[1:$]};
             }
@@ -241,7 +241,7 @@ class pwm_coverage extends uvm_subscriber #(apb_item);
         function void write(apb_item t);
             p_item = t;
             apb_cg.sample();
-            if (t.pwrite && !t.pslverr && t.paddr[4:0] == 5'h08) behavior_cg.sample();
+            if (t.PWRITE && !t.PSLVERR && t.PADDR[4:0] == 5'h08) behavior_cg.sample();
         endfunction
     endclass
 class pwm_env extends uvm_env;
@@ -279,24 +279,24 @@ class pwm_env extends uvm_env;
         task write_reg(logic [11:0] addr, logic [31:0] data, logic [3:0] strb = 4'hF);
             apb_item req = apb_item::type_id::create("req");
             start_item(req);
-            req.paddr = addr;
-            req.pwrite = 1;
-            req.pwdata = data;
-            req.pstrb = strb;
-            req.pprot = 0;
+            req.PADDR = addr;
+            req.PWRITE = 1;
+            req.PWDATA = data;
+            req.PSTRB = strb;
+            req.PPROT = 0;
             finish_item(req);
         endtask
         
         task read_reg(logic [11:0] addr, output logic [31:0] data, output logic err);
             apb_item req = apb_item::type_id::create("req");
             start_item(req);
-            req.paddr = addr;
-            req.pwrite = 0;
-            req.pstrb = 0;
-            req.pprot = 0;
+            req.PADDR = addr;
+            req.PWRITE = 0;
+            req.PSTRB = 0;
+            req.PPROT = 0;
             finish_item(req);
-            data = req.prdata;
-            err = req.pslverr;
+            data = req.PRDATA;
+            err = req.PSLVERR;
         endtask
         
         task body();

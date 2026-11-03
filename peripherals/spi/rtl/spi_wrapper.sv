@@ -107,7 +107,7 @@ module spi_wrapper #(
   end
 
   // APB Completer Access Logic
-  assign apb.pready = 1'b1; // Zero wait-state
+  assign apb.PREADY = 1'b1; // Zero wait-state
 
   always_comb begin
     ctrl_next = ctrl;
@@ -115,35 +115,35 @@ module spi_wrapper #(
     tx_push = 1'b0;
     rx_pop = 1'b0;
     tx_data_in = '0;
-    apb.prdata = '0;
-    apb.pslverr = 1'b0;
+    apb.PRDATA = '0;
+    apb.PSLVERR = 1'b0;
     
     // Read operations
-    if (apb.psel && !apb.pwrite) begin
-        case (apb.paddr[7:0])
-          8'h00: apb.prdata = ctrl;
-          8'h04: apb.prdata = status;
-          8'h08: apb.prdata = {16'h0, clkdiv};
-          8'h10: apb.prdata = {24'h0, rx_data_out};
-          default: apb.prdata = '0;
+    if (apb.PSEL && !apb.PWRITE) begin
+        case (apb.PADDR[7:0])
+          8'h00: apb.PRDATA = ctrl;
+          8'h04: apb.PRDATA = status;
+          8'h08: apb.PRDATA = {16'h0, clkdiv};
+          8'h10: apb.PRDATA = {24'h0, rx_data_out};
+          default: apb.PRDATA = '0;
         endcase
-        if (apb.penable) begin
-          if (apb.paddr[7:0] == 8'h10 && !rx_empty) rx_pop = 1'b1;
+        if (apb.PENABLE) begin
+          if (apb.PADDR[7:0] == 8'h10 && !rx_empty) rx_pop = 1'b1;
         end
     end
     
     // Write operations
-    if (apb.psel && apb.penable && apb.pwrite) begin
-        case (apb.paddr[7:0])
-          8'h00: ctrl_next = apb.pwdata;
-          8'h08: clkdiv_next = apb.pwdata[15:0];
+    if (apb.PSEL && apb.PENABLE && apb.PWRITE) begin
+        case (apb.PADDR[7:0])
+          8'h00: ctrl_next = apb.PWDATA;
+          8'h08: clkdiv_next = apb.PWDATA[15:0];
           8'h0C: begin
             if (!tx_full) begin
                 tx_push = 1'b1;
-                tx_data_in = apb.pwdata[7:0];
+                tx_data_in = apb.PWDATA[7:0];
             end
           end
-          default: apb.pslverr = 1'b1; // Unmapped address
+          default: apb.PSLVERR = 1'b1; // Unmapped address
         endcase
     end
   end

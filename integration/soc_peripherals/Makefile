@@ -1,5 +1,5 @@
 VERILATOR_ROOT ?= /usr/share/verilator
-VFLAGS = --timing -Wall -Wno-fatal -Wno-TIMESCALEMOD -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC -Wno-UNOPTFLAT
+VFLAGS = --timing -Wall -Wno-fatal -Wno-TIMESCALEMOD -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC -Wno-UNOPTFLAT --assert
 INCDIRS = -I../../bus/apb/include -I../../bus/ahb/include -I../../peripherals/gpio/src -I../../peripherals/pwm/src -I../../peripherals/timer/src -I../../peripherals/digital_io_mux/rtl -I../../bus/apb/rtl -I../../bus/bus/apb_ahb_bridge -I../../digital_lib/src -I../../bus/generic -I../../peripherals/interrupt_controller/plic/include -I../../peripherals/interrupt_controller/plic/rtl
 
 SRCS = \
@@ -28,8 +28,17 @@ run:
 
 run_neg:
 	verilator --binary -j 0 --trace $(VFLAGS) $(INCDIRS) $(SRCS) --top-module peripheral_subsystem_tb
-	-./obj_dir/Vperipheral_subsystem_tb +EXPECT_FAILURE=1 > run_neg.log 2>&1 || true
+	if ./obj_dir/Vperipheral_subsystem_tb +EXPECT_FAILURE=1 > run_neg.log 2>&1; then \
+		echo "Expected simulator to fail but it returned 0 exit code"; exit 1; \
+	fi
 	grep "Intentional failure triggered" run_neg.log
+
+run_overlap:
+	verilator --binary -j 0 --trace $(VFLAGS) $(INCDIRS) $(SRCS) --top-module peripheral_subsystem_tb -DTEST_OVERLAP
+	if ./obj_dir/Vperipheral_subsystem_tb > run_overlap.log 2>&1; then \
+		echo "Expected simulator to fail on overlap but it passed"; exit 1; \
+	fi
+	grep "Overlapping APB selection detected" run_overlap.log
 
 clean:
 	rm -rf obj_dir
