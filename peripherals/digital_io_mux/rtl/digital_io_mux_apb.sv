@@ -4,7 +4,7 @@ module digital_io_mux_apb #(
     parameter int NUM_PINS = 32,
     parameter int NUM_BITS = 2,
     parameter int NUM_REGS = 2,
-    parameter logic [31:0] BASE_ADDR = 32'h6000
+    parameter logic [31:0] BASE_ADDR = 32'h8000_6000
 ) (
     input logic pclk,
     input logic presetn,

@@ -167,7 +167,7 @@ module ahb2apb #(
             latched_write  <= '0;
             latched_strobe <= '0;
         end else if (ahb_state == AHB_IDLE && ahb_req_valid && addr_valid) begin
-            latched_addr   <= ahbif.HADDR - BASE_ADDR;
+            latched_addr   <= ahbif.HADDR;
             latched_write  <= ahbif.HWRITE;
             latched_strobe <= ahbif.HWSTRB;
         end

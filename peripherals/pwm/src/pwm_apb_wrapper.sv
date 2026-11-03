@@ -2,8 +2,8 @@
 
 module pwm_apb_wrapper #(
     parameter int PWM_CHANNELS = 4,
-    // Bridge-relative base address for PWM
-    parameter logic [31:0] BASE_ADDR = 32'h0000_1000
+    // Absolute base address for PWM
+    parameter logic [31:0] BASE_ADDR = 32'h8000_1000
 ) (
     apb_if.completer apb,
     output logic [PWM_CHANNELS-1:0] pwm_out_o,

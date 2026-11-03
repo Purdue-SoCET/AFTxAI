@@ -80,13 +80,13 @@ module peripheral_subsystem (
     
     // Interconnect configuration
     localparam logic [31:0] APB_MAP [NCOMPLETERS] = '{
-        32'h0000_0000, // GPIO0
-        32'h0000_0100, // GPIO1
-        32'h0000_0200, // GPIO2
-        32'h0000_0300, // GPIO3
-        32'h0000_1000, // PWM0
-        32'h0000_2000, // Timer0
-        32'h0000_6000  // IO MUX
+        32'h8000_0000, // GPIO0
+        32'h8000_0100, // GPIO1
+        32'h8000_0200, // GPIO2
+        32'h8000_0300, // GPIO3
+        32'h8000_1000, // PWM0
+        32'h8000_2000, // Timer0
+        32'h8000_6000  // IO MUX
     };
     
     localparam logic [31:0] APB_MAP_MASK [NCOMPLETERS] = '{
@@ -168,7 +168,7 @@ module peripheral_subsystem (
         .NUM_PINS(32),
         .NUM_BITS(2),
         .NUM_REGS(2),
-        .BASE_ADDR(32'h6000)
+        .BASE_ADDR(32'h8000_6000)
     ) u_io_mux (
         .pclk(pclk),
         .presetn(presetn),

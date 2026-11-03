@@ -1,5 +1,5 @@
 module timer_apb_wrapper #(
-    parameter logic [31:0] BASE_ADDR = 32'h0000_2000
+    parameter logic [31:0] BASE_ADDR = 32'h8000_2000
 ) (
     apb_if.completer apb,
     input  logic         capture_i,
