@@ -6,7 +6,8 @@ module apb_interconnect #(
     // verilator lint_off UNUSED
     parameter logic [31:0] BUS_REGION_BEGIN = 32'h8000_0000, 
     // verilator lint_on UNUSED
-    parameter logic [31:0] APB_MAP [NCOMPLETERS] = '{default: '0}
+    parameter logic [31:0] APB_MAP [NCOMPLETERS] = '{default: '0},
+    parameter logic [31:0] APB_MAP_MASK [NCOMPLETERS] = '{default: '0}
 ) (
     apb_if.completer requester,      
     apb_if.requester completers [NCOMPLETERS] 
@@ -15,18 +16,36 @@ module apb_interconnect #(
     logic [NCOMPLETERS-1:0] sel_completer;
     logic decode_error;
     
+    logic [31:0] actual_mask [NCOMPLETERS];
+    always_comb begin
+        for (int i = 0; i < NCOMPLETERS; i++) begin
+            actual_mask[i] = (APB_MAP_MASK[i] == '0) ? ~((32'd1 << COMPLETER_ADDR_BITS) - 32'd1) : APB_MAP_MASK[i];
+        end
+    end
+
     always_comb begin
         sel_completer = '0;
         decode_error = requester.PSEL; 
         
         for (int i = 0; i < NCOMPLETERS; i++) begin
-            if (requester.PADDR[ADDR_WIDTH-1 : COMPLETER_ADDR_BITS] == APB_MAP[i][ADDR_WIDTH-1 : COMPLETER_ADDR_BITS]) begin
+            if ((requester.PADDR & actual_mask[i]) == (APB_MAP[i] & actual_mask[i])) begin
                 sel_completer[i] = requester.PSEL;
                 decode_error = 1'b0;
             end
         end
+
+        // Detect overlapping selections
+        if ($countones(sel_completer) > 1) begin
+            // verilator lint_off UNOPTFLAT
+            assert(0) else $error("Overlapping APB selection detected");
+            // verilator lint_on UNOPTFLAT
+            sel_completer = '0;
+            decode_error = requester.PSEL;
+        end
     end
 
+    // Error response behavior: PSLVERR only in ACCESS phase (PSEL && PENABLE)
+    // PRDATA=0 and PREADY=1 for unmapped accesses
     logic [DATA_WIDTH-1:0] mux_prdata;
     logic                  mux_pready;
     logic                  mux_pslverr;
@@ -34,7 +53,7 @@ module apb_interconnect #(
     always_comb begin
         mux_prdata = '0;
         mux_pready = 1'b1;
-        mux_pslverr = decode_error && requester.PSEL;
+        mux_pslverr = decode_error && requester.PSEL && requester.PENABLE;
     end
 
     // Use generate for array of interfaces to avoid constant indexing issues
@@ -58,7 +77,7 @@ module apb_interconnect #(
             
             assign agg_prdata[i]  = sel_completer[i] ? completers[i].PRDATA : '0;
             assign agg_pready[i]  = sel_completer[i] ? completers[i].PREADY : 1'b0;
-            assign agg_pslverr[i] = sel_completer[i] ? completers[i].PSLVERR : 1'b0;
+            assign agg_pslverr[i] = (sel_completer[i] && requester.PENABLE) ? completers[i].PSLVERR : 1'b0;
         end
     endgenerate
 
