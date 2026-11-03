@@ -15,10 +15,10 @@ module digital_io_mux_cell #(
     sync_2ff #(
         .WIDTH(1)
     ) u_sync (
-        .pclk    (pclk),
-        .presetn (presetn),
-        .d       (vif.to_module_iopad),
-        .q       (sync_out)
+        .clk     (pclk),
+        .rst_n   (presetn),
+        .d_in    (vif.to_module_iopad),
+        .d_out   (sync_out)
     );
 
     always_comb begin

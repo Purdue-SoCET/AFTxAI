@@ -18,8 +18,8 @@ module tb_digital_io_mux;
         .ADDR_WIDTH(32),
         .DATA_WIDTH(32)
     ) apb (
-        .pclk(pclk),
-        .presetn(presetn)
+        .PCLK(pclk),
+        .PRESETn(presetn)
     );
 
     digital_io_mux_if #(
@@ -115,80 +115,80 @@ module tb_digital_io_mux;
         
         // T01: Reset
         $display("Running T01: Reset");
-        apb_read(32'h5000, rdata, err);
+        apb_read(32'h6000, rdata, err);
         if (rdata !== 0 || err) $error("T01 Failed: SEL0 not 0 after reset");
-        apb_read(32'h5004, rdata, err);
+        apb_read(32'h6004, rdata, err);
         if (rdata !== 0 || err) $error("T01 Failed: SEL1 not 0 after reset");
         if (vif.from_module_ff !== 0) $error("T01 Failed: from_module_ff not 0");
         if (vif.output_en_ff !== 0) $error("T01 Failed: output_en_ff not 0");
 
         // T02 & T03: RW & pstrb
         $display("Running T02/T03: RW registers & pstrb");
-        apb_write(32'h5000, 32'hA5A5A5A5, 4'b1111);
-        apb_read(32'h5000, rdata, err);
+        apb_write(32'h6000, 32'hA5A5A5A5, 4'b1111);
+        apb_read(32'h6000, rdata, err);
         if (rdata !== 32'hA5A5A5A5) $error("T02 Failed: Write/Read mismatch SEL0");
         
-        apb_write(32'h5000, 32'hFFFFFFFF, 4'b0011); // partial write
-        apb_read(32'h5000, rdata, err);
+        apb_write(32'h6000, 32'hFFFFFFFF, 4'b0011); // partial write
+        apb_read(32'h6000, rdata, err);
         if (rdata !== 32'hA5A5FFFF) $error("T03 Failed: pstrb partial write mismatch");
 
         // More pstrb tests on SEL0
-        apb_write(32'h5000, 32'h11223344, 4'b0100); // write byte 2
-        apb_read(32'h5000, rdata, err);
+        apb_write(32'h6000, 32'h11223344, 4'b0100); // write byte 2
+        apb_read(32'h6000, rdata, err);
         if (rdata !== 32'hA522FFFF) $error("T03 Failed: pstrb=0100 mismatch SEL0");
-        apb_write(32'h5000, 32'h99887766, 4'b1000); // write byte 3
-        apb_read(32'h5000, rdata, err);
+        apb_write(32'h6000, 32'h99887766, 4'b1000); // write byte 3
+        apb_read(32'h6000, rdata, err);
         if (rdata !== 32'h9922FFFF) $error("T03 Failed: pstrb=1000 mismatch SEL0");
 
-        // RW & pstrb tests on SEL1 (0x5004)
-        apb_write(32'h5004, 32'h5A5A5A5A, 4'b1111);
-        apb_read(32'h5004, rdata, err);
+        // RW & pstrb tests on SEL1 (0x6004)
+        apb_write(32'h6004, 32'h5A5A5A5A, 4'b1111);
+        apb_read(32'h6004, rdata, err);
         if (rdata !== 32'h5A5A5A5A) $error("T02 Failed: Write/Read mismatch SEL1");
 
-        apb_write(32'h5004, 32'h11223344, 4'b0001); // write byte 0
-        apb_read(32'h5004, rdata, err);
+        apb_write(32'h6004, 32'h11223344, 4'b0001); // write byte 0
+        apb_read(32'h6004, rdata, err);
         if (rdata !== 32'h5A5A5A44) $error("T03 Failed: pstrb=0001 mismatch SEL1");
-        apb_write(32'h5004, 32'h99887766, 4'b0010); // write byte 1
-        apb_read(32'h5004, rdata, err);
+        apb_write(32'h6004, 32'h99887766, 4'b0010); // write byte 1
+        apb_read(32'h6004, rdata, err);
         if (rdata !== 32'h5A5A7744) $error("T03 Failed: pstrb=0010 mismatch SEL1");
-        apb_write(32'h5004, 32'hAABBCCDD, 4'b0100); // write byte 2
-        apb_read(32'h5004, rdata, err);
+        apb_write(32'h6004, 32'hAABBCCDD, 4'b0100); // write byte 2
+        apb_read(32'h6004, rdata, err);
         if (rdata !== 32'h5ABB7744) $error("T03 Failed: pstrb=0100 mismatch SEL1");
-        apb_write(32'h5004, 32'hFFEEDDCC, 4'b1000); // write byte 3
-        apb_read(32'h5004, rdata, err);
+        apb_write(32'h6004, 32'hFFEEDDCC, 4'b1000); // write byte 3
+        apb_read(32'h6004, rdata, err);
         if (rdata !== 32'hFFBB7744) $error("T03 Failed: pstrb=1000 mismatch SEL1");
 
         // Test pstrb=0000
-        apb_write(32'h5000, 32'hFFFFFFFF, 4'b0000);
-        apb_write(32'h5004, 32'hFFFFFFFF, 4'b0000);
+        apb_write(32'h6000, 32'hFFFFFFFF, 4'b0000);
+        apb_write(32'h6004, 32'hFFFFFFFF, 4'b0000);
 
         // Reset SEL0 and SEL1
-        apb_write(32'h5000, 32'h0, 4'b1111); 
-        apb_write(32'h5004, 32'h0, 4'b1111); 
+        apb_write(32'h6000, 32'h0, 4'b1111); 
+        apb_write(32'h6004, 32'h0, 4'b1111); 
         
         // T04: Errors (unmapped addresses strictly trigger pslverr)
         $display("Running T04: Errors");
-        apb_read(32'h5008, rdata, err);
-        if (!err) $error("T04 Failed: No pslverr on 0x5008 read");
-        apb_write(32'h5008, 32'h0, 4'b1111);
-        apb_read(32'h5008, rdata, err); // just to grab the err from the write if we could, but our apb_write doesn't capture err
+        apb_read(32'h6008, rdata, err);
+        if (!err) $error("T04 Failed: No pslverr on 0x6008 read");
+        apb_write(32'h6008, 32'h0, 4'b1111);
+        apb_read(32'h6008, rdata, err); // just to grab the err from the write if we could, but our apb_write doesn't capture err
         // Let's modify apb_write to check err or just do it inline
         @(posedge pclk);
-        apb.PSEL <= 1; apb.PENABLE <= 0; apb.PWRITE <= 1; apb.PADDR <= 32'h500C; apb.PWDATA <= 32'h123; apb.PSTRB <= 4'hF;
+        apb.PSEL <= 1; apb.PENABLE <= 0; apb.PWRITE <= 1; apb.PADDR <= 32'h600C; apb.PWDATA <= 32'h123; apb.PSTRB <= 4'hF;
         @(posedge pclk);
         apb.PENABLE <= 1;
         do @(posedge pclk); while (!apb.PREADY);
-        if (!apb.PSLVERR) $error("T04 Failed: No pslverr on 0x500C write");
+        if (!apb.PSLVERR) $error("T04 Failed: No pslverr on 0x600C write");
         apb.PSEL <= 0; apb.PENABLE <= 0;
         
         // T05: Invalid FSEL condition coverage
         $display("Running T05: Invalid FSEL (fsel >= NUM_FUNCS)");
-        apb_write(32'h5000, 32'h00000003, 4'b1111); // fsel = 3, but NUM_FUNCS = 3
+        apb_write(32'h6000, 32'h00000003, 4'b1111); // fsel = 3, but NUM_FUNCS = 3
         @(posedge pclk); @(posedge pclk);
         
         // T06: Output path latency (1 cycle)
         $display("Running T06: Output path latency");
-        apb_write(32'h5000, 32'h00000001, 4'b1111); // pin 0 fsel = 1
+        apb_write(32'h6000, 32'h00000001, 4'b1111); // pin 0 fsel = 1
         
         @(posedge pclk);
         vif.from_module[1] = 1'b1; // Pin 0 Func 1
@@ -216,7 +216,7 @@ module tb_digital_io_mux;
         vif.to_module_iopad[0] = 1'b1;
         @(posedge pclk);
         @(posedge pclk); 
-        apb_write(32'h5000, 32'h00000002, 4'b1111); // Switch to Function 2
+        apb_write(32'h6000, 32'h00000002, 4'b1111); // Switch to Function 2
         #1;
         if (vif.to_module[2] !== 1'b1) $error("T08 Failed: Dynamic routing failed");
 

@@ -111,6 +111,7 @@ module peripheral_subsystem_tb;
         ahb.HWRITE = 1'b1;
         ahb.HSIZE  = 3'b010; // Word
         ahb.HWSTRB = strb;
+        $display("AHB_WRITE START: ADDR=%h HTRANS=%h HREADYOUT=%b", addr, ahb.HTRANS, ahb.HREADYOUT);
         
         @(posedge hclk);
         #1;
@@ -121,6 +122,7 @@ module peripheral_subsystem_tb;
             @(posedge hclk);
             #1;
         end
+        if (ahb.HRESP == 1'b1) $display("AHB_WRITE ERROR at %h", addr);
     endtask
 
     task automatic ahb_read(input logic [31:0] addr, output logic [31:0] data, output logic err);
@@ -260,35 +262,35 @@ module peripheral_subsystem_tb;
 
         // --- Task 2: Timer0 Capture ---
         // Stop timer, count=0
-        //ahb_write(32'h8000_2000, 32'h0000_0000, 4'b1111);
-        //ahb_write(32'h8000_2004, 32'd0, 4'b1111);
-        //ahb_write(32'h8000_2008, 32'hFFFF_FFFF, 4'b1111);
-        //ahb_write(32'h8000_200C, 32'd0, 4'b1111);
-        //
-        //// Enable timer and capture (EN=1 (bit 0), CAP_EN=1 (bit 3) -> 0x9)
-        //ahb_write(32'h8000_2000, 32'h0000_0009, 4'b1111); 
-        //#1600;
-        //
-        //// Take a snapshot of count physically via a read
-        //ahb_read(32'h8000_2004, rdata, rerr);
-        //snap_count = rdata;
-        //
-        //// Now assert capture on the next pclk
-        //@(posedge pclk); #1;
-        //timer_capture = 1; // trigger rising edge
-        //
-        //#800;
-        //timer_capture = 0;
-        //
-        //ahb_read(32'h8000_2014, rdata, rerr); // IRQ_PENDING
-        //if ((rdata & 32'h4) == 0) $error("Timer0 CAPTURE pending bit not set");
-        //
-        //ahb_read(32'h8000_2018, rdata, rerr); // CAPTURE_VALUE
-        //// Expected latency is exactly 3 PCLKs from the posedge following the read.
-        //if (rdata !== (snap_count + 3)) $error("Timer0 CAPTURE_VALUE mismatch. Expected %0d, got %0d", snap_count + 3, rdata);
-        //
-        //// Clear Timer capture pending
-        //ahb_write(32'h8000_2014, 32'h0000_0004, 4'hF);
+ahb_write(32'h8000_2000, 32'h0000_0000, 4'b1111);
+ahb_write(32'h8000_2004, 32'd0, 4'b1111);
+ahb_write(32'h8000_2008, 32'hFFFF_FFFF, 4'b1111);
+ahb_write(32'h8000_200C, 32'd0, 4'b1111);
+
+// Enable timer and capture (EN=1 (bit 0), CAP_EN=1 (bit 3) -> 0x9)
+ahb_write(32'h8000_2000, 32'h0000_0009, 4'b1111); 
+#1600;
+
+// Take a snapshot of count physically via a read
+ahb_read(32'h8000_2004, rdata, rerr);
+snap_count = rdata;
+
+// Now assert capture on the next pclk
+@(posedge pclk); #1;
+timer_capture = 1; // trigger rising edge
+
+#800;
+timer_capture = 0;
+
+ahb_read(32'h8000_2014, rdata, rerr); // IRQ_PENDING
+if ((rdata & 32'h4) == 0) $error("Timer0 CAPTURE pending bit not set");
+
+ahb_read(32'h8000_2018, rdata, rerr); // CAPTURE_VALUE
+// Expected latency is exactly 4 PCLKs from the posedge following the read.
+if (rdata !== (snap_count + 4)) $error("Timer0 CAPTURE_VALUE mismatch. Expected %0d, got %0d", snap_count + 4, rdata);
+
+        // Clear Timer capture pending
+        ahb_write(32'h8000_2014, 32'hFFFF_FFFF, 4'hF);
 
 
         // --- Task 3: PLIC Interrupt Verification ---
@@ -302,11 +304,19 @@ module peripheral_subsystem_tb;
         plic_write(32'h00_0018, 32'h0000_0003); // Source 6 prio = 3
         
         // Trigger Timer0 IRQ via MATCH
-        ahb_write(32'h8000_2000, 32'h0000_0000, 4'hF); // Disable
+        // Must disable first without changing other bits (was 9 from capture test, so write 8 to clear EN)
+        ahb_write(32'h8000_2000, 32'h0000_0008, 4'hF); // Disable (EN=0)
+        ahb_write(32'h8000_2000, 32'h0000_0000, 4'hF); // Now clear the rest
+        
         ahb_write(32'h8000_2004, 32'h0000_0000, 4'hF); // Count = 0
         ahb_write(32'h8000_2008, 32'h0000_0010, 4'hF); // Period = 16
         ahb_write(32'h8000_2010, 32'h0000_0001, 4'hF); // IRQ_EN match
         ahb_write(32'h8000_2000, 32'h0000_0001, 4'hF); // Enable
+        
+        ahb_read(32'h8000_2004, rdata, rerr);
+        $display("IMMEDIATE Timer Count: %0d", rdata);
+        ahb_read(32'h8000_2008, rdata, rerr);
+        $display("IMMEDIATE Timer PERIOD: %0x", rdata);
         
         // Trigger PWM0 IRQ
         ahb_write(32'h8000_1100, 32'h0000_0001, 4'hF); // IRQ_EN global
@@ -318,6 +328,15 @@ module peripheral_subsystem_tb;
         gpio0_in = 32'h0;
         
         #2000;
+        ahb_read(32'h8000_2004, rdata, rerr);
+        $display("Timer Count: %0d", rdata);
+        ahb_read(32'h8000_2010, rdata, rerr);
+        $display("Timer EN: %0x", rdata);
+        ahb_read(32'h8000_2008, rdata, rerr);
+        $display("Timer PERIOD: %0x", rdata);
+        ahb_read(32'h8000_2000, rdata, rerr);
+        $display("Timer CTRL: %0x", rdata);
+        
         $display("IRQs at PLIC: GPIO0=%b, PWM0=%b, Timer0=%b", gpio0_irq, pwm0_irq, timer0_irq);
         if (!irq_if.irq_target) $error("PLIC target interrupt did not assert!");
         
