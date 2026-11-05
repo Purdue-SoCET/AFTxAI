@@ -1,0 +1,73 @@
+regions:
+  ahb:
+    boot_rom:
+      base: 0x0000_0400
+      words: 1024
+    on_chip_ram:
+      base: 0x0000_8400
+      words: 4096
+    off_chip_sram:
+      base: 0x0002_0000
+      words: 524288
+    apb_bridge:
+      base: 0x8000_0000
+      words: 32768
+    dma:
+      base: 0x9000_1000
+      words: 5
+    clint:
+      base: 0x9001_0000
+      words: 12288
+    plic:
+      base: 0xA000_0000
+      words: 16777216
+    printer:
+      base: 0xB000_0000
+      words: 1
+  apb:
+    gpio0:
+      base: 0x8000_0000
+      words: 18
+    gpio1:
+      base: 0x8000_0100
+      words: 18
+    gpio2:
+      base: 0x8000_0200
+      words: 18
+    gpio3:
+      base: 0x8000_0300
+      words: 18
+    pwm0:
+      base: 0x8000_1000
+      words: 67
+    timer0:
+      base: 0x8000_2000
+      words: 8
+    spi0:
+      base: 0x8000_4000
+      words: 8
+    i2c0:
+      base: 0x8000_5000
+      words: 6
+    uart:
+      base: 0x8000_6000
+      words: 9
+    io_mux:
+      base: 0x8000_7000
+      words: 2
+    gpio_boot:
+      base: 0x8000_8000
+      words: 18
+
+interrupts:
+  gpio0: 1
+  gpio1: 2
+  gpio2: 3
+  gpio3: 4
+  pwm0: 5
+  timer0: 6
+  spi0: 7
+  i2c0: 8
+  uart: 9
+  dma: 10
+  gpio_boot: 11
