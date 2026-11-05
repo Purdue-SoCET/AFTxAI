@@ -11,6 +11,7 @@ INCA_libs/
 *.fsdb
 cov_work/
 work_cov/
+cov_report/
 .simvision/
 obj_dir/
 *.elf
