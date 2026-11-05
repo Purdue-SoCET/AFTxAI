@@ -78,7 +78,7 @@ Nex must confirm each item during S0 and report any that no longer apply. These 
 | K-08 | Resolved. AHB interconnect decoder now correctly decodes by finding the highest matching base address `<= HADDR` without a mask array. | `ahb_interconnect.sv` |
 | K-09 | Resolved. AHB arbiter converted to fixed priority (Manager 0 > Manager 1, etc.) in `ahb_interconnect.sv`. | `ahb_interconnect.sv` |
 | K-10 | Resolved. `ahb2apb` now passes absolute addresses. `i2c`, `digital_io_mux_apb`, `pwm_apb_wrapper`, `timer_apb_wrapper`, and `peripheral_subsystem` all correctly utilize `0x8000_XXXX` mapping. | `ahb2apb.sv`; `peripheral_subsystem.sv`; `*_apb_wrapper.sv` |
-| K-11 | The core's `bus_ahbm_if` (`req/ack`) has no adapter to `ahb_manager`'s `bus_protocol_if`. | `riscv/include/bus_ahbm_if.sv`; `ahb_manager.sv` |
+| K-11 | Resolved. Created `bus_ahbm_adapter.sv` in `riscv/rtl/memory/` to map `bus_ahbm_if` signals into `bus_protocol_if` (including mapping `size` to write `strobe`). | `bus_ahbm_adapter.sv` |
 | K-12 | The caches have no uncached path, and the core always requests word size with no write strobes. Peripheral access would cause line fills, and PLIC claims or FIFO pops could fire unintentionally. | `l1_cache.sv`; `bus_controller.sv:79` |
 | K-13 | Resolved. `ahb_manager` now computes `HSIZE` dynamically based on the byte `strobe` via `get_hsize()`. | `ahb_manager.sv` |
 | K-14 | The core has no CSRs, trap entry, or interrupt inputs. | `riscv/SPEC.md`; `riscv/rtl/riscv.sv` |
