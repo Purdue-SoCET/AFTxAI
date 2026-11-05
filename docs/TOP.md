@@ -80,7 +80,7 @@ Nex must confirm each item during S0 and report any that no longer apply. These 
 | K-10 | Resolved. `ahb2apb` now passes absolute addresses. `i2c`, `digital_io_mux_apb`, `pwm_apb_wrapper`, `timer_apb_wrapper`, and `peripheral_subsystem` all correctly utilize `0x8000_XXXX` mapping. | `ahb2apb.sv`; `peripheral_subsystem.sv`; `*_apb_wrapper.sv` |
 | K-11 | The core's `bus_ahbm_if` (`req/ack`) has no adapter to `ahb_manager`'s `bus_protocol_if`. | `riscv/include/bus_ahbm_if.sv`; `ahb_manager.sv` |
 | K-12 | The caches have no uncached path, and the core always requests word size with no write strobes. Peripheral access would cause line fills, and PLIC claims or FIFO pops could fire unintentionally. | `l1_cache.sv`; `bus_controller.sv:79` |
-| K-13 | `ahb_manager` always drives `HSIZE = WORD`. | `ahb_manager.sv` |
+| K-13 | Resolved. `ahb_manager` now computes `HSIZE` dynamically based on the byte `strobe` via `get_hsize()`. | `ahb_manager.sv` |
 | K-14 | The core has no CSRs, trap entry, or interrupt inputs. | `riscv/SPEC.md`; `riscv/rtl/riscv.sv` |
 | K-15 | `BOOT_ADDR` defaults to `0`, and `link.ld` places code at `0x0`. Both fall in an unmapped region. | `riscv.sv`; `riscv/verification/cFiles/link.ld` |
 | K-16 | `peripheral_subsystem` omits SPI0, I2C0, and `GPIOBOOT`, and has only the mux's APB registers. It does not include the PLIC. | `integration/soc_peripherals/peripheral_subsystem.sv` |
