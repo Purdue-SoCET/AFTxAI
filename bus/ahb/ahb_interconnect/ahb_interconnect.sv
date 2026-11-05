@@ -87,7 +87,7 @@ module ahb_interconnect #(
         end
     end
 
-    // Arbitration: Round-robin with lock on requesting manager
+    // Arbitration: Fixed priority (Manager 0 > Manager 1)
     int unsigned granted_manager;
     int unsigned active_manager_addr_phase;
     
@@ -111,7 +111,8 @@ module ahb_interconnect #(
 
     always_comb begin
         active_manager_addr_phase = granted_manager;
-        if (current_hready && !request[granted_manager]) begin
+        if (current_hready) begin
+            // Fixed priority: Manager 0 has highest priority
             for (int i = 0; i < NMANAGERS; i++) begin
                 if (request[i]) begin
                     active_manager_addr_phase = i;
