@@ -10,7 +10,7 @@ module tb_spi_top;
   apb_if #(
     .ADDR_WIDTH(32),
     .DATA_WIDTH(32)
-  ) apb_bus (.pclk(pclk), .presetn(nRST));
+  ) apb_bus (.PCLK(pclk), .PRESETn(nRST));
 
   // SPI Interface Instance
   spi_if spi_bus ();
