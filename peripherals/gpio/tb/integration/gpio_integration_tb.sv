@@ -59,7 +59,7 @@ module gpio_integration_tb;
 
     // APB Interconnect
     // Maps GPIO0..3 to 0x000, 0x100, 0x200, 0x300 bridge-relative offsets
-    localparam logic [31:0] apb_map [4] = '{32'h0000_0300, 32'h0000_0200, 32'h0000_0100, 32'h0000_0000};
+    localparam logic [31:0] apb_map [4] = '{32'h8000_0300, 32'h8000_0200, 32'h8000_0100, 32'h8000_0000};
     
     apb_interconnect #(
         .NCOMPLETERS(4),
@@ -181,24 +181,24 @@ module gpio_integration_tb;
     // PLIC accesses
     task plic_write(input logic [31:0] addr, input logic [31:0] data);
         @(posedge hclk);
-        plic_bus.addr = addr;
-        plic_bus.wdata = data;
-        plic_bus.wen = 1;
-        plic_bus.ren = 0;
-        plic_bus.strobe = 4'hf;
+        plic_bus.addr <= addr;
+        plic_bus.wdata <= data;
+        plic_bus.wen <= 1;
+        plic_bus.ren <= 0;
+        plic_bus.strobe <= 4'hf;
         @(posedge hclk);
-        plic_bus.wen = 0;
+        plic_bus.wen <= 0;
         @(posedge hclk);
     endtask
     
     task plic_read(input logic [31:0] addr, output logic [31:0] data);
         @(posedge hclk);
-        plic_bus.addr = addr;
-        plic_bus.wen = 0;
-        plic_bus.ren = 1;
+        plic_bus.addr <= addr;
+        plic_bus.wen <= 0;
+        plic_bus.ren <= 1;
         @(posedge hclk);
         data = plic_bus.rdata;
-        plic_bus.ren = 0;
+        plic_bus.ren <= 0;
         @(posedge hclk);
     endtask
 
@@ -269,7 +269,7 @@ module gpio_integration_tb;
             test_fails++;
         end
         
-        // 5. Test Interrupt flow (GPIO2 -> PLIC)
+        // 5. Test Interrupt flow (GPIO2 High Level)
         $display("Test 5: Interrupt Flow (GPIO2 High Level)");
         ahb_write(32'h8000_022C, 32'h0000_0008, 4'hF); // IRQ High Enable bit 3
         plic_write(32'h0000_0010, 32'h0000_0007);      // Priority of src 4 to 7

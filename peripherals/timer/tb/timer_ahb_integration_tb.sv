@@ -46,13 +46,13 @@ module timer_ahb_integration_tb;
     );
 
     // APB Interconnect
-    // Maps 0x0000_2000 (relative to bridge base)
+    // Maps 0x8000_2000 (absolute)
     apb_interconnect #(
         .NCOMPLETERS(1),
         .COMPLETER_ADDR_BITS(12),
         .ADDR_WIDTH(32),
         .DATA_WIDTH(32),
-        .APB_MAP('{32'h0000_2000})
+        .APB_MAP('{32'h8000_2000})
     ) u_interconnect (
         .requester(apb_req.completer),
         .completers(apb_comp)
@@ -62,7 +62,7 @@ module timer_ahb_integration_tb;
     logic capture_i;
     logic irq_o;
     timer_apb_wrapper #(
-        .BASE_ADDR(32'h0000_2000)
+        .BASE_ADDR(32'h8000_2000)
     ) u_timer_wrapper (
         .apb(apb_comp[0].completer),
         .capture_i(capture_i),

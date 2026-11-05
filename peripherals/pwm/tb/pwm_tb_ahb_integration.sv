@@ -45,7 +45,7 @@ module pwm_tb_ahb_integration;
         .COMPLETER_ADDR_BITS(12),
         .ADDR_WIDTH(32),
         .DATA_WIDTH(32),
-        .APB_MAP('{PWM_REL, DUMMY_REL})
+        .APB_MAP('{PWM_ABS, DUMMY_ABS})
     ) ic (
         .requester(apb_req_bus.completer),
         .completers(apb_comp)
@@ -53,7 +53,7 @@ module pwm_tb_ahb_integration;
     
     pwm_apb_wrapper #(
         .PWM_CHANNELS(PWM_CHANNELS),
-        .BASE_ADDR(PWM_REL)
+        .BASE_ADDR(PWM_ABS)
     ) dut (
         .apb(apb_comp[0].completer),
         .pwm_out_o(pwm_out),
@@ -99,7 +99,7 @@ module pwm_tb_ahb_integration;
         ahb_req.HSEL <= 1'b0;
         ahb_req.HTRANS <= 2'b00; // IDLE
         ahb_req.HWDATA <= data;
-        ahb_req.HWSTRB <= 4'h0;
+        ahb_req.HWSTRB <= strb;
         
         do begin
             @(posedge hclk);
