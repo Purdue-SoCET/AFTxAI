@@ -1,0 +1,2 @@
+set -e
+xrun -exit -64 -sv -timescale 1ns/1ps -incdir ../../bus/apb/include -incdir ../../peripherals/interrupt_controller/plic/include ../../bus/apb/include/apb_if.sv ../../bus/generic/bus_protocol_if.sv ../../bus/apb/rtl/apb_interconnect.sv ../../peripherals/interrupt_controller/plic/include/plic_if.sv ../../peripherals/interrupt_controller/plic/rtl/plic.sv ../../digital_lib/src/sync_2ff.sv src/timer_apb.sv src/timer_apb_wrapper.sv tb/timer_plic_integration_tb.sv +access+rwc
