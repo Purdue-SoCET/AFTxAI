@@ -84,8 +84,8 @@ module timer_tb;
     logic [31:0] expected_cap;
 
     // Independent cycle accounting for T23
-    int tb_count = 0;
-    logic tb_en = 0;
+    int tb_count;
+    logic tb_en;
     always_ff @(posedge pclk or negedge presetn) begin
         if (!presetn) begin
             tb_count <= 0;

@@ -18,7 +18,7 @@ RTL_SRC = $(LIB_INC)/sync_2ff.sv $(SRC_DIR)/gpio_apb.sv $(SRC_DIR)/gpio_apb_wrap
 TB_SRC = $(TB_DIR)/gpio_tb.sv
 UVM_TB_SRC = $(TB_DIR)/apb4_if.sv $(TB_DIR)/gpio_pad_if.sv $(TB_DIR)/gpio_uvm_pkg.sv $(TB_DIR)/gpio_uvm_tb.sv
 INTEGRATION_TB_SRC = $(TB_DIR)/integration/gpio_integration_tb.sv
-BUS_SRC = ../../bus/generic/bus_protocol_if.sv ../../bus/ahb/include/ahb_if.sv ../../bus/apb/include/apb_if.sv ../../bus/apb/rtl/apb_interconnect.sv ../../bus/bus/apb_ahb_bridge/ahb2apb.sv ../../peripherals/interrupt_controller/plic/include/plic_if.sv ../../peripherals/interrupt_controller/plic/rtl/plic.sv
+BUS_SRC = ../../bus/generic/bus_protocol_if.sv ../../bus/ahb/include/ahb_if.sv ../../bus/apb/include/apb_if.sv ../../bus/apb/rtl/apb_interconnect.sv ../../bus/bridge/rtl/ahb2apb.sv ../../peripherals/interrupt_controller/plic/include/plic_if.sv ../../peripherals/interrupt_controller/plic/rtl/plic.sv
 
 TEST ?= gpio_base_test
 SEED ?= random

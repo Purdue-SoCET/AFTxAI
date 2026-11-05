@@ -27,7 +27,8 @@ module timer_plic_integration_tb;
     plic_if irq_if ();
 
     // Tie off unused PLIC sources
-    assign irq_if.irq_source[14:1] = '0;
+    assign irq_if.irq_source[15:7] = '0;
+    assign irq_if.irq_source[5:1] = '0;
     assign irq_if.irq_source[31:16] = '0;
 
     // Timer Wrapper
