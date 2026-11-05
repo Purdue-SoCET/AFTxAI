@@ -3,12 +3,14 @@
 /* verilator lint_off UNUSEDPARAM */
 // Reason: FIFO_DEPTH is part of the spec but simplified in this stub implementation.
 /* verilator lint_off UNUSEDSIGNAL */
-// Reason: Not all AHB or UART interface signals (e.g. HMASTLOCK, HBURST, rx, cts_n) are needed in this basic configuration.
+// Reason: Not all AHB or UART interface signals (e.g. HMASTLOCK, HBURST) are needed.
 /* verilator lint_off UNDRIVEN */
 // Reason: Interfaces contain signals driven by the external testbench or interconnect.
 
 module uart #(
-    parameter int FIFO_DEPTH = 16
+    parameter CLOCK_FREQ_HZ = 50000000,
+    parameter DEFAULT_BAUD  = 115200,
+    parameter FIFO_DEPTH    = 16
 ) (
     ahb_if.subordinate ahb,
     uart_if.target uif
@@ -61,184 +63,166 @@ module uart #(
         end
     end
 
-    // -------------------------------------------------------------------------
-    // Registers
-    // -------------------------------------------------------------------------
-    logic [31:0] int_enable, int_enable_next;
-    logic [31:0] line_ctrl, line_ctrl_next;
-    logic [31:0] mode_ctrl, mode_ctrl_next;
-    logic [31:0] scratch, scratch_next;
-    logic [31:0] baud_div_lo, baud_div_lo_next;
-    
-    // Status
-    logic [31:0] line_status, line_status_next;
-    logic [31:0] hrdata_next;
+    // ------------------------------------------------------------------------
+    // Registers & Control
+    // ------------------------------------------------------------------------
+    logic [31:0] int_enable_q, int_enable_d;
+    logic [31:0] line_ctrl_q, line_ctrl_d;
+    logic [31:0] mode_ctrl_q, mode_ctrl_d;
+    logic [31:0] baud_div_q, baud_div_d;
+
+    localparam int OVERSAMPLE = 16;
+    localparam int DEFAULT_DIV = CLOCK_FREQ_HZ / (DEFAULT_BAUD * OVERSAMPLE);
+
+    // Baud generator logic
+    logic [15:0] baud_cnt_q, baud_cnt_d;
+    logic os_tick_q, os_tick_d;
+    logic [3:0] baud_tick_cnt_q, baud_tick_cnt_d;
+    logic baud_tick_q, baud_tick_d;
+
+    // FIFO signals
+    logic [7:0] tx_fifo_rdata;
+    logic tx_fifo_full, tx_fifo_empty;
+    logic tx_fifo_wr, tx_fifo_rd;
+    logic [7:0] rx_fifo_rdata;
+    logic rx_fifo_full, rx_fifo_empty;
+    logic rx_fifo_wr, rx_fifo_rd;
+
+    // TX / RX interface signals
+    logic tx_ready, tx_out;
+    logic rx_valid;
+    logic [7:0] rx_data;
+
+    // Instantiations
+    uart_fifo #(.DATA_WIDTH(8), .DEPTH(FIFO_DEPTH)) tx_fifo (
+        .clk(clk), .rst_n(rst_n), .clear(1'b0), // Tie off clear for now
+        .wr_en(tx_fifo_wr), .wr_data(ahb.HWDATA[7:0]),
+        .rd_en(tx_fifo_rd), .rd_data(tx_fifo_rdata),
+        .full(tx_fifo_full), .empty(tx_fifo_empty)
+    );
+
+    uart_fifo #(.DATA_WIDTH(8), .DEPTH(FIFO_DEPTH)) rx_fifo (
+        .clk(clk), .rst_n(rst_n), .clear(1'b0),
+        .wr_en(rx_fifo_wr), .wr_data(rx_data),
+        .rd_en(rx_fifo_rd), .rd_data(rx_fifo_rdata),
+        .full(rx_fifo_full), .empty(rx_fifo_empty)
+    );
+
+    uart_tx tx_inst (
+        .clk(clk), .rst_n(rst_n),
+        .baud_tick(baud_tick_q),
+        .tx_data(tx_fifo_rdata),
+        .tx_valid(~tx_fifo_empty),
+        .tx_ready(tx_ready),
+        .tx_out(tx_out)
+    );
+
+    uart_rx #(.OVERSAMPLE(OVERSAMPLE)) rx_inst (
+        .clk(clk), .rst_n(rst_n),
+        .os_tick(os_tick_q),
+        .rx_in(uif.rx),
+        .rx_data(rx_data),
+        .rx_valid(rx_valid)
+    );
+
+    // TX FIFO read logic
+    assign tx_fifo_rd = tx_ready && ~tx_fifo_empty && baud_tick_q;
+    assign rx_fifo_wr = rx_valid && ~rx_fifo_full;
+
+    assign uif.tx = tx_out;
+    assign uif.rts_n = rx_fifo_full; // Simple auto-RTS
 
     always_comb begin
-        int_enable_next  = int_enable;
-        line_ctrl_next   = line_ctrl;
-        mode_ctrl_next   = mode_ctrl;
-        scratch_next     = scratch;
-        baud_div_lo_next = baud_div_lo;
+        int_enable_d = int_enable_q;
+        line_ctrl_d  = line_ctrl_q;
+        mode_ctrl_d  = mode_ctrl_q;
+        baud_div_d   = baud_div_q;
+
+        // Baud Generation
+        baud_cnt_d      = baud_cnt_q;
+        os_tick_d       = 1'b0;
+        baud_tick_d     = 1'b0;
+        baud_tick_cnt_d = baud_tick_cnt_q;
         
+        if (baud_cnt_q >= baud_div_q[15:0] - 1) begin
+            baud_cnt_d = '0;
+            os_tick_d  = 1'b1;
+            if (baud_tick_cnt_q == OVERSAMPLE - 1) begin
+                baud_tick_cnt_d = '0;
+                baud_tick_d     = 1'b1;
+            end else begin
+                baud_tick_cnt_d = baud_tick_cnt_q + 1;
+            end
+        end else begin
+            baud_cnt_d = baud_cnt_q + 1;
+        end
+
+        // Bus Write Interface
+        tx_fifo_wr   = 1'b0;
+        rx_fifo_rd   = 1'b0;
+
         if (we) begin
             case (reg_addr)
-                8'h04: int_enable_next  = ahb.HWDATA;
-                8'h0C: line_ctrl_next   = ahb.HWDATA;
-                8'h10: mode_ctrl_next   = ahb.HWDATA;
-                8'h1C: scratch_next     = ahb.HWDATA;
-                8'h20: baud_div_lo_next = ahb.HWDATA;
+                8'h00: tx_fifo_wr = ~tx_fifo_full;
+                8'h04: int_enable_d = ahb.HWDATA;
+                8'h0C: line_ctrl_d  = ahb.HWDATA;
+                8'h10: mode_ctrl_d  = ahb.HWDATA;
+                8'h1C: baud_div_d   = ahb.HWDATA;
                 default: ;
             endcase
         end
-    end
 
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            int_enable  <= '0;
-            line_ctrl   <= 32'h03; // 8 data bits, 1 stop bit, no parity
-            mode_ctrl   <= '0;
-            scratch     <= '0;
-            baud_div_lo <= 32'd27; // Default for 115200 at 50MHz
-        end else begin
-            int_enable  <= int_enable_next;
-            line_ctrl   <= line_ctrl_next;
-            mode_ctrl   <= mode_ctrl_next;
-            scratch     <= scratch_next;
-            baud_div_lo <= baud_div_lo_next;
-        end
-    end
-
-    // -------------------------------------------------------------------------
-    // Read Logic
-    // -------------------------------------------------------------------------
-    always_comb begin
-        hrdata_next = '0;
+        // Bus Read Interface
         if (re) begin
-            case (ahb.HADDR[7:0])
-                8'h04: hrdata_next = int_enable;
-                8'h0C: hrdata_next = line_ctrl;
-                8'h10: hrdata_next = mode_ctrl;
-                8'h14: hrdata_next = line_status;
-                8'h1C: hrdata_next = scratch;
-                8'h20: hrdata_next = baud_div_lo;
-                default: hrdata_next = '0;
+            case (ahb.HADDR[7:0]) // Use ahb.HADDR directly for read as per AHB re logic
+                8'h00: rx_fifo_rd = ~rx_fifo_empty;
+                default: ;
             endcase
         end
+
+        // Basic IRQ implementation
+        uif.irq = (int_enable_q[0] && ~rx_fifo_empty) || (int_enable_q[1] && tx_fifo_empty);
     end
 
+    // AHB HRDATA
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             ahb.HRDATA <= '0;
         end else begin
-            if (re) ahb.HRDATA <= hrdata_next;
-        end
-    end
-
-    // -------------------------------------------------------------------------
-    // UART TX Implementation
-    // -------------------------------------------------------------------------
-    logic [15:0] baud_cnt;
-    logic [3:0]  oversample_cnt;
-    logic        baud_clear;
-    logic        tx_tick;
-
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            baud_cnt <= '0;
-            oversample_cnt <= '0;
-        end else if (baud_clear) begin
-            baud_cnt <= '0;
-            oversample_cnt <= '0;
-        end else begin
-            if (baud_cnt == baud_div_lo[15:0] - 1) begin
-                baud_cnt <= '0;
-                oversample_cnt <= oversample_cnt + 1;
-            end else begin
-                baud_cnt <= baud_cnt + 1;
+            if (re) begin
+                case (ahb.HADDR[7:0])
+                    8'h00: ahb.HRDATA <= {24'h0, rx_fifo_rdata};
+                    8'h04: ahb.HRDATA <= int_enable_q;
+                    8'h0C: ahb.HRDATA <= line_ctrl_q;
+                    8'h10: ahb.HRDATA <= mode_ctrl_q;
+                    8'h14: ahb.HRDATA <= {25'h0, tx_fifo_empty && tx_ready, tx_fifo_empty, 4'h0, ~rx_fifo_empty}; 
+                    8'h1C: ahb.HRDATA <= baud_div_q;
+                    default: ahb.HRDATA <= 32'h0;
+                endcase
             end
         end
-    end
-    
-    assign tx_tick = (baud_cnt == baud_div_lo[15:0] - 1) && (oversample_cnt == 4'd15);
-
-    typedef enum logic [2:0] {
-        TX_IDLE, TX_START, TX_DATA, TX_STOP
-    } tx_state_t;
-    
-    tx_state_t tx_state, tx_state_next;
-    logic [7:0] tx_shift, tx_shift_next;
-    logic [2:0] tx_bit_cnt, tx_bit_cnt_next;
-    logic       tx_out_reg, tx_out_next;
-
-    always_comb begin
-        baud_clear      = 1'b0;
-        tx_state_next   = tx_state;
-        tx_shift_next   = tx_shift;
-        tx_bit_cnt_next = tx_bit_cnt;
-        tx_out_next     = tx_out_reg;
-        
-        case (tx_state)
-            TX_IDLE: begin
-                tx_out_next = 1'b1;
-                if (we && reg_addr == 8'h00) begin
-                    tx_shift_next = ahb.HWDATA[7:0];
-                    tx_state_next = TX_START;
-                    tx_out_next   = 1'b0; // Send start bit
-                    baud_clear    = 1'b1;
-                end
-            end
-            TX_START: begin
-                if (tx_tick) begin
-                    tx_state_next   = TX_DATA;
-                    tx_bit_cnt_next = '0;
-                    tx_out_next     = tx_shift[0];
-                end
-            end
-            TX_DATA: begin
-                if (tx_tick) begin
-                    tx_shift_next = {1'b0, tx_shift[7:1]};
-                    if (tx_bit_cnt == 3'd7) begin
-                        tx_state_next = TX_STOP;
-                        tx_out_next   = 1'b1; // Send stop bit
-                    end else begin
-                        tx_bit_cnt_next = tx_bit_cnt + 1;
-                        tx_out_next     = tx_shift[1];
-                    end
-                end
-            end
-            TX_STOP: begin
-                if (tx_tick) begin
-                    tx_state_next = TX_IDLE;
-                end
-            end
-            default: tx_state_next = TX_IDLE;
-        endcase
     end
 
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            tx_state   <= TX_IDLE;
-            tx_shift   <= '0;
-            tx_bit_cnt <= '0;
-            tx_out_reg <= 1'b1;
+            int_enable_q <= '0;
+            line_ctrl_q  <= 32'h03;
+            mode_ctrl_q  <= '0;
+            baud_div_q   <= DEFAULT_DIV;
+            baud_cnt_q   <= '0;
+            os_tick_q    <= '0;
+            baud_tick_cnt_q <= '0;
+            baud_tick_q  <= '0;
         end else begin
-            tx_state   <= tx_state_next;
-            tx_shift   <= tx_shift_next;
-            tx_bit_cnt <= tx_bit_cnt_next;
-            tx_out_reg <= tx_out_next;
+            int_enable_q <= int_enable_d;
+            line_ctrl_q  <= line_ctrl_d;
+            mode_ctrl_q  <= mode_ctrl_d;
+            baud_div_q   <= baud_div_d;
+            baud_cnt_q   <= baud_cnt_d;
+            os_tick_q    <= os_tick_d;
+            baud_tick_cnt_q <= baud_tick_cnt_d;
+            baud_tick_q  <= baud_tick_d;
         end
-    end
-    
-    assign uif.tx = tx_out_reg;
-
-    always_comb begin
-        line_status_next = 32'h0;
-        line_status_next[5] = (tx_state == TX_IDLE); // THRE
-        line_status_next[6] = (tx_state == TX_IDLE); // TEMT
-        
-        uif.irq = 1'b0;
-        uif.rts_n = 1'b1;
     end
 
 endmodule

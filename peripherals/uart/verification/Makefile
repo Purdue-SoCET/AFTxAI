@@ -10,6 +10,9 @@ BUS_DIR = ../../../bus/ahb/include
 SRCS = \
 	$(BUS_DIR)/ahb_if.sv \
 	$(INC_DIR)/uart_if.sv \
+	$(SRC_DIR)/uart_fifo.sv \
+	$(SRC_DIR)/uart_tx.sv \
+	$(SRC_DIR)/uart_rx.sv \
 	$(SRC_DIR)/uart.sv \
 	tb_uart.sv
 
