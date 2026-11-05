@@ -3,7 +3,7 @@
 /* verilator lint_off UNUSEDPARAM */
 `timescale 1ns/1ps
 
-module fifo #(
+module dma_fifo #(
     parameter int WIDTH = 66,
     parameter int DEPTH = 8
 )(

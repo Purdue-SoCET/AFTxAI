@@ -3,7 +3,7 @@
 /* verilator lint_off UNUSEDPARAM */
 `timescale 1ns/1ps
 
-module counter #(
+module dma_counter #(
     parameter int COUNT_W = 8
 )(
     input  logic               clk,

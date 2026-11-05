@@ -56,7 +56,7 @@ module pwm_tb_plic;
     bus_protocol_if #( .ADDR_WIDTH(32), .DATA_WIDTH(32) ) plic_bus ();
     plic_if plic_irq ();
     
-    assign plic_irq.irq_source = {16'h0, irq_sync2, 14'h0}; // Source 15
+    assign plic_irq.irq_source = {26'h0, irq_sync2, 4'h0}; // Source 5
     
     plic plic_inst (
         .clk(hclk),
@@ -125,9 +125,9 @@ module pwm_tb_plic;
         #100 presetn = 1; hresetn = 1;
         #100;
         
-        // 1. Configure PLIC for Source 15
-        plic_write(32'h00_003C, 32'd5); // Priority 5 for source 15
-        plic_write(32'h00_2000, 32'h00008000); // Enable source 15
+        // 1. Configure PLIC for Source 5
+        plic_write(32'h00_0014, 32'd5); // Priority 5 for source 5
+        plic_write(32'h00_2000, 32'h00000020); // Enable source 5
         plic_write(32'h20_0000, 32'd1); // Threshold 1
         
         // 2. Generate PWM IRQ
@@ -145,7 +145,7 @@ module pwm_tb_plic;
         
         // 3. Claim the interrupt
         plic_read(32'h20_0004, rdata);
-        check_ok("Claim returns source 15", rdata == 15);
+        check_ok("Claim returns source 5", rdata == 5);
         
         // Wait 10 hclk cycles. PLIC target should be deasserted because we claimed it
         repeat(10) @(posedge hclk);
@@ -157,7 +157,7 @@ module pwm_tb_plic;
         check_ok("PWM irq_o deasserted after W1C", irq_o == 0);
         
         // 5. Complete PLIC
-        plic_write(32'h20_0004, 32'd15);
+        plic_write(32'h20_0004, 32'd5);
         
         // Wait a few hclks
         repeat(10) @(posedge hclk);

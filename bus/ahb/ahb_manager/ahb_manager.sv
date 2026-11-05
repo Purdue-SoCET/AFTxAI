@@ -28,9 +28,6 @@ module ahb_manager #(
     logic saved_wen;
     logic saved_ren;
 
-    assign ahb.HCLK = HCLK;
-    assign ahb.HRESETn = HRESETn;
-
     always_ff @(posedge HCLK or negedge HRESETn) begin
         if (!HRESETn) begin
             state <= IDLE;
@@ -52,6 +49,16 @@ module ahb_manager #(
         end
     end
 
+    function logic [2:0] get_hsize(input logic [(HDATA_WIDTH/8)-1:0] strb);
+        if (strb == 4'b0001 || strb == 4'b0010 || strb == 4'b0100 || strb == 4'b1000) begin
+            return ahb_pkg::BYTE;
+        end else if (strb == 4'b0011 || strb == 4'b1100) begin
+            return ahb_pkg::HALFWORD;
+        end else begin
+            return ahb_pkg::WORD;
+        end
+    endfunction
+
     always_comb begin
         next_state = state;
         
@@ -59,7 +66,7 @@ module ahb_manager #(
         ahb.HTRANS = ahb_pkg::IDLE;
         ahb.HADDR = '0;
         ahb.HWRITE = 1'b0;
-        ahb.HSIZE = ahb_pkg::WORD; // Default size, could be based on strobe but let's assume WORD
+        ahb.HSIZE = ahb_pkg::WORD;
         ahb.HBURST = ahb_pkg::SINGLE;
         ahb.HMASTLOCK = 1'b0;
         ahb.HWDATA = '0;
@@ -78,6 +85,7 @@ module ahb_manager #(
                     ahb.HTRANS = ahb_pkg::NONSEQ;
                     ahb.HADDR = generic_if.addr;
                     ahb.HWRITE = generic_if.wen;
+                    ahb.HSIZE = get_hsize(generic_if.strobe);
                     generic_if.request_stall = 1'b1;
                     
                     if (ahb.HREADY) begin
@@ -93,6 +101,7 @@ module ahb_manager #(
                 ahb.HTRANS = ahb_pkg::NONSEQ;
                 ahb.HADDR = saved_addr;
                 ahb.HWRITE = saved_wen;
+                ahb.HSIZE = get_hsize(saved_strobe);
                 
                 if (ahb.HREADY) begin
                     next_state = DATA_PHASE;

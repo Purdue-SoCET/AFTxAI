@@ -9,5 +9,5 @@ interface spi_if;
   logic sck_out;
   logic ss_out;
   logic mode;
-  logic [5:0] irq;
+  logic irq;
 endinterface

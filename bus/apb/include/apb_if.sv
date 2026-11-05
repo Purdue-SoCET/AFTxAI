@@ -5,28 +5,30 @@ interface apb_if #(
     parameter int ADDR_WIDTH = 32,
     parameter int DATA_WIDTH = 32
 ) (
-    input logic pclk,
-    input logic presetn
+    input logic PCLK,
+    input logic PRESETn
 );
-    logic [ADDR_WIDTH-1:0]     paddr;
-    logic                      psel;
-    logic                      penable;
-    logic                      pwrite;
-    logic [DATA_WIDTH-1:0]     pwdata;
-    logic [(DATA_WIDTH/8)-1:0] pstrb;
-    logic [2:0]                pprot;
-    logic [DATA_WIDTH-1:0]     prdata;
-    logic                      pready;
-    logic                      pslverr;
+    logic [ADDR_WIDTH-1:0]     PADDR;
+    logic                      PSEL;
+    logic                      PENABLE;
+    logic                      PWRITE;
+    logic [DATA_WIDTH-1:0]     PWDATA;
+    logic [(DATA_WIDTH/8)-1:0] PSTRB;
+    logic [2:0]                PPROT;
+    logic [DATA_WIDTH-1:0]     PRDATA;
+    logic                      PREADY;
+    logic                      PSLVERR;
 
     modport requester (
-        output paddr, psel, penable, pwrite, pwdata, pstrb, pprot,
-        input  prdata, pready, pslverr
+        input PCLK, PRESETn,
+        output PADDR, PSEL, PENABLE, PWRITE, PWDATA, PSTRB, PPROT,
+        input  PRDATA, PREADY, PSLVERR
     );
 
     modport completer (
-        input  paddr, psel, penable, pwrite, pwdata, pstrb, pprot,
-        output prdata, pready, pslverr
+        input PCLK, PRESETn,
+        input  PADDR, PSEL, PENABLE, PWRITE, PWDATA, PSTRB, PPROT,
+        output PRDATA, PREADY, PSLVERR
     );
 endinterface
 

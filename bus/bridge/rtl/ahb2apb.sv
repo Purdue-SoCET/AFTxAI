@@ -163,7 +163,7 @@ module ahb2apb #(
         end else begin
             if ((ahb_state == AHB_IDLE && ahb_req_valid) ||
                 (ahb_state == AHB_WAIT && fwd_pushed && !ret_rempty && ret_rdata[DATA_WIDTH] == 1'b0 && ahbif.HSEL && ahbif.HTRANS[1])) begin
-                latched_addr    <= ahbif.HADDR - BASE_ADDR;
+                latched_addr    <= ahbif.HADDR;
                 latched_write   <= ahbif.HWRITE;
                 latched_addr_ok <= ahb_addr_ok;
             end

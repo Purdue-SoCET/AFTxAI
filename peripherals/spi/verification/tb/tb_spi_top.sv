@@ -55,23 +55,23 @@ module tb_spi_top;
 
   task bus_write(input [31:0] addr, input [31:0] data);
     @(posedge pclk);
-    apb_bus.paddr = addr; apb_bus.pwdata = data; apb_bus.pwrite = 1; apb_bus.psel = 1; apb_bus.penable = 0;
+    apb_bus.PADDR = addr; apb_bus.PWDATA = data; apb_bus.PWRITE = 1; apb_bus.PSEL = 1; apb_bus.PENABLE = 0;
     @(posedge pclk);
-    apb_bus.penable = 1;
-    wait(apb_bus.pready);
+    apb_bus.PENABLE = 1;
+    wait(apb_bus.PREADY);
     @(posedge pclk);
-    apb_bus.psel = 0; apb_bus.penable = 0; apb_bus.pwrite = 0;
+    apb_bus.PSEL = 0; apb_bus.PENABLE = 0; apb_bus.PWRITE = 0;
   endtask
 
   task bus_read(input [31:0] addr, output [31:0] data);
     @(posedge pclk);
-    apb_bus.paddr = addr; apb_bus.pwrite = 0; apb_bus.psel = 1; apb_bus.penable = 0;
+    apb_bus.PADDR = addr; apb_bus.PWRITE = 0; apb_bus.PSEL = 1; apb_bus.PENABLE = 0;
     @(posedge pclk);
-    apb_bus.penable = 1;
-    wait(apb_bus.pready);
-    data = apb_bus.prdata;
+    apb_bus.PENABLE = 1;
+    wait(apb_bus.PREADY);
+    data = apb_bus.PRDATA;
     @(posedge pclk);
-    apb_bus.psel = 0; apb_bus.penable = 0;
+    apb_bus.PSEL = 0; apb_bus.PENABLE = 0;
   endtask
 
   task test_spi_mode(int mode, logic cpol, logic cpha);
@@ -205,7 +205,7 @@ module tb_spi_top;
   // Test Sequence
   initial begin
     nRST = 0;
-    apb_bus.paddr = 0; apb_bus.pwdata = 0; apb_bus.pwrite = 0; apb_bus.psel = 0; apb_bus.penable = 0;
+    apb_bus.PADDR = 0; apb_bus.PWDATA = 0; apb_bus.PWRITE = 0; apb_bus.PSEL = 0; apb_bus.PENABLE = 0;
     spi_bus.miso_in = 0;
     spi_bus.mosi_in = 0;
     spi_bus.sck_in = 0;
@@ -216,18 +216,18 @@ module tb_spi_top;
 
     // Simple Controller TX Test
     // Write CLKDIV = 3
-    apb_bus.paddr = 8'h08; apb_bus.pwdata = 3; apb_bus.pwrite = 1; apb_bus.psel = 1;
-    #10 apb_bus.penable = 1; #10 apb_bus.psel = 0; apb_bus.penable = 0; #10;
+    apb_bus.PADDR = 8'h08; apb_bus.PWDATA = 3; apb_bus.PWRITE = 1; apb_bus.PSEL = 1;
+    #10 apb_bus.PENABLE = 1; #10 apb_bus.PSEL = 0; apb_bus.PENABLE = 0; #10;
 
     // Write TXDATA = 0xA5
-    apb_bus.paddr = 8'h0C; apb_bus.pwdata = 8'hA5; apb_bus.pwrite = 1; apb_bus.psel = 1;
-    #10 apb_bus.penable = 1; #10 apb_bus.psel = 0; apb_bus.penable = 0; #10;
+    apb_bus.PADDR = 8'h0C; apb_bus.PWDATA = 8'hA5; apb_bus.PWRITE = 1; apb_bus.PSEL = 1;
+    #10 apb_bus.PENABLE = 1; #10 apb_bus.PSEL = 0; apb_bus.PENABLE = 0; #10;
 
     // Write CTRL to start transaction
     // mode=1, msb_first=1, ssoe=1, start_transaction=1
     // CR[1] = 1, CR[5] = 1, CR[4]=1, CR[0]=1 -> 0x33
-    apb_bus.paddr = 8'h00; apb_bus.pwdata = 32'h00000033; apb_bus.pwrite = 1; apb_bus.psel = 1;
-    #10 apb_bus.penable = 1; #10 apb_bus.psel = 0; apb_bus.penable = 0; #10;
+    apb_bus.PADDR = 8'h00; apb_bus.PWDATA = 32'h00000033; apb_bus.PWRITE = 1; apb_bus.PSEL = 1;
+    #10 apb_bus.PENABLE = 1; #10 apb_bus.PSEL = 0; apb_bus.PENABLE = 0; #10;
 
     // SPI Modes 1-3
     nRST = 0; #20; nRST = 1; #20;

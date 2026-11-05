@@ -28,10 +28,10 @@ module timer_ahb_integration_tb;
     ahb_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) ahb (.HCLK(hclk), .HRESETn(hresetn));
 
     // APB Interface from Bridge
-    apb_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) apb_req (.pclk(pclk), .presetn(presetn));
+    apb_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) apb_req (.PCLK(pclk), .PRESETn(presetn));
 
     // APB Completer interfaces
-    apb_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) apb_comp[1] (.pclk(pclk), .presetn(presetn));
+    apb_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) apb_comp[1] (.PCLK(pclk), .PRESETn(presetn));
 
     // AHB to APB Bridge
     ahb2apb #(
@@ -64,8 +64,6 @@ module timer_ahb_integration_tb;
     timer_apb_wrapper #(
         .BASE_ADDR(32'h0000_2000)
     ) u_timer_wrapper (
-        .pclk(pclk),
-        .presetn(presetn),
         .apb(apb_comp[0].completer),
         .capture_i(capture_i),
         .irq_o(irq_o)

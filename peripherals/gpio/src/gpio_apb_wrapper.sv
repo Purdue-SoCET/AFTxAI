@@ -1,8 +1,6 @@
 module gpio_apb_wrapper #(
     parameter int GPIO_WIDTH = 32
 ) (
-    input logic pclk,
-    input logic presetn,
     apb_if.completer apb,
 
     // Physical pin interface
@@ -20,22 +18,22 @@ module gpio_apb_wrapper #(
     gpio_apb #(
         .GPIO_WIDTH(GPIO_WIDTH)
     ) i_gpio_apb (
-        .pclk    (pclk),
-        .presetn (presetn),
+        .pclk    (apb.PCLK),
+        .presetn (apb.PRESETn),
         
         // Pass only the lower 8 bits of PADDR to match gpio_apb expectations
-        .paddr   (apb.paddr[7:0]),
+        .paddr   (apb.PADDR[7:0]),
         
-        .psel    (apb.psel),
-        .penable (apb.penable),
-        .pwrite  (apb.pwrite),
-        .pwdata  (apb.pwdata),
-        .pstrb   (apb.pstrb),
-        .pprot   (apb.pprot),
+        .psel    (apb.PSEL),
+        .penable (apb.PENABLE),
+        .pwrite  (apb.PWRITE),
+        .pwdata  (apb.PWDATA),
+        .pstrb   (apb.PSTRB),
+        .pprot   (apb.PPROT),
         
-        .prdata  (apb.prdata),
-        .pready  (apb.pready),
-        .pslverr (apb.pslverr),
+        .prdata  (apb.PRDATA),
+        .pready  (apb.PREADY),
+        .pslverr (apb.PSLVERR),
         
         .gpio_in_i        (gpio_in_i),
         .gpio_out_o       (gpio_out_o),

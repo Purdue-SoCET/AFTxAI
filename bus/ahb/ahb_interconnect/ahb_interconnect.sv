@@ -4,7 +4,6 @@ module ahb_interconnect #(
     parameter int NMANAGERS = 2,
     parameter int NSUBORDINATES = 2,
     parameter logic [31:0] AHB_MAP [NSUBORDINATES] = '{default: 32'h0},
-    parameter logic [31:0] AHB_MASK [NSUBORDINATES] = '{default: 32'hF000_0000},
     parameter int HDATA_WIDTH = 32
 ) (
     input logic HCLK,
@@ -113,11 +112,9 @@ module ahb_interconnect #(
     always_comb begin
         active_manager_addr_phase = granted_manager;
         if (current_hready && !request[granted_manager]) begin
-            for (int i = 1; i <= NMANAGERS; i++) begin
-                int static_idx;
-                static_idx = (granted_manager + i) % NMANAGERS;
-                if (request[static_idx]) begin
-                    active_manager_addr_phase = static_idx;
+            for (int i = 0; i < NMANAGERS; i++) begin
+                if (request[i]) begin
+                    active_manager_addr_phase = i;
                     break;
                 end
             end
@@ -130,11 +127,22 @@ module ahb_interconnect #(
     always_comb begin
         current_haddr = mgr_HADDR[active_manager_addr_phase];
         active_sub_addr_phase = NSUBORDINATES; // Default to unmapped (default subordinate)
-        for (int i = 0; i < NSUBORDINATES; i++) begin
-            if ((current_haddr & AHB_MASK[i]) == (AHB_MAP[i] & AHB_MASK[i])) begin
-                active_sub_addr_phase = i;
-                break;
+        
+        begin
+            logic [31:0] highest_base;
+            int unsigned best_match;
+            highest_base = 32'h0;
+            best_match = NSUBORDINATES;
+            
+            for (int i = 0; i < NSUBORDINATES; i++) begin
+                if (current_haddr >= AHB_MAP[i]) begin
+                    if (best_match == NSUBORDINATES || AHB_MAP[i] >= highest_base) begin
+                        highest_base = AHB_MAP[i];
+                        best_match = i;
+                    end
+                end
             end
+            active_sub_addr_phase = best_match;
         end
     end
 

@@ -18,7 +18,7 @@ module timer_plic_integration_tb;
     end
 
     // APB Interface for Timer
-    apb_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) apb_req (.pclk(clk), .presetn(rst_n));
+    apb_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) apb_req (.PCLK(clk), .PRESETn(rst_n));
 
     // Bus Protocol Interface for PLIC
     bus_protocol_if #(.ADDR_WIDTH(32), .DATA_WIDTH(32)) plic_bus ();
@@ -41,8 +41,8 @@ module timer_plic_integration_tb;
         .irq_o(irq_o)
     );
 
-    // Connect Timer IRQ to PLIC source 15 (TEST-ONLY: PlIC source 15 is temporary. Central integrator must choose distinct source indices)
-    assign irq_if.irq_source[15] = irq_o;
+    // Connect Timer IRQ to PLIC source 6
+    assign irq_if.irq_source[6] = irq_o;
 
     // PLIC
     plic u_plic (
@@ -55,18 +55,18 @@ module timer_plic_integration_tb;
     // BFM Tasks for APB
     task apb_write(input logic [31:0] addr, input logic [31:0] data, input logic [3:0] strb);
         @(posedge clk);
-        apb_req.paddr <= addr;
-        apb_req.pwrite <= 1'b1;
-        apb_req.psel <= 1'b1;
-        apb_req.penable <= 1'b0;
-        apb_req.pwdata <= data;
-        apb_req.pstrb <= strb;
+        apb_req.PADDR <= addr;
+        apb_req.PWRITE <= 1'b1;
+        apb_req.PSEL <= 1'b1;
+        apb_req.PENABLE <= 1'b0;
+        apb_req.PWDATA <= data;
+        apb_req.PSTRB <= strb;
         @(posedge clk);
-        apb_req.penable <= 1'b1;
+        apb_req.PENABLE <= 1'b1;
         @(posedge clk);
-        while (!apb_req.pready) @(posedge clk);
-        apb_req.psel <= 1'b0;
-        apb_req.penable <= 1'b0;
+        while (!apb_req.PREADY) @(posedge clk);
+        apb_req.PSEL <= 1'b0;
+        apb_req.PENABLE <= 1'b0;
     endtask
 
     // BFM Tasks for PLIC Bus
@@ -98,13 +98,13 @@ module timer_plic_integration_tb;
     initial begin
         capture_i = 0;
         
-        apb_req.paddr = 0;
-        apb_req.pwrite = 0;
-        apb_req.psel = 0;
-        apb_req.penable = 0;
-        apb_req.pwdata = 0;
-        apb_req.pstrb = 0;
-        apb_req.pprot = 0;
+        apb_req.PADDR = 0;
+        apb_req.PWRITE = 0;
+        apb_req.PSEL = 0;
+        apb_req.PENABLE = 0;
+        apb_req.PWDATA = 0;
+        apb_req.PSTRB = 0;
+        apb_req.PPROT = 0;
 
         plic_bus.wen = 0;
         plic_bus.ren = 0;
@@ -116,11 +116,11 @@ module timer_plic_integration_tb;
         #100;
 
         // 1. Configure PLIC
-        // Priority for source 15 = 7
-        plic_write(32'h00_003C, 32'h00000007); // 15 * 4 = 60 = 0x3C
+        // Priority for source 6 = 7
+        plic_write(32'h00_0018, 32'h00000007); // 6 * 4 = 24 = 0x18
         
-        // Enable for source 15
-        plic_write(32'h00_2000, 32'h00008000); // bit 15
+        // Enable for source 6
+        plic_write(32'h00_2000, 32'h00000040); // bit 6
         
         // Threshold = 0
         plic_write(32'h20_0000, 32'h00000000);
@@ -140,7 +140,7 @@ module timer_plic_integration_tb;
 
         // 3. Claim interrupt
         plic_read(32'h20_0004, rdata);
-        if (rdata !== 32'd15) $error("Claim ID mismatch");
+        if (rdata !== 32'd6) $error("Claim ID mismatch");
 
         // 4. Check PLIC pending is cleared (but irq_o is still active!)
         // Wait, PLIC target should be 0 because we claimed it and max_id = 0 now (pending cleared)
@@ -150,7 +150,7 @@ module timer_plic_integration_tb;
         if (irq_if.irq_target !== 1'b0) $error("PLIC target not deasserted after claim");
 
         // 5. Complete interrupt
-        plic_write(32'h20_0004, 32'd15);
+        plic_write(32'h20_0004, 32'd6);
         @(posedge clk);
 
         // 6. Because Timer IRQ is level-sensitive and we haven't cleared it, PLIC should re-trigger
@@ -165,7 +165,7 @@ module timer_plic_integration_tb;
 
         // 8. Re-claim and complete to clear the re-triggered PLIC
         plic_read(32'h20_0004, rdata);
-        plic_write(32'h20_0004, 32'd15);
+        plic_write(32'h20_0004, 32'd6);
         @(posedge clk);
         
         #20;

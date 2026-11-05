@@ -82,7 +82,9 @@ module ahb_sva #(
 
 endmodule
 
-// Bind to the interface
+// Removed to resolve K-07: Binding a module into an interface is rejected by strict elaborators.
+// Top-level testbenches should instantiate ahb_sva manually or bind it to module instances.
+/*
 bind ahb_if ahb_sva #(
     .ADDR_WIDTH(ADDR_WIDTH),
     .DATA_WIDTH(DATA_WIDTH)
@@ -100,5 +102,6 @@ bind ahb_if ahb_sva #(
     .HSIZE(HSIZE),
     .HADDR(HADDR)
 );
+*/
 
 `endif

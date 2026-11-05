@@ -20,7 +20,10 @@ module tb_uart;
         .HRESETn(rst_n)
     );
     
-    uart_if uif();
+    uart_if uif(
+        .clk(clk),
+        .rst_n(rst_n)
+    );
     
     // In a single-slave AHB setup, HREADY input to master/slave is driven by HREADYOUT of slave
     assign ahb.HREADY = ahb.HREADYOUT;
