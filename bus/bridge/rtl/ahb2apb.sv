@@ -111,7 +111,7 @@ module ahb2apb #(
     ) fwd_fifo (
         .wclk(ahbif.HCLK), .wrst_n(ahbif.HRESETn),
         .winc(fwd_winc), .wdata(fwd_wdata), .wfull(fwd_wfull),
-        .rclk(apbif.pclk), .rrst_n(apbif.presetn),
+        .rclk(apbif.PCLK), .rrst_n(apbif.PRESETn),
         .rinc(fwd_rinc), .rdata(fwd_rdata), .rempty(fwd_rempty)
     );
 
@@ -119,7 +119,7 @@ module ahb2apb #(
         .WIDTH(RET_WIDTH),
         .DEPTH(FIFO_DEPTH)
     ) ret_fifo (
-        .wclk(apbif.pclk), .wrst_n(apbif.presetn),
+        .wclk(apbif.PCLK), .wrst_n(apbif.PRESETn),
         .winc(ret_winc), .wdata(ret_wdata), .wfull(ret_wfull),
         .rclk(ahbif.HCLK), .rrst_n(ahbif.HRESETn),
         .rinc(ret_rinc), .rdata(ret_rdata), .rempty(ret_rempty)
@@ -269,8 +269,8 @@ module ahb2apb #(
 
     apb_state_t apb_state, apb_next;
 
-    always_ff @(posedge apbif.pclk or negedge apbif.presetn) begin
-        if (!apbif.presetn)
+    always_ff @(posedge apbif.PCLK or negedge apbif.PRESETn) begin
+        if (!apbif.PRESETn)
             apb_state <= APB_IDLE;
         else
             apb_state <= apb_next;
@@ -288,47 +288,47 @@ module ahb2apb #(
         fwd_rinc = 1'b0;
         ret_winc = 1'b0;
         
-        apbif.psel    = 1'b0;
-        apbif.penable = 1'b0;
-        apbif.paddr   = '0;
-        apbif.pwdata  = '0;
-        apbif.pwrite  = 1'b0;
-        apbif.pstrb   = '0;
-        apbif.pprot   = '0;
+        apbif.PSEL    = 1'b0;
+        apbif.PENABLE = 1'b0;
+        apbif.PADDR   = '0;
+        apbif.PWDATA  = '0;
+        apbif.PWRITE  = 1'b0;
+        apbif.PSTRB   = '0;
+        apbif.PPROT   = '0;
         
-        ret_wdata = {apbif.pslverr, apbif.prdata};
+        ret_wdata = {apbif.PSLVERR, apbif.PRDATA};
 
         case (apb_state)
             APB_IDLE: begin
                 if (!fwd_rempty) begin
-                    apbif.psel    = 1'b1;
-                    apbif.paddr   = apb_req_addr;
-                    apbif.pwdata  = apb_req_wdata;
-                    apbif.pwrite  = apb_req_write;
-                    apbif.pstrb   = apb_req_strb;
+                    apbif.PSEL    = 1'b1;
+                    apbif.PADDR   = apb_req_addr;
+                    apbif.PWDATA  = apb_req_wdata;
+                    apbif.PWRITE  = apb_req_write;
+                    apbif.PSTRB   = apb_req_strb;
                     apb_next      = APB_SETUP;
                 end
             end
             
             APB_SETUP: begin
-                apbif.psel    = 1'b1;
-                apbif.penable = 1'b0;
-                apbif.paddr   = apb_req_addr;
-                apbif.pwdata  = apb_req_wdata;
-                apbif.pwrite  = apb_req_write;
-                apbif.pstrb   = apb_req_strb;
+                apbif.PSEL    = 1'b1;
+                apbif.PENABLE = 1'b0;
+                apbif.PADDR   = apb_req_addr;
+                apbif.PWDATA  = apb_req_wdata;
+                apbif.PWRITE  = apb_req_write;
+                apbif.PSTRB   = apb_req_strb;
                 apb_next      = APB_ACCESS;
             end
             
             APB_ACCESS: begin
-                apbif.psel    = 1'b1;
-                apbif.penable = 1'b1;
-                apbif.paddr   = apb_req_addr;
-                apbif.pwdata  = apb_req_wdata;
-                apbif.pwrite  = apb_req_write;
-                apbif.pstrb   = apb_req_strb;
+                apbif.PSEL    = 1'b1;
+                apbif.PENABLE = 1'b1;
+                apbif.PADDR   = apb_req_addr;
+                apbif.PWDATA  = apb_req_wdata;
+                apbif.PWRITE  = apb_req_write;
+                apbif.PSTRB   = apb_req_strb;
                 
-                if (apbif.pready) begin
+                if (apbif.PREADY) begin
                     ret_winc = 1'b1;
                     fwd_rinc = 1'b1;
                     apb_next = APB_IDLE;

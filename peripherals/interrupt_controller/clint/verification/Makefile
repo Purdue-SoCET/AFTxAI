@@ -1,7 +1,7 @@
 # Makefile for CLINT verification
 RTL_DIR = ../rtl
 INC_DIR = ../include
-BUS_INC_DIR = ../../../bus/generic
+BUS_INC_DIR = ../../../../bus/generic
 
 SRC = $(BUS_INC_DIR)/bus_protocol_if.sv $(INC_DIR)/clint_if.sv $(RTL_DIR)/clint.sv tb_clint.sv
 LINT_SRC = $(BUS_INC_DIR)/bus_protocol_if.sv $(INC_DIR)/clint_if.sv tb_clint.sv

@@ -53,44 +53,44 @@ module tb_ahb2apb;
     int   apb_delay = 0;
 
     initial begin
-        apb.pready = 1;
-        apb.prdata = '0;
-        apb.pslverr = 0;
+        apb.PREADY = 1;
+        apb.PRDATA = '0;
+        apb.PSLVERR = 0;
         forever begin
             @(posedge pclk);
-            if (apb.psel && !apb.penable) begin
+            if (apb.PSEL && !apb.PENABLE) begin
                 // SETUP phase
-                apb.pready <= 0;
-                apb.pslverr <= 0;
+                apb.PREADY <= 0;
+                apb.PSLVERR <= 0;
             end
-            else if (apb.psel && apb.penable) begin
+            else if (apb.PSEL && apb.PENABLE) begin
                 // ACCESS phase
                 if (apb_delay > 0) begin
                     apb_delay--;
-                    apb.pready <= 0;
+                    apb.PREADY <= 0;
                 end else begin
-                    apb.pready <= 1;
+                    apb.PREADY <= 1;
                     if (force_pslverr) begin
-                        apb.pslverr <= 1;
+                        apb.PSLVERR <= 1;
                     end else begin
-                        apb.pslverr <= 0;
-                        if (apb.pwrite) begin
+                        apb.PSLVERR <= 0;
+                        if (apb.PWRITE) begin
                             // Write
                             logic [31:0] word;
-                            word = apb_mem[apb.paddr[13:2]];
+                            word = apb_mem[apb.PADDR[13:2]];
                             for (int i=0; i<4; i++) begin
-                                if (apb.pstrb[i]) word[i*8 +: 8] = apb.pwdata[i*8 +: 8];
+                                if (apb.PSTRB[i]) word[i*8 +: 8] = apb.PWDATA[i*8 +: 8];
                             end
-                            apb_mem[apb.paddr[13:2]] = word;
+                            apb_mem[apb.PADDR[13:2]] = word;
                         end else begin
                             // Read
-                            apb.prdata <= apb_mem[apb.paddr[13:2]];
+                            apb.PRDATA <= apb_mem[apb.PADDR[13:2]];
                         end
                     end
                 end
             end else begin
-                apb.pready <= 1;
-                apb.pslverr <= 0;
+                apb.PREADY <= 1;
+                apb.PSLVERR <= 0;
             end
         end
     end

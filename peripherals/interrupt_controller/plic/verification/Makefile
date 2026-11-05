@@ -33,5 +33,7 @@ XRUN_ARGS += uvm/plic_uvm_pkg.sv uvm/tb_uvm_top.sv
 XRUN_ARGS += -access +rwc
 XRUN_ARGS += +UVM_TESTNAME=plic_sanity_test
 
+regress: sim_uvm
+
 sim_uvm:
 	xrun $(XRUN_ARGS)
