@@ -3,8 +3,9 @@
 ## 1. Core Architecture Overview
 ### 1.1. ISA & Capabilities
 - **Base ISA:** Parameterized for `RV32I` or `RV32E`.
-- **Extensions:** Base I/E only.
-  - *Unsupported:* `Zicsr`, `M` extension, interrupts, virtual memory/TLBs.
+- **Extensions:** Base I/E, `Zicsr` (partial), and Machine-Mode Privileged Architecture.
+  - *Supported Interrupts:* CLINT (`mtip`, `msip`) and PLIC (`meip`).
+  - *Unsupported:* `M` extension, virtual memory/TLBs.
   - All addresses are treated as physical.
 - **Memory Accesses:** All loads and stores are assumed to be naturally aligned (hardware ignores the bottom two bits of the address).
 - **Error Handling:** The core halts execution upon encountering an illegal instruction.

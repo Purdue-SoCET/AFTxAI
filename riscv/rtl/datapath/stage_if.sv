@@ -21,12 +21,18 @@ module stage_if #(parameter logic [31:0] BOOT_ADDR = 32'h0000_0000) (
     logic [31:0] next_if_pc_out, next_if_instr_out;
 
     always_comb begin
-        if (port.flush_if) next_pc = port.mispredict_target;
+        if (port.trap_flush) next_pc = port.trap_target_pc;
+        else if (port.flush_if) next_pc = port.mispredict_target;
         else if (port.global_stall) next_pc = pc;
         else if (if_is_jal || (if_is_branch && port.bp_predict_taken)) next_pc = pc_target_if;
         else next_pc = pc + 32'd4;
 
-        if (port.global_stall) begin
+        if (port.trap_flush) begin
+            next_if_valid_out = 1'b0;
+            next_if_pc_out = 32'b0;
+            next_if_instr_out = 32'b0;
+            next_if_pred_taken_out = 1'b0;
+        end else if (port.global_stall) begin
             next_if_valid_out = port.if_valid_out;
             next_if_pc_out = port.if_pc_out;
             next_if_instr_out = port.if_instr_out;

@@ -2,7 +2,7 @@
 module riscv #(parameter int RV32E = 0, parameter logic [31:0] BOOT_ADDR = 32'h0000_0000) (
     input logic HCLK, input logic nRST,
     bus_ahbm_if.manager ahbm_if,
-    riscv_if.mp port_unused
+    riscv_if.mp port
 );
     cpu_cache_if icache_cpu_if();
     cpu_cache_if dcache_cpu_if();
@@ -18,6 +18,10 @@ module riscv #(parameter int RV32E = 0, parameter logic [31:0] BOOT_ADDR = 32'h0
     assign dp_if.dcache_error = dcache_cpu_if.error;
     
     datapath #(.RV32E(RV32E), .BOOT_ADDR(BOOT_ADDR)) dp_inst (.HCLK(HCLK), .nRST(nRST), .port(dp_if.mp));
+
+    assign dp_if.mtip = port.mtip;
+    assign dp_if.msip = port.msip;
+    assign dp_if.meip = port.meip;
 
     assign icache_cpu_if.valid = dp_if.icache_valid;
     assign icache_cpu_if.addr = dp_if.icache_addr;

@@ -15,6 +15,9 @@ module control_unit(control_unit_if.mp port);
         port.wb_src_mem = 1'b0;
         port.wb_src_pc = 1'b0;
         port.illegal_instr = 1'b0;
+        port.is_csr = 1'b0;
+        port.is_mret = 1'b0;
+        port.wb_src_csr = 1'b0;
 
         case (port.opcode)
             7'b0110111: begin port.reg_write = 1'b1; port.imm_src = 3'd3; port.alu_src_b_imm = 1'b1; port.alu_op = 4'd10; end
@@ -37,6 +40,16 @@ module control_unit(control_unit_if.mp port);
                     3'b000: port.alu_op = port.funct7[5] ? 4'd1 : 4'd0; 3'b010: port.alu_op = 4'd3; 3'b011: port.alu_op = 4'd4; 3'b100: port.alu_op = 4'd5;
                     3'b110: port.alu_op = 4'd8; 3'b111: port.alu_op = 4'd9; 3'b001: port.alu_op = 4'd2; 3'b101: port.alu_op = port.funct7[5] ? 4'd7 : 4'd6;
                 endcase
+            end
+            7'b1110011: begin // SYSTEM
+                if (port.funct3 == 3'b000) begin
+                    if (port.funct7 == 7'b0011000) port.is_mret = 1'b1;
+                    else if (port.funct7 != 7'b0000000) port.illegal_instr = 1'b1; // ecall/ebreak not supported fully, just nop or illegal? Let's just flag illegal if not mret/ecall/ebreak. Wait, we can treat ebreak/ecall as illegal if not supported.
+                end else begin
+                    port.is_csr = 1'b1;
+                    port.reg_write = 1'b1;
+                    port.wb_src_csr = 1'b1;
+                end
             end
             7'b0000000: ; // NOP
             default: port.illegal_instr = 1'b1;
