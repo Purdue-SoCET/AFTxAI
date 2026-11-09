@@ -19,7 +19,7 @@ module stage_ex #(parameter int RV32E = 0) (
 
     regfile_if rf_if();
     assign rf_if.rs1 = rs1; assign rf_if.rs2 = rs2; assign rf_if.rd = port.wb_rd_in;
-    assign rf_if.wdata = port.wb_data_in; assign rf_if.we = port.wb_reg_write_in;
+    assign rf_if.wdata = port.wb_data_in; assign rf_if.we = port.wb_reg_write_in && !port.global_stall;
     regfile #(.NUM_REGS(RV32E ? 16 : 32)) rf_inst(.HCLK(HCLK), .nRST(nRST), .port(rf_if.mp));
 
     forwarding_unit_if fu_if();

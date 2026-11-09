@@ -41,7 +41,7 @@ module stage_wb(stage_wb_if.mp port);
         port.csr_write_data_out = port.ex_csr_write_data;
         
         if (port.ex_valid && !port.halt) begin
-            if (port.interrupt_pending) begin
+            if (port.interrupt_pending && !(port.ex_mem_read || port.ex_mem_write)) begin
                 port.trap_req_out = 1'b1;
                 port.trap_cause_out = port.interrupt_cause;
                 port.trap_pc_out = port.ex_pc; // The instruction about to commit gets interrupted

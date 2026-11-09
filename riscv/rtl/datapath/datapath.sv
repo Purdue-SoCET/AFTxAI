@@ -27,7 +27,7 @@ module datapath #(parameter int RV32E = 0, parameter logic [31:0] BOOT_ADDR = 32
     assign hz_if.ex_branch_taken = ex_if.ex_branch_taken;
     assign hz_if.ex_pred_taken = ex_if.ex_pred_taken_out;
     assign hz_if.ex_is_jalr = ex_if.ex_is_jalr;
-    assign hz_if.trap_flush = wb_if.trap_req_out || wb_if.mret_req_out;
+    assign hz_if.trap_flush = (wb_if.trap_req_out || wb_if.mret_req_out) && !hz_if.global_stall_out;
     hazard_unit hz_inst(.port(hz_if.mp));
 
     assign bp_if.fetch_pc = if_if.fetch_pc;
@@ -91,12 +91,12 @@ module datapath #(parameter int RV32E = 0, parameter logic [31:0] BOOT_ADDR = 32
     assign csr_if.msip = port.msip;
     assign csr_if.meip = port.meip;
     assign csr_if.csr_read_addr = ex_if.csr_read_addr;
-    assign csr_if.csr_write_en = wb_if.csr_write_en_out;
+    assign csr_if.csr_write_en = wb_if.csr_write_en_out && !hz_if.global_stall_out;
     assign csr_if.csr_write_addr = wb_if.csr_write_addr_out;
     assign csr_if.csr_write_data = wb_if.csr_write_data_out;
-    assign csr_if.trap_req = wb_if.trap_req_out;
+    assign csr_if.trap_req = wb_if.trap_req_out && !hz_if.global_stall_out;
     assign csr_if.trap_cause = wb_if.trap_cause_out;
     assign csr_if.trap_pc = wb_if.trap_pc_out;
-    assign csr_if.mret_req = wb_if.mret_req_out;
+    assign csr_if.mret_req = wb_if.mret_req_out && !hz_if.global_stall_out;
     csr_unit csr_inst(.HCLK(HCLK), .nRST(nRST), .port(csr_if.mp));
 endmodule
