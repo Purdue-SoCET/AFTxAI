@@ -19,7 +19,7 @@ module stage_ex #(parameter int RV32E = 0) (
 
     regfile_if rf_if();
     assign rf_if.rs1 = rs1; assign rf_if.rs2 = rs2; assign rf_if.rd = port.wb_rd_in;
-    assign rf_if.wdata = port.wb_data_in; assign rf_if.we = port.wb_reg_write_in;
+    assign rf_if.wdata = port.wb_data_in; assign rf_if.we = port.wb_reg_write_in && !port.global_stall;
     regfile #(.NUM_REGS(RV32E ? 16 : 32)) rf_inst(.HCLK(HCLK), .nRST(nRST), .port(rf_if.mp));
 
     forwarding_unit_if fu_if();
@@ -55,24 +55,56 @@ module stage_ex #(parameter int RV32E = 0) (
     assign port.ex_is_branch = cu_if.is_branch;
     assign port.ex_branch_taken = br_if.branch_taken;
     assign port.ex_is_jalr = cu_if.is_jalr;
+    assign port.csr_read_addr = ig_if.imm[11:0];
+    
+    logic [31:0] csr_zimm;
+    assign csr_zimm = {27'b0, rs1};
+    
+    always_comb begin
+        port.csr_write_data_out = port.csr_read_data_in;
+        case (funct3)
+            3'b001: port.csr_write_data_out = fwd_rs1;                     // csrrw
+            3'b010: port.csr_write_data_out = port.csr_read_data_in | fwd_rs1;  // csrrs
+            3'b011: port.csr_write_data_out = port.csr_read_data_in & ~fwd_rs1; // csrrc
+            3'b101: port.csr_write_data_out = csr_zimm;                    // csrrwi
+            3'b110: port.csr_write_data_out = port.csr_read_data_in | csr_zimm; // csrrsi
+            3'b111: port.csr_write_data_out = port.csr_read_data_in & ~csr_zimm;// csrrci
+            default: port.csr_write_data_out = port.csr_read_data_in;
+        endcase
+    end
+    
     assign port.illegal_instr = cu_if.illegal_instr;
 
     logic next_ex_valid_out, next_ex_reg_write_out, next_ex_mem_read_out, next_ex_mem_write_out, next_ex_wb_src_mem_out, next_ex_wb_src_pc_out;
+    logic next_ex_wb_src_csr_out, next_ex_is_mret_out, next_ex_is_csr_out;
+    logic [11:0] next_ex_csr_addr_out;
+    logic [31:0] next_ex_csr_read_data_out, next_ex_csr_write_data_out;
     logic [31:0] next_ex_pc_out, next_ex_alu_result_out, next_ex_store_data_out;
     logic [4:0] next_ex_rd_out;
     logic [2:0] next_ex_mem_size_out;
 
     always_comb begin
-        if (port.global_stall) begin
+        if (port.flush_ex) begin
+            next_ex_valid_out = 1'b0; next_ex_pc_out = 32'b0; next_ex_alu_result_out = 32'b0;
+            next_ex_store_data_out = 32'b0; next_ex_rd_out = 5'b0; next_ex_reg_write_out = 1'b0;
+            next_ex_mem_size_out = 3'b0; next_ex_mem_read_out = 1'b0; next_ex_mem_write_out = 1'b0;
+            next_ex_wb_src_mem_out = 1'b0; next_ex_wb_src_pc_out = 1'b0;
+            next_ex_wb_src_csr_out = 1'b0; next_ex_is_mret_out = 1'b0; next_ex_is_csr_out = 1'b0;
+            next_ex_csr_addr_out = 12'b0; next_ex_csr_read_data_out = 32'b0; next_ex_csr_write_data_out = 32'b0;
+        end else if (port.global_stall) begin
             next_ex_valid_out = port.ex_valid_out; next_ex_pc_out = port.ex_pc_out; next_ex_alu_result_out = port.ex_alu_result_out;
             next_ex_store_data_out = port.ex_store_data_out; next_ex_rd_out = port.ex_rd_out; next_ex_reg_write_out = port.ex_reg_write_out;
             next_ex_mem_size_out = port.ex_mem_size_out; next_ex_mem_read_out = port.ex_mem_read_out; next_ex_mem_write_out = port.ex_mem_write_out;
             next_ex_wb_src_mem_out = port.ex_wb_src_mem_out; next_ex_wb_src_pc_out = port.ex_wb_src_pc_out;
+            next_ex_wb_src_csr_out = port.ex_wb_src_csr_out; next_ex_is_mret_out = port.ex_is_mret_out; next_ex_is_csr_out = port.ex_is_csr_out;
+            next_ex_csr_addr_out = port.ex_csr_addr_out; next_ex_csr_read_data_out = port.ex_csr_read_data_out; next_ex_csr_write_data_out = port.ex_csr_write_data_out;
         end else begin
             next_ex_valid_out = port.if_valid_in; next_ex_pc_out = port.if_pc_in; next_ex_alu_result_out = alu_if_inst.result;
             next_ex_store_data_out = fwd_rs2; next_ex_rd_out = rd; next_ex_reg_write_out = (port.if_valid_in && cu_if.reg_write);
             next_ex_mem_size_out = funct3; next_ex_mem_read_out = (port.if_valid_in && cu_if.mem_read); next_ex_mem_write_out = (port.if_valid_in && cu_if.mem_write);
             next_ex_wb_src_mem_out = cu_if.wb_src_mem; next_ex_wb_src_pc_out = cu_if.wb_src_pc;
+            next_ex_wb_src_csr_out = cu_if.wb_src_csr; next_ex_is_mret_out = cu_if.is_mret; next_ex_is_csr_out = cu_if.is_csr;
+            next_ex_csr_addr_out = port.csr_read_addr; next_ex_csr_read_data_out = port.csr_read_data_in; next_ex_csr_write_data_out = port.csr_write_data_out;
         end
     end
 
@@ -82,11 +114,15 @@ module stage_ex #(parameter int RV32E = 0) (
             port.ex_store_data_out <= 32'b0; port.ex_rd_out <= 5'b0; port.ex_reg_write_out <= 1'b0;
             port.ex_mem_size_out <= 3'b0; port.ex_mem_read_out <= 1'b0; port.ex_mem_write_out <= 1'b0;
             port.ex_wb_src_mem_out <= 1'b0; port.ex_wb_src_pc_out <= 1'b0;
+            port.ex_wb_src_csr_out <= 1'b0; port.ex_is_mret_out <= 1'b0; port.ex_is_csr_out <= 1'b0;
+            port.ex_csr_addr_out <= 12'b0; port.ex_csr_read_data_out <= 32'b0; port.ex_csr_write_data_out <= 32'b0;
         end else begin
             port.ex_valid_out <= next_ex_valid_out; port.ex_pc_out <= next_ex_pc_out; port.ex_alu_result_out <= next_ex_alu_result_out;
             port.ex_store_data_out <= next_ex_store_data_out; port.ex_rd_out <= next_ex_rd_out; port.ex_reg_write_out <= next_ex_reg_write_out;
             port.ex_mem_size_out <= next_ex_mem_size_out; port.ex_mem_read_out <= next_ex_mem_read_out; port.ex_mem_write_out <= next_ex_mem_write_out;
             port.ex_wb_src_mem_out <= next_ex_wb_src_mem_out; port.ex_wb_src_pc_out <= next_ex_wb_src_pc_out;
+            port.ex_wb_src_csr_out <= next_ex_wb_src_csr_out; port.ex_is_mret_out <= next_ex_is_mret_out; port.ex_is_csr_out <= next_ex_is_csr_out;
+            port.ex_csr_addr_out <= next_ex_csr_addr_out; port.ex_csr_read_data_out <= next_ex_csr_read_data_out; port.ex_csr_write_data_out <= next_ex_csr_write_data_out;
         end
     end
 endmodule

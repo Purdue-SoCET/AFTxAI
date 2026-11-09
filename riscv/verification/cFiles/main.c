@@ -41,5 +41,5 @@ int main() {
     
     if (expected != 0) correct = 0;
     
-    return correct ? 0xAA : 0xBB;
+    return correct ? 0x600D : 0xBAD0;
 }
