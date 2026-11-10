@@ -38,6 +38,7 @@ module aft_top (
     assign manager_ports[0].HBURST    = intf.tb_hburst;
     assign manager_ports[0].HTRANS    = intf.tb_htrans;
     assign manager_ports[0].HMASTLOCK = intf.tb_hmastlock;
+    assign manager_ports[0].HSEL      = intf.tb_hsel;
     // Note: The interconnect generates HREADY and HRESP for managers.
     assign intf.tb_hrdata = manager_ports[0].HRDATA;
     assign intf.tb_hready = manager_ports[0].HREADY;
@@ -52,6 +53,7 @@ module aft_top (
     assign manager_ports[1].HBURST    = '0;
     assign manager_ports[1].HTRANS    = '0; // IDLE
     assign manager_ports[1].HMASTLOCK = '0;
+    assign manager_ports[1].HSEL      = '0;
 
     localparam logic [31:0] AHB_MAP [NSUBORDINATES] = '{
         BOOT_ROM_BASE,
