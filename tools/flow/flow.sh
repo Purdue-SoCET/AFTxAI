@@ -293,6 +293,7 @@ These rules override the skill where they conflict:
 - Wherever you would stop and ask the user, instead write each question, with the requirement IDs involved, to $LOG/$1.questions, then stop.
 - Do not create, switch or commit branches, and do not commit. The branch is already set; the user commits after review.
 - Do not modify or delete existing files outside $BLK/ (shared bus interfaces, digital_lib/, other blocks). Use them as they are. If the spec seems to need such a change, write it as a question instead. You may create new files outside $BLK/ that the spec asks for, kept minimal.
+- Never let a simulation run unattended for long: start every simulation and test run with a time limit (e.g. \`timeout 10m make sim CFG=...\`), and give every testbench a watchdog that prints FAIL and calls \$finish if simulated time runs far past the longest test. A run that hits a limit is a failure to report, not something to wait out.
 - Write your final report to $LOG/$1.report.md.
 EOF
 }
