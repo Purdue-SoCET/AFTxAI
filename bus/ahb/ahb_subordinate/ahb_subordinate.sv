@@ -59,7 +59,15 @@ module ahb_subordinate #(
         generic_if.ren = 1'b0;
         generic_if.addr = saved_addr;
         generic_if.wdata = ahb.HWDATA;
-        generic_if.strobe = ahb.HWSTRB;
+        
+        // Generate proper strobe based on HSIZE and HADDR for reads (if HWSTRB is not provided)
+        // or just use HWSTRB for writes, but we need something for reads if the slave needs it.
+        // Actually, for a 32-bit bus, we can just set strobe to all 1s for reads.
+        if (!saved_write) begin
+            generic_if.strobe = 4'b1111;
+        end else begin
+            generic_if.strobe = ahb.HWSTRB;
+        end
         generic_if.is_burst = 1'b0;
         generic_if.burst_type = 2'b0;
         generic_if.burst_length = '0;

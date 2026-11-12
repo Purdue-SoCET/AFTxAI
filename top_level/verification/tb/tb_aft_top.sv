@@ -45,63 +45,83 @@ module tb_aft_top;
 
     // AHB tasks
     task ahb_write(input logic [31:0] addr, input logic [31:0] data, input logic [2:0] size);
-        $display("ahb_write: Start addr=%h data=%h", addr, data);
+        $display("[%0t] ahb_write: Start addr=%h data=%h", $time, addr, data);
         @(posedge ext_clk);
-        top_if.tb_hsel = 1'b1;
-        top_if.tb_haddr = addr;
-        top_if.tb_hwrite = 1'b1;
-        top_if.tb_hsize = size;
-        top_if.tb_htrans = 2'b10; // NONSEQ
+        top_if.tb_hsel <= 1'b1;
+        top_if.tb_haddr <= addr;
+        top_if.tb_hwrite <= 1'b1;
+        top_if.tb_hsize <= size;
+        top_if.tb_htrans <= 2'b10; // NONSEQ
         
-        @(posedge ext_clk);
-        $display("ahb_write: Wait ready 1 addr=%h", addr);
-        while (!top_if.tb_hready) @(posedge ext_clk);
-        top_if.tb_htrans = 2'b00; // IDLE
-        top_if.tb_hwdata = data;
+        $display("[%0t] ahb_write: Address phase launched addr=%h", $time, addr);
+        do begin
+            @(posedge ext_clk);
+        end while (top_if.tb_hready !== 1'b1);
         
-        @(posedge ext_clk);
-        $display("ahb_write: Wait ready 2 addr=%h", addr);
-        while (!top_if.tb_hready) @(posedge ext_clk);
-        top_if.tb_hsel = 1'b0;
-        $display("ahb_write: Done addr=%h", addr);
+        top_if.tb_htrans <= 2'b00; // IDLE
+        top_if.tb_hsel <= 1'b0;    // Drop HSEL cleanly
+        top_if.tb_hwdata <= data;
+        
+        if (size == 3'b000) top_if.tb_hwstrb <= 4'b0001 << addr[1:0];
+        else if (size == 3'b001) top_if.tb_hwstrb <= 4'b0011 << {addr[1], 1'b0};
+        else top_if.tb_hwstrb <= 4'b1111;
+        
+        $display("[%0t] ahb_write: Data phase waiting addr=%h", $time, addr);
+        do begin
+            @(posedge ext_clk);
+        end while (top_if.tb_hready !== 1'b1);
+        
+        top_if.tb_hwstrb <= '0;
+        $display("[%0t] ahb_write: Done addr=%h", $time, addr);
     endtask
 
     task ahb_read(input logic [31:0] addr, output logic [31:0] data, input logic [2:0] size);
-        $display("ahb_read: Start addr=%h", addr);
+        $display("[%0t] ahb_read: Start addr=%h", $time, addr);
         @(posedge ext_clk);
-        top_if.tb_hsel = 1'b1;
-        top_if.tb_haddr = addr;
-        top_if.tb_hwrite = 1'b0;
-        top_if.tb_hsize = size;
-        top_if.tb_htrans = 2'b10; // NONSEQ
+        top_if.tb_hsel <= 1'b1;
+        top_if.tb_haddr <= addr;
+        top_if.tb_hwrite <= 1'b0;
+        top_if.tb_hsize <= size;
+        top_if.tb_htrans <= 2'b10; // NONSEQ
         
-        @(posedge ext_clk);
-        while (!top_if.tb_hready) @(posedge ext_clk);
-        top_if.tb_htrans = 2'b00; // IDLE
+        $display("[%0t] ahb_read: Address phase launched addr=%h", $time, addr);
+        do begin
+            @(posedge ext_clk);
+        end while (top_if.tb_hready !== 1'b1);
         
-        @(posedge ext_clk);
-        while (!top_if.tb_hready) @(posedge ext_clk);
+        top_if.tb_htrans <= 2'b00; // IDLE
+        top_if.tb_hsel <= 1'b0;    // Drop HSEL cleanly
+        $display("[%0t] ahb_read: Data phase waiting addr=%h", $time, addr);
+        
+        do begin
+            @(posedge ext_clk);
+        end while (top_if.tb_hready !== 1'b1);
+        
         data = top_if.tb_hrdata;
-        top_if.tb_hsel = 1'b0;
+        $display("[%0t] ahb_read: Done addr=%h data=%h", $time, addr, data);
     endtask
     
     task ahb_read_resp(input logic [31:0] addr, output logic [31:0] data, input logic [2:0] size, output logic resp);
         @(posedge ext_clk);
-        top_if.tb_hsel = 1'b1;
-        top_if.tb_haddr = addr;
-        top_if.tb_hwrite = 1'b0;
-        top_if.tb_hsize = size;
-        top_if.tb_htrans = 2'b10; // NONSEQ
+        top_if.tb_hsel <= 1'b1;
+        top_if.tb_haddr <= addr;
+        top_if.tb_hwrite <= 1'b0;
+        top_if.tb_hsize <= size;
+        top_if.tb_htrans <= 2'b10; // NONSEQ
         
-        @(posedge ext_clk);
-        while (!top_if.tb_hready) @(posedge ext_clk);
-        top_if.tb_htrans = 2'b00; // IDLE
+        do begin
+            @(posedge ext_clk);
+        end while (top_if.tb_hready !== 1'b1);
         
-        @(posedge ext_clk);
-        while (!top_if.tb_hready) @(posedge ext_clk);
+        top_if.tb_htrans <= 2'b00; // IDLE
+        top_if.tb_hsel <= 1'b0;    // Drop HSEL cleanly
+        
+        do begin
+            @(posedge ext_clk);
+        end while (top_if.tb_hready !== 1'b1);
+        
         data = top_if.tb_hrdata;
         resp = top_if.tb_hresp;
-        top_if.tb_hsel = 1'b0;
     endtask
 
     logic [31:0] rdata;

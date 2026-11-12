@@ -20,7 +20,9 @@ module ff_ram #(
 
     // Initialization and Dump
     initial begin
-        $readmemb(INIT_FILE, mem);
+        if (INIT_FILE != "") begin
+            $readmemb(INIT_FILE, mem);
+        end
     end
 
     final begin

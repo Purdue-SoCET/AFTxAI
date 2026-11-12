@@ -94,7 +94,7 @@ module aft_top (
         .NBYTES(BOOT_ROM_WORDS * 4),
         .ROM(1),
         .LATENCY(0),
-        .INIT_FILE("meminit.bin") // Will be overridden or ignored for now
+        .INIT_FILE("") 
     ) u_boot_rom (
         .clk(hclk),
         .rst_n(hresetn),
@@ -120,7 +120,8 @@ module aft_top (
     ff_ram #(
         .NBYTES(ON_CHIP_RAM_WORDS * 4),
         .ROM(0),
-        .LATENCY(0)
+        .LATENCY(0),
+        .INIT_FILE("")
     ) u_on_chip_ram (
         .clk(hclk),
         .rst_n(hresetn),
