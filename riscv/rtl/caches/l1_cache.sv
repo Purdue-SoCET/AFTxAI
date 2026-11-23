@@ -57,7 +57,14 @@ module l1_cache #(parameter int CACHE_SIZE = 1024, parameter int BLOCK_SIZE = 4,
                 end
             end
             STATE_EVICT_REQ: if (bus_if.gnt) next_state = STATE_EVICT_DATA;
-            STATE_EVICT_DATA: if (bus_if.valid) begin if (bus_if.last) next_state = STATE_FILL_REQ; else next_word_cnt = word_cnt + 1; end
+            STATE_EVICT_DATA: if (bus_if.valid) begin
+                if (bus_if.last) begin
+                    next_state = STATE_FILL_REQ;
+                    next_word_cnt = '0;
+                end else begin
+                    next_word_cnt = word_cnt + 1;
+                end
+            end
             STATE_FILL_REQ: if (bus_if.gnt) next_state = STATE_FILL_DATA;
             STATE_FILL_DATA: if (bus_if.valid) begin
                 next_data_array[cpu_idx][victim_way][word_cnt] = bus_if.rdata;

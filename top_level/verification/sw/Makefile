@@ -18,7 +18,7 @@ $(TESTS): %: %/main.elf %/main.hex %/main.dump
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 %/main.hex: %/main.elf
-	$(OBJCOPY) -O verilog $< $@
+	$(OBJCOPY) -O verilog --verilog-data-width=4 --adjust-vma=-0x400 $< $@
 
 %/main.dump: %/main.elf
 	$(OBJDUMP) -D $< > $@

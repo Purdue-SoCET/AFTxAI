@@ -125,4 +125,9 @@ module stage_ex #(parameter int RV32E = 0) (
             port.ex_csr_addr_out <= next_ex_csr_addr_out; port.ex_csr_read_data_out <= next_ex_csr_read_data_out; port.ex_csr_write_data_out <= next_ex_csr_write_data_out;
         end
     end
+    always_ff @(posedge HCLK) begin
+        if (port.ex_valid_out && !port.global_stall) begin
+            $display("[%0t] CPU COMMIT PC=%h", $time, port.ex_pc_out);
+        end
+    end
 endmodule

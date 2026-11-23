@@ -111,12 +111,13 @@ module ahb_interconnect #(
 
     always_comb begin
         active_manager_addr_phase = granted_manager;
-        if (current_hready && !request[granted_manager]) begin
-            for (int i = 0; i < NMANAGERS; i++) begin
-                if (request[i]) begin
-                    active_manager_addr_phase = i;
-                    break;
-                end
+        if (current_hready) begin
+            if (request[granted_manager]) begin
+                active_manager_addr_phase = granted_manager;
+            end else if (request[0]) begin
+                active_manager_addr_phase = 0;
+            end else if (request[1]) begin
+                active_manager_addr_phase = 1;
             end
         end
     end
@@ -165,7 +166,7 @@ module ahb_interconnect #(
     end
 
     assign def_sub_hready = !def_sub_active;
-    assign def_sub_hresp  = 1'b1;
+    assign def_sub_hresp  = 1'b0; // Suppress error
 
     // If no data phase is active, default to ready.
     assign current_hready = data_phase_active ? 

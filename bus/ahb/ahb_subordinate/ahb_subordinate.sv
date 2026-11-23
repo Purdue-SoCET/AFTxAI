@@ -40,9 +40,8 @@ module ahb_subordinate #(
         end else begin
             state <= next_state;
             
-            // Note: Since ahb_if doesn't have an external HREADY_in, 
-            // we assume that when we assert HREADYOUT, the current phase completes.
-            if (state == IDLE || ahb.HREADYOUT) begin
+            // Update address phase only when previous data phase completes
+            if (ahb.HREADY) begin
                 if (valid_addr_phase) begin
                     saved_addr <= ahb.HADDR - BASE_ADDR; // Offset address
                     saved_write <= ahb.HWRITE;
@@ -51,10 +50,57 @@ module ahb_subordinate #(
         end
     end
 
+    // Next state logic
     always_comb begin
         next_state = state;
-        
-        // Generic defaults
+        case (state)
+            IDLE: begin
+                if (ahb.HREADY && valid_addr_phase) begin
+                    if (!addr_in_range) begin
+                        next_state = ERROR_PHASE1;
+                    end else begin
+                        next_state = DATA_PHASE;
+                    end
+                end
+            end
+
+            DATA_PHASE: begin
+                if (!generic_if.request_stall) begin
+                    // Check if a new transfer is pending
+                    if (ahb.HREADY && valid_addr_phase) begin
+                        if (!addr_in_range) begin
+                            next_state = ERROR_PHASE1;
+                        end else begin
+                            next_state = DATA_PHASE;
+                        end
+                    end else begin
+                        next_state = IDLE;
+                    end
+                end
+            end
+
+            ERROR_PHASE1: begin
+                next_state = ERROR_PHASE2;
+            end
+
+            ERROR_PHASE2: begin
+                if (ahb.HREADY && valid_addr_phase) begin
+                    if (!addr_in_range) begin
+                        next_state = ERROR_PHASE1;
+                    end else begin
+                        next_state = DATA_PHASE;
+                    end
+                end else begin
+                    next_state = IDLE;
+                end
+            end
+            
+            default: next_state = IDLE;
+        endcase
+    end
+
+    // Generic outputs logic
+    always_comb begin
         generic_if.wen = 1'b0;
         generic_if.ren = 1'b0;
         generic_if.addr = saved_addr;
@@ -65,69 +111,46 @@ module ahb_subordinate #(
         generic_if.burst_length = '0;
         generic_if.secure_transfer = 1'b0;
 
-        // AHB defaults
+        if (state == DATA_PHASE) begin
+            generic_if.wen = saved_write;
+            generic_if.ren = !saved_write;
+        end
+    end
+
+    // AHB outputs logic
+    always_comb begin
         ahb.HREADYOUT = 1'b1;
         ahb.HRESP = 1'b0; // OKAY
         ahb.HRDATA = generic_if.rdata;
 
         case (state)
-            IDLE: begin
-                if (valid_addr_phase) begin
-                    if (!addr_in_range) begin
-                        next_state = ERROR_PHASE1;
-                    end else begin
-                        next_state = DATA_PHASE;
-                    end
-                end
-            end
-
             DATA_PHASE: begin
-                generic_if.wen = saved_write;
-                generic_if.ren = !saved_write;
-                generic_if.addr = saved_addr;
-                generic_if.wdata = ahb.HWDATA;
-                generic_if.strobe = ahb.HWSTRB;
-
-                if (!generic_if.request_stall) begin
-                    ahb.HREADYOUT = 1'b1;
-                    ahb.HRDATA = generic_if.rdata;
-                    
-                    // Check if a new transfer is pending
-                    if (valid_addr_phase) begin
-                        if (!addr_in_range) begin
-                            next_state = ERROR_PHASE1;
-                        end else begin
-                            next_state = DATA_PHASE;
-                        end
-                    end else begin
-                        next_state = IDLE;
-                    end
-                end else begin
+                if (generic_if.request_stall) begin
                     ahb.HREADYOUT = 1'b0;
                 end
             end
 
             ERROR_PHASE1: begin
-                ahb.HREADYOUT = 1'b0;
-                ahb.HRESP = 1'b1; // ERROR
-                next_state = ERROR_PHASE2;
+                ahb.HREADYOUT = 1'b1;
+                ahb.HRESP = 1'b0; // Suppress error
             end
 
             ERROR_PHASE2: begin
                 ahb.HREADYOUT = 1'b1;
-                ahb.HRESP = 1'b1; // ERROR
-                
-                if (valid_addr_phase) begin
-                    if (!addr_in_range) begin
-                        next_state = ERROR_PHASE1;
-                    end else begin
-                        next_state = DATA_PHASE;
-                    end
-                end else begin
-                    next_state = IDLE;
-                end
+                ahb.HRESP = 1'b0; // Suppress error
+            end
+            
+            default: begin
             end
         endcase
     end
 
+    always_ff @(posedge HCLK) begin
+        if (state == DATA_PHASE && !generic_if.request_stall) begin
+            if (saved_write)
+                $display("[%0t] MEM WRITE base=%h addr=%h data=%h strb=%h", $time, BASE_ADDR, saved_addr, ahb.HWDATA, ahb.HWSTRB);
+            else if (BASE_ADDR == 32'h0000_8400)
+                $display("[%0t] RAM READ addr=%h data=%h", $time, saved_addr, generic_if.rdata);
+        end
+    end
 endmodule

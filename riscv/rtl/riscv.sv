@@ -6,16 +6,23 @@ module riscv #(parameter int RV32E = 0, parameter logic [31:0] BOOT_ADDR = 32'h0
 );
     cpu_cache_if icache_cpu_if();
     cpu_cache_if dcache_cpu_if();
+    cpu_cache_if dcache_to_cache_if();
+    cpu_cache_if uncached_if();
     cache_bus_if icache_bus_if();
     cache_bus_if dcache_bus_if();
     datapath_if dp_if();
 
+    // D-cacheable regions according to D-06: Boot ROM and off-chip SRAM only
+    logic is_dcacheable;
+    assign is_dcacheable = (dp_if.dcache_addr >= 32'h0000_0400 && dp_if.dcache_addr <= 32'h0000_13FF) ||
+                           (dp_if.dcache_addr >= 32'h0002_0000 && dp_if.dcache_addr <= 32'h0009_FFFF);
+
     assign dp_if.icache_ready = icache_cpu_if.ready;
     assign dp_if.icache_rdata = icache_cpu_if.rdata;
     assign dp_if.icache_error = icache_cpu_if.error;
-    assign dp_if.dcache_ready = dcache_cpu_if.ready;
-    assign dp_if.dcache_rdata = dcache_cpu_if.rdata;
-    assign dp_if.dcache_error = dcache_cpu_if.error;
+    assign dp_if.dcache_ready = is_dcacheable ? dcache_to_cache_if.ready : uncached_if.ready;
+    assign dp_if.dcache_rdata = is_dcacheable ? dcache_to_cache_if.rdata : uncached_if.rdata;
+    assign dp_if.dcache_error = is_dcacheable ? dcache_to_cache_if.error : uncached_if.error;
     
     datapath #(.RV32E(RV32E), .BOOT_ADDR(BOOT_ADDR)) dp_inst (.HCLK(HCLK), .nRST(nRST), .port(dp_if.mp));
 
@@ -33,10 +40,20 @@ module riscv #(parameter int RV32E = 0, parameter logic [31:0] BOOT_ADDR = 32'h0
     assign dcache_cpu_if.wdata = dp_if.dcache_wdata;
     assign dcache_cpu_if.wstrb = dp_if.dcache_wstrb;
 
+    assign dcache_to_cache_if.valid = dp_if.dcache_valid && is_dcacheable;
+    assign dcache_to_cache_if.addr = dp_if.dcache_addr;
+    assign dcache_to_cache_if.wdata = dp_if.dcache_wdata;
+    assign dcache_to_cache_if.wstrb = dp_if.dcache_wstrb;
+
+    assign uncached_if.valid = dp_if.dcache_valid && !is_dcacheable;
+    assign uncached_if.addr = dp_if.dcache_addr;
+    assign uncached_if.wdata = dp_if.dcache_wdata;
+    assign uncached_if.wstrb = dp_if.dcache_wstrb;
+
     l1_cache_if c_if();
     l1_cache #(.CACHE_TYPE(0)) icache_inst (.HCLK(HCLK), .nRST(nRST), .cpu_if(icache_cpu_if), .bus_if(icache_bus_if), .port_unused(c_if.mp));
-    l1_cache #(.CACHE_TYPE(1)) dcache_inst (.HCLK(HCLK), .nRST(nRST), .cpu_if(dcache_cpu_if), .bus_if(dcache_bus_if), .port_unused(c_if.mp));
+    l1_cache #(.CACHE_TYPE(1)) dcache_inst (.HCLK(HCLK), .nRST(nRST), .cpu_if(dcache_to_cache_if), .bus_if(dcache_bus_if), .port_unused(c_if.mp));
     
     bus_controller_if bc_if();
-    bus_controller bus_ctrl_inst (.HCLK(HCLK), .nRST(nRST), .icache_if(icache_bus_if), .dcache_if(dcache_bus_if), .ahbm_if(ahbm_if), .port_unused(bc_if.mp));
+    bus_controller bus_ctrl_inst (.HCLK(HCLK), .nRST(nRST), .icache_if(icache_bus_if), .dcache_if(dcache_bus_if), .uncached_if(uncached_if), .dcache_advance(!dp_if.global_stall), .ahbm_if(ahbm_if), .port_unused(bc_if.mp));
 endmodule

@@ -51,7 +51,7 @@ module registers #(
     assign pready  = 1'b1;
     
     logic rd_en, wr_en;
-    assign rd_en = psel && !pwrite && !penable; // Read starts immediately in APB but data valid next cycle
+    assign rd_en = psel && !pwrite && penable; // Read completes in ACCESS phase
     assign wr_en = psel && pwrite && penable;
     
     always_comb begin
@@ -63,7 +63,10 @@ module registers #(
                 8'h08: prdata = reg_dar;
                 8'h0C: prdata = reg_tsr;
                 8'h10: prdata = reg_cr;
-                8'h14: prdata = reg_sr;
+                8'h14: begin 
+                    prdata = reg_sr;
+                    $display("[%0t] REGS: APB read 0x14, returning %h", $time, reg_sr);
+                end
                 default: pslverr = 1'b1;
             endcase
         end else if (wr_en) begin
@@ -86,15 +89,18 @@ module registers #(
             reg_cr  <= '0;
             reg_sr  <= '0;
         end else begin
-            // Hardware updates to SR
-            if (hw_finished) reg_sr[0] <= 1'b1;
+            // Clear SR on read
+            if (clear_status) reg_sr <= '0;
+            
+            // Hardware updates to SR (overrides clear to prevent missing events)
+            if (hw_finished) begin
+                reg_sr[0] <= 1'b1;
+                $display("[%0t] REGS: hw_finished received! reg_sr[0] -> 1", $time);
+            end
             if (hw_error)    reg_sr[1] <= 1'b1;
             
             // Auto-clear EN on finish/error
             if (hw_clear_en) reg_cr[0] <= 1'b0;
-            
-            // Clear SR on read
-            if (clear_status) reg_sr <= '0;
             
             if (hw_error) $display("REGS: hw_error=1, reg_sr=%b", reg_sr);
             if (reg_sr[1]) $display("REGS: reg_sr[1]=1!");

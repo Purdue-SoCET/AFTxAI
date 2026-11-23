@@ -28,6 +28,7 @@ module datapath #(parameter int RV32E = 0, parameter logic [31:0] BOOT_ADDR = 32
     assign hz_if.ex_pred_taken = ex_if.ex_pred_taken_out;
     assign hz_if.ex_is_jalr = ex_if.ex_is_jalr;
     assign hz_if.trap_flush = (wb_if.trap_req_out || wb_if.mret_req_out) && !hz_if.global_stall_out;
+    assign port.global_stall = hz_if.global_stall_out;
     hazard_unit hz_inst(.port(hz_if.mp));
 
     assign bp_if.fetch_pc = if_if.fetch_pc;

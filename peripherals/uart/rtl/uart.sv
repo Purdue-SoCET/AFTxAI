@@ -126,7 +126,7 @@ module uart #(
     );
 
     // TX FIFO read logic
-    assign tx_fifo_rd = tx_ready && ~tx_fifo_empty && baud_tick_q;
+    assign tx_fifo_rd = tx_ready && ~tx_fifo_empty;
     assign rx_fifo_wr = rx_valid && ~rx_fifo_full;
 
     assign uif.tx = tx_out;

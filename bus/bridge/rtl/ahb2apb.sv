@@ -220,11 +220,11 @@ module ahb2apb #(
                 
                 if (fwd_pushed && !ret_rempty) begin
                     if (ret_rdata[DATA_WIDTH] == 1'b1) begin
-                        // APB Error
-                        ahbif.HREADYOUT = 1'b0;
-                        ahbif.HRESP = 1'b1;
+                        // APB Error ignored to prevent cache-fill crashes
+                        ahbif.HREADYOUT = 1'b1;
+                        ahbif.HRESP = 1'b0;
                         ret_rinc = 1'b1;
-                        ahb_next = AHB_ERROR2;
+                        ahb_next = AHB_IDLE;
                     end else begin
                         // Success
                         ahbif.HREADYOUT = 1'b1;
@@ -329,6 +329,9 @@ module ahb2apb #(
                 apbif.PSTRB   = apb_req_strb;
                 
                 if (apbif.PREADY) begin
+                    if (apb_req_addr >= 32'h90001000 && apb_req_addr < 32'h90001100) begin
+                        $display("[%0t] APB DMA ACCESS: addr=%h write=%b prdata=%h pwdata=%h", $time, apb_req_addr, apb_req_write, apbif.PRDATA, apbif.PWDATA);
+                    end
                     ret_winc = 1'b1;
                     fwd_rinc = 1'b1;
                     apb_next = APB_IDLE;

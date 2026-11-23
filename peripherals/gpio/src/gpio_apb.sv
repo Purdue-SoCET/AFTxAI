@@ -130,7 +130,17 @@ module gpio_apb #(
     logic [31:0] masked_wdata;
     assign masked_wdata = pwdata & wmask & ACTIVE_MASK;
 
+    always_ff @(posedge pclk) begin
+        if (psel && penable && pwrite) begin
+            $display("[%0t] GPIO APB WRITE addr=%h wdata=%h", $time, paddr, pwdata);
+        end
+        if (psel && penable && !pwrite) begin
+            $display("[%0t] GPIO APB READ addr=%h rdata=%h dir=%h", $time, paddr, prdata_nxt, dir);
+        end
+    end
+
     always_comb begin
+
         prdata_nxt = '0;
         pslverr_nxt = 1'b0;
 

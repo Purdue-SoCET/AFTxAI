@@ -25,7 +25,7 @@
 #define TIMER0_BASE         0x80002000
 #define SPI0_BASE           0x80004000
 #define I2C0_BASE           0x80005000
-#define UART_BASE           0x80006000
+#define UART_BASE           0x90002000
 #define IO_MUX_BASE         0x80007000
 #define GPIO_BOOT_BASE      0x80008000
 
@@ -44,8 +44,8 @@
 
 // Test utility macros
 #define TEST_PASS() do { REG32(PRINTER_BASE) = 1; return 0; } while(0)
-#define TEST_FAIL() do { REG32(PRINTER_BASE) = 0xBAD; return 1; } while(0)
-#define CHECK_EQ(actual, expected) do { if ((actual) != (expected)) TEST_FAIL(); } while(0)
-#define CHECK_NEQ(actual, expected) do { if ((actual) == (expected)) TEST_FAIL(); } while(0)
+#define TEST_FAIL() do { REG32(PRINTER_BASE) = __LINE__; REG32(PRINTER_BASE) = 0xBAD; return 1; } while(0)
+#define CHECK_EQ(actual, expected) do { if ((actual) != (expected)) { REG32(PRINTER_BASE) = (actual); REG32(PRINTER_BASE) = (expected); TEST_FAIL(); } } while(0)
+#define CHECK_NEQ(actual, expected) do { if ((actual) == (expected)) { REG32(PRINTER_BASE) = (actual); REG32(PRINTER_BASE) = (expected); TEST_FAIL(); } } while(0)
 
 #endif // AFT_MAP_H

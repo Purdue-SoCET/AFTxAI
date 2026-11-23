@@ -100,6 +100,7 @@ module read_control #(
             ST_IDLE: begin
                 if (en && !stop) begin
                     if (count == tsr) begin
+                        $display("[%0t] READ_CONTROL ST_IDLE: count == tsr (%0d)", $time, tsr);
                         if (circ) begin
                             // Wait for write side to finish before wrap
                             if (write_finished) next_state = ST_READ_REQ;
@@ -148,8 +149,10 @@ module read_control #(
             end
             
             ST_FINISH: begin
+                $display("[%0t] READ_CONTROL ST_FINISH: write_finished=%b", $time, write_finished);
                 if (write_finished) begin
                     hw_finished = 1'b1;
+                    $display("[%0t] READ_CONTROL: HW_FINISHED SET TO 1", $time);
                     next_state = ST_IDLE;
                 end
             end
@@ -168,7 +171,9 @@ module read_control #(
     // Outputs
     assign r_addr = curr_src_addr;
     assign r_size = {1'b0, psize};
-    assign fifo_data = {psize, curr_dest_addr, r_rdata};
+    
+    logic [DATA_W-1:0] latched_rdata;
+    assign fifo_data = {psize, curr_dest_addr, latched_rdata};
     
     assign cnt_clear  = (state == ST_IDLE && en && count == tsr && circ) || fifo_clear;
     assign fifo_clear = (state == ST_ERROR) || (!en && state == ST_IDLE); 
@@ -176,8 +181,12 @@ module read_control #(
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             state <= ST_IDLE;
+            latched_rdata <= '0;
         end else begin
             state <= next_state;
+            if (state == ST_READ_WAIT && r_ready) begin
+                latched_rdata <= r_rdata;
+            end
         end
     end
 

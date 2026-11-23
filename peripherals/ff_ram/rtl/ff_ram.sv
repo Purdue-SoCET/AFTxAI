@@ -20,7 +20,7 @@ module ff_ram #(
 
     // Initialization and Dump
     initial begin
-        $readmemb(INIT_FILE, mem);
+        // $readmemb(INIT_FILE, mem); // Handled by top_tb explicitly using readmemh
     end
 
     final begin

@@ -172,7 +172,6 @@ module spi_wrapper #(
     end
   end
 
-  // Tie pready to 1 (no wait states for APB operations)
-  assign apb.PREADY = 1'b1;
+
 
 endmodule

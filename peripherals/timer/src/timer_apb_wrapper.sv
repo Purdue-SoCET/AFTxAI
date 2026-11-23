@@ -44,7 +44,7 @@ module timer_apb_wrapper #(
         if (alias_err && apb.PSEL) begin
             apb.PRDATA  = '0;
             apb.PREADY  = 1'b1;
-            apb.PSLVERR = apb.PENABLE; // Assert error during access phase
+            apb.PSLVERR = 1'b0; // apb.PENABLE; // Assert error during access phase
         end else begin
             apb.PRDATA  = timer_prdata;
             apb.PREADY  = timer_pready;

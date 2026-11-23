@@ -53,15 +53,15 @@ module sram_controller #(
 
     // Helpers
     logic need_a1, need_a2;
-    assign need_a1 = |bus.strobe[1:0];
-    assign need_a2 = |bus.strobe[3:2];
+    assign need_a1 = bus.ren | (|bus.strobe[1:0]);
+    assign need_a2 = bus.ren | (|bus.strobe[3:2]);
 
     logic is_last_cycle;
     always_comb begin
         is_last_cycle = 1'b0;
         if (state_q == A1_HOLD && !need_a2) is_last_cycle = 1'b1;
         if (state_q == A2_HOLD) is_last_cycle = 1'b1;
-        if (state_q == IDLE && (bus.wen | bus.ren) && !need_a1 && !need_a2) is_last_cycle = 1'b1;
+        // Removed IDLE zero-strobe bypass to break combinatorial loop
     end
 
     assign bus.request_stall = (bus.wen | bus.ren) & ~is_last_cycle;

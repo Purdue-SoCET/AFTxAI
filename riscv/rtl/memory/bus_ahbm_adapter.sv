@@ -13,7 +13,9 @@ module bus_ahbm_adapter (
     // Convert 3-bit size to byte strobe
     // 000: BYTE, 001: HALFWORD, 010: WORD
     always_comb begin
-        if (core_bus.size == 3'b000) begin
+        if (core_bus.rnw) begin
+            generic_bus.strobe = 4'b0000;
+        end else if (core_bus.size == 3'b000) begin
             generic_bus.strobe = 4'b0001 << core_bus.addr[1:0];
         end else if (core_bus.size == 3'b001) begin
             generic_bus.strobe = 4'b0011 << {core_bus.addr[1], 1'b0};

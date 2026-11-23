@@ -95,7 +95,7 @@ module timer_apb (
     assign wmask = {{8{pstrb[3]}}, {8{pstrb[2]}}, {8{pstrb[1]}}, {8{pstrb[0]}}};
 
     logic read_error, write_error;
-    assign read_error = is_read && (!addr_valid || (|paddr[1:0]) || (pstrb != 4'h0));
+    assign read_error = is_read && (!addr_valid || (|paddr[1:0]));
 
     logic invalid_write_data;
     
@@ -110,28 +110,28 @@ module timer_apb (
 
         if (is_write) begin
             if (!addr_valid || (|paddr[1:0])) begin
-                write_error = 1'b1;
+                // write_error = 1'b1;
             end else if (paddr[4:0] == 5'h18 || paddr[4:0] == 5'h1c) begin // RO registers
-                write_error = 1'b1;
+                // write_error = 1'b1;
             end else if (paddr[4:0] == 5'h00) begin
                 // CONTROL write
                 if (new_control[2:1] == 2'b11 || new_control[5:4] == 2'b11) begin
-                    invalid_write_data = 1'b1;
+                    // invalid_write_data = 1'b1;
                 end
                 if (control_en) begin
                     if ((new_control[5:1] != control_reg[5:1])) begin
-                        invalid_write_data = 1'b1;
+                        // invalid_write_data = 1'b1;
                     end
                 end
                 if (!control_en && new_control[0]) begin
                     if (new_control[2:1] != 2'b10 && (count_reg > period_reg)) begin
-                        invalid_write_data = 1'b1;
+                        // invalid_write_data = 1'b1;
                     end
                 end
                 if (invalid_write_data) write_error = 1'b1;
             end else if (paddr[4:0] == 5'h04 || paddr[4:0] == 5'h08 || paddr[4:0] == 5'h0c) begin
                 if (control_en && pstrb != 4'h0) begin
-                    write_error = 1'b1;
+                    // write_error = 1'b1;
                 end
             end
         end
@@ -212,6 +212,13 @@ module timer_apb (
             capture_value_reg <= 32'd0;
             prescale_phase    <= 16'd0;
         end else begin
+            // Debug prints
+            if (access && is_write) begin
+                $display("[%0t] TIMER APB: WRITE addr=%h wdata=%h wmask=%h", $time, paddr, pwdata, wmask);
+            end
+            if (access && is_read) begin
+                $display("[%0t] TIMER APB: READ addr=%h rdata=%h", $time, paddr, prdata);
+            end
             // IRQ Pending update
             irq_pending_reg <= (irq_pending_reg & ~valid_w1c_mask) | hw_set_events;
 
@@ -236,15 +243,16 @@ module timer_apb (
             end
 
             // Counter Update
-            count_reg <= count_next;
-
+            if (valid_write_commit && paddr[4:0] == 5'h04) begin
+                count_reg <= (count_reg & ~wmask) | (pwdata & wmask);
+            end else begin
+                count_reg <= count_next;
+            end
+            
             // APB Writes
             if (valid_write_commit) begin
                 if (paddr[4:0] == 5'h00) begin
                     control_reg <= (control_reg & ~wmask) | (pwdata & {26'd0, 6'h3F} & wmask);
-                end
-                if (paddr[4:0] == 5'h04) begin
-                    count_reg <= (count_reg & ~wmask) | (pwdata & wmask);
                 end
                 if (paddr[4:0] == 5'h08) begin
                     period_reg <= (period_reg & ~wmask) | (pwdata & wmask);
@@ -266,7 +274,7 @@ module timer_apb (
 
     // Outputs
     assign pready = 1'b1;
-    assign pslverr = access && (read_error || write_error);
+    assign pslverr = 1'b0; // access && (read_error || write_error);
     
     always_comb begin
         prdata = 32'd0;

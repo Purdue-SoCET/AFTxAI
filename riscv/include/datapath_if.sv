@@ -7,9 +7,10 @@ interface datapath_if;
     logic dcache_valid, dcache_ready, dcache_error; 
     logic [31:0] dcache_addr, dcache_wdata, dcache_rdata; 
     logic [3:0] dcache_wstrb; 
+    logic global_stall;
     logic mtip, msip, meip;
     modport mp(
-        output halt, icache_valid, icache_addr, dcache_valid, dcache_addr, dcache_wdata, dcache_wstrb, 
+        output halt, icache_valid, icache_addr, dcache_valid, dcache_addr, dcache_wdata, dcache_wstrb, global_stall,
         input icache_ready, icache_rdata, icache_error, dcache_ready, dcache_rdata, dcache_error, mtip, msip, meip
     );
 endinterface

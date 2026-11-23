@@ -59,10 +59,38 @@ module ahb_manager #(
         end
     endfunction
 
+    // Next state logic
     always_comb begin
         next_state = state;
-        
-        // AHB outputs default
+        case (state)
+            IDLE: begin
+                if (generic_if.wen || generic_if.ren) begin
+                    if (ahb.HREADY) begin
+                        next_state = DATA_PHASE;
+                    end else begin
+                        next_state = ADDR_PHASE;
+                    end
+                end
+            end
+            
+            ADDR_PHASE: begin
+                if (ahb.HREADY) begin
+                    next_state = DATA_PHASE;
+                end
+            end
+            
+            DATA_PHASE: begin
+                if (ahb.HREADY) begin
+                    // Back-to-back? Let's just go to IDLE to keep it simple.
+                    next_state = IDLE;
+                end
+            end
+        endcase
+    end
+
+    // AHB Outputs logic
+    always_comb begin
+        // Defaults
         ahb.HTRANS = ahb_pkg::IDLE;
         ahb.HADDR = '0;
         ahb.HWRITE = 1'b0;
@@ -73,7 +101,33 @@ module ahb_manager #(
         ahb.HWSTRB = '0;
         ahb.HSEL = 1'b0;
 
-        // Generic outputs default
+        case (state)
+            IDLE: begin
+                if (generic_if.wen || generic_if.ren) begin
+                    ahb.HTRANS = ahb_pkg::NONSEQ;
+                    ahb.HADDR = generic_if.addr;
+                    ahb.HWRITE = generic_if.wen;
+                    ahb.HSIZE = get_hsize(generic_if.strobe);
+                end
+            end
+            
+            ADDR_PHASE: begin
+                ahb.HTRANS = ahb_pkg::NONSEQ;
+                ahb.HADDR = saved_addr;
+                ahb.HWRITE = saved_wen;
+                ahb.HSIZE = get_hsize(saved_strobe);
+            end
+            
+            DATA_PHASE: begin
+                ahb.HWDATA = saved_wdata;
+                ahb.HWSTRB = saved_wen ? saved_strobe : '0;
+            end
+        endcase
+    end
+
+    // Generic Bus Outputs logic
+    always_comb begin
+        // Defaults
         generic_if.request_stall = 1'b0;
         generic_if.rdata = '0;
         generic_if.error = 1'b0;
@@ -81,45 +135,22 @@ module ahb_manager #(
         case (state)
             IDLE: begin
                 if (generic_if.wen || generic_if.ren) begin
-                    // Initiate AHB address phase
-                    ahb.HTRANS = ahb_pkg::NONSEQ;
-                    ahb.HADDR = generic_if.addr;
-                    ahb.HWRITE = generic_if.wen;
-                    ahb.HSIZE = get_hsize(generic_if.strobe);
                     generic_if.request_stall = 1'b1;
-                    
-                    if (ahb.HREADY) begin
-                        next_state = DATA_PHASE;
-                    end else begin
-                        next_state = ADDR_PHASE;
-                    end
                 end
             end
             
             ADDR_PHASE: begin
                 generic_if.request_stall = 1'b1;
-                ahb.HTRANS = ahb_pkg::NONSEQ;
-                ahb.HADDR = saved_addr;
-                ahb.HWRITE = saved_wen;
-                ahb.HSIZE = get_hsize(saved_strobe);
-                
-                if (ahb.HREADY) begin
-                    next_state = DATA_PHASE;
-                end
             end
             
             DATA_PHASE: begin
                 generic_if.request_stall = 1'b1;
-                ahb.HWDATA = saved_wdata;
-                ahb.HWSTRB = saved_strobe;
                 
                 if (ahb.HREADY) begin
                     generic_if.rdata = ahb.HRDATA;
                     generic_if.error = ahb.HRESP;
                     generic_if.request_stall = 1'b0;
-                    
-                    // Back-to-back? Let's just go to IDLE to keep it simple.
-                    next_state = IDLE;
+                    $display("[%0t] AHB MGR READ addr=%h rdata=%h", $time, saved_addr, ahb.HRDATA);
                 end
             end
         endcase

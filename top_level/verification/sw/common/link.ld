@@ -13,14 +13,14 @@ SECTIONS
         *(.text.init)
         *(.text)
         *(.text.*)
+        *(.rodata)
+        *(.rodata.*)
     } > ROM
 
     .data : {
         *(.data)
         *(.data.*)
         *(.sdata)
-        *(.rodata)
-        *(.rodata.*)
     } > RAM AT> ROM
 
     .bss : {
