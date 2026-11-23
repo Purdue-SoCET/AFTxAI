@@ -4,11 +4,11 @@ CC = $(TOOLCHAIN_PREFIX)gcc
 OBJCOPY = $(TOOLCHAIN_PREFIX)objcopy
 OBJDUMP = $(TOOLCHAIN_PREFIX)objdump
 
-CFLAGS = -march=rv32i -mabi=ilp32 -mcmodel=medany -ffunction-sections -fdata-sections -O2 -Iinclude
+CFLAGS = -march=rv32i_zicsr -mabi=ilp32 -mcmodel=medany -ffunction-sections -fdata-sections -O2 -Iinclude
 LDFLAGS = -T common/link.ld -nostartfiles -Wl,--gc-sections
 
-TESTS = uart gpio timer spi i2c dma pwm digital_io_mux sram_controller interrupt_controller ff_ram
-COMMON_SRC = common/start.S
+TESTS = uart gpio timer spi i2c dma pwm digital_io_mux sram_controller interrupt_controller ff_ram integration
+COMMON_SRC = common/start.S common/trap.c
 
 all: $(TESTS)
 
