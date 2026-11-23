@@ -6,8 +6,10 @@ _start:
     la t0, trap_handler
     csrw mtvec, t0
 
-    # Initialize counter
+    # Initialize counters and state
     li x1, 0
+    li x10, 0
+    li x11, 0
 
     # Enable M-mode interrupts (MIE=1 in mstatus) and MTI in mie
     li t0, 0x8       # mstatus.MIE is bit 3
@@ -16,27 +18,40 @@ _start:
     csrw mie, t0
 
 loop:
-    # We want x1 to increment. If interrupted, we might see it increment twice?
-    # Wait, the bug is: instruction in WB writes to reg file, but then gets squashed by interrupt.
-    # So it writes to reg file, and when we return from interrupt, we RE-EXECUTE it, writing AGAIN.
+    # Complex instruction mix to stress pipeline when interrupt fires
+    # 1. Back-to-back ALU (EX-EX forwarding)
     addi x1, x1, 1
-    addi x2, x0, 2
-    addi x3, x0, 3
-    # Try to cause a stall.
-    # A load instruction will cause a stall in the stage BEFORE it while it fetches?
-    # No, load from a new cache line causes global stall.
-    lw x4, 128(x0)
+    add  x2, x1, x1
+    xor  x3, x2, x1
     
+    # 2. Load-use hazard to trigger stalls 
+    sw   x3, 0x100(x0)
+    lw   x4, 0x100(x0)
+    add  x5, x4, x1      # Stall cycle here!
+    
+    # 3. Multi-cycle delay load to cause cache miss / longer stall
+    lw   x6, 128(x0)
+    
+    # 4. Branches to test squashing during interrupt
+    blt  x1, zero, skip
+    addi x10, x10, 1     # Branch not taken path
+skip:
+    bge  x1, zero, loop
+    # Unreachable
     j loop
 
 trap_handler:
-    # Disable MTI
+    # Disable MTI to prevent nested traps in basic handler
     li t0, 0
     csrw mie, t0
     
-    # Write x1 to 0x1000 so testbench intercepts and prints it
-    # We expect x1 to be some value.
+    # Perform CSR reads/writes within the trap
+    csrr t1, mepc
+    csrr t2, mcause
+    
+    # Write x1 and x10 to 0x1000 so testbench intercepts and prints it
     lui t0, 1
     sw x1, 0(t0)
+    sw x10, 4(t0)
     
     mret

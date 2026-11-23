@@ -72,7 +72,18 @@ int main() {
 
     uart_print("Starting Integration Test\n");
 
-    // 2. Setup Timer Interrupt
+    // Initialize Timer 0 and PWM
+    REG32(TIMER0_BASE + 0x00) = 0; 
+    REG32(TIMER0_BASE + 0x08) = 0xFFFF; // Max period
+    REG32(TIMER0_BASE + 0x0C) = 0xF;    // Prescale
+    REG32(TIMER0_BASE + 0x00) = 1;      // Enable
+
+    REG32(PWM0_BASE + 0x04) = 1000;
+    REG32(PWM0_BASE + 0x08) = 500;
+    REG32(PWM0_BASE + 0x10) = 0x1; // Update
+    REG32(PWM0_BASE + 0x00) = 0x1; // Enable
+
+    // 2. Setup Timer Interrupt (CLINT)
     write_mtimecmp(read_mtime() + 500);
     write_mie(read_mie() | (1 << 7)); // MTIE
     
@@ -117,6 +128,15 @@ int main() {
     REG32(GPIO0_BASE + 0x08) = 0xFFFFFFFF; // DIR = output
     REG32(GPIO0_BASE + 0x04) = 0xDEADBEEF; // Data
     CHECK_EQ(REG32(GPIO0_BASE + 0x04), 0xDEADBEEF);
+
+    // 5. Test SPI Concurrent configuration
+    REG32(SPI0_BASE + 0x08) = 10;
+    REG32(SPI0_BASE + 0x00) = 0x3;
+    REG32(SPI0_BASE + 0x0C) = 0xAA;
+    
+    // Stop PWM and Timer0
+    REG32(PWM0_BASE + 0x00) = 0;
+    REG32(TIMER0_BASE + 0x00) = 0;
 
     uart_print("Integration Test Passed!\n");
     TEST_PASS();

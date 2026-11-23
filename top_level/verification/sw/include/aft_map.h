@@ -43,8 +43,8 @@
 #define IRQ_GPIO_BOOT       11
 
 // Test utility macros
-#define TEST_PASS() do { REG32(PRINTER_BASE) = 1; return 0; } while(0)
-#define TEST_FAIL() do { REG32(PRINTER_BASE) = __LINE__; REG32(PRINTER_BASE) = 0xBAD; return 1; } while(0)
+#define TEST_PASS() do { REG32(PRINTER_BASE) = 1; while(1); } while(0)
+#define TEST_FAIL() do { REG32(PRINTER_BASE) = __LINE__; REG32(PRINTER_BASE) = 0xBAD; while(1); } while(0)
 #define CHECK_EQ(actual, expected) do { if ((actual) != (expected)) { REG32(PRINTER_BASE) = (actual); REG32(PRINTER_BASE) = (expected); TEST_FAIL(); } } while(0)
 #define CHECK_NEQ(actual, expected) do { if ((actual) == (expected)) { REG32(PRINTER_BASE) = (actual); REG32(PRINTER_BASE) = (expected); TEST_FAIL(); } } while(0)
 

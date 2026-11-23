@@ -39,6 +39,31 @@ module top_tb;
 
     sram_if #(.ADDR_WIDTH(19)) sram();
 
+    logic [15:0] mem0 [0:32767];
+    logic [15:0] mem1 [0:32767];
+    logic [15:0] next_rdata;
+
+    always_comb begin
+        next_rdata = 16'hxxxx;
+        if (sram.pad_oe) begin
+            if (~sram.ce0_n && ~sram.oe0_n) next_rdata = mem0[sram.addr[14:0]];
+            else if (~sram.ce1_n && ~sram.oe1_n) next_rdata = mem1[sram.addr[14:0]];
+        end
+    end
+
+    assign sram.rdata = next_rdata;
+
+    always @(posedge clk) begin
+        if (~sram.ce0_n && ~sram.we0_n) begin
+            if (~sram.ub0_n) mem0[sram.addr[14:0]][15:8] <= sram.wdata[15:8];
+            if (~sram.lb0_n) mem0[sram.addr[14:0]][7:0]  <= sram.wdata[7:0];
+        end
+        if (~sram.ce1_n && ~sram.we1_n) begin
+            if (~sram.ub1_n) mem1[sram.addr[14:0]][15:8] <= sram.wdata[15:8];
+            if (~sram.lb1_n) mem1[sram.addr[14:0]][7:0]  <= sram.wdata[7:0];
+        end
+    end
+
     // Instantiate Top Level SoC
     wire i2c0_sda;
     wire i2c0_scl;
