@@ -434,7 +434,7 @@ module aft_top (
     assign riscv_irq.meip = plic_irq.irq_target;
 
     // Interrupt Mapping to PLIC
-    assign plic_irq.irq_source[0] = 1'b0;
+    // Source 0 is hardwired to 0 internally in plic (irq_source is [31:1])
     assign plic_irq.irq_source[IRQ_GPIO0]  = gpio0_irq;
     assign plic_irq.irq_source[IRQ_GPIO1]  = gpio1_irq;
     assign plic_irq.irq_source[IRQ_GPIO2]  = gpio2_irq;
