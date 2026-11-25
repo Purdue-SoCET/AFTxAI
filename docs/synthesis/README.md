@@ -52,7 +52,10 @@ bash synth/scripts/check_environment.sh
 # 2. Run the 30-test SRAM macro read-handshake regression suite
 bash synth/scripts/run_sram_tests.sh
 
-# 3. Run full-SoC SystemVerilog elaboration
+# 3. Run the AHB-Lite subordinate to SRAM macro integration suite
+bash synth/scripts/run_ahb_sram_tests.sh
+
+# 4. Run full-SoC SystemVerilog elaboration
 bash synth/scripts/run_elaboration.sh
 
 # 4. Prepare full synthesis script
