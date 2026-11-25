@@ -27,9 +27,10 @@ module tb_aft_top_sram_integration;
     pullup(i2c0_sda);
     pullup(i2c0_scl);
 
-    // Instantiate aft_synth_top with USE_SRAM_MACRO = 1
+    // Instantiate aft_synth_top with USE_SRAM_MACRO = 1 and USE_SYNTH_ROM = 1
     aft_synth_top #(
-        .USE_SRAM_MACRO(1'b1)
+        .USE_SRAM_MACRO(1'b1),
+        .USE_SYNTH_ROM(1'b1)
     ) u_soc_top (
         .clk(clk),
         .rst_n(rst_n),
@@ -58,6 +59,13 @@ module tb_aft_top_sram_integration;
     logic saw_reset_vector_fetch = 1'b0;
     logic [31:0] captured_boot_addr = '0;
 
+    // Monitor real execution milestone flags
+    logic saw_gpio0_dir_write = 1'b0;
+    logic saw_gpio0_data_a5a5 = 1'b0;
+    logic saw_sram_write = 1'b0;
+    logic saw_sram_read = 1'b0;
+    logic saw_gpio0_pass_5a5a = 1'b0;
+
     always @(posedge clk) begin
         if (rst_n) begin
             // Check Manager 0 (RISC-V Core) AHB bus requests
@@ -66,6 +74,45 @@ module tb_aft_top_sram_integration;
                 if (!saw_reset_vector_fetch) begin
                     captured_boot_addr = u_soc_top.dut.mgr_ports[0].HADDR;
                     saw_reset_vector_fetch = 1'b1;
+                end
+            end
+
+            // Monitor GPIO0 Output Pins for architectural side effects
+            if (gpio0_oe == 32'h0000_FFFF) begin
+                if (!saw_gpio0_dir_write) begin
+                    $display("[%0t] [CPU EXECUTION EVENT] GPIO0 Direction configured: oe=0x%08x", $time, gpio0_oe);
+                    saw_gpio0_dir_write = 1'b1;
+                end
+            end
+
+            if (gpio0_out == 32'h0000_A5A5) begin
+                if (!saw_gpio0_data_a5a5) begin
+                    $display("[%0t] [CPU EXECUTION EVENT] GPIO0 Data written: data=0x%08x", $time, gpio0_out);
+                    saw_gpio0_data_a5a5 = 1'b1;
+                end
+            end
+
+            if (gpio0_out == 32'h0000_5A5A) begin
+                if (!saw_gpio0_pass_5a5a) begin
+                    $display("[%0t] [CPU EXECUTION EVENT] CPU completed SRAM verify & signaled PASS: data=0x%08x", $time, gpio0_out);
+                    saw_gpio0_pass_5a5a = 1'b1;
+                end
+            end
+
+            // Monitor AHB Subordinate 1 (SRAM) transactions initiated by CPU
+            if (u_soc_top.dut.sub_ports[1].HSEL && u_soc_top.dut.sub_ports[1].HREADY) begin
+                if (u_soc_top.dut.sub_ports[1].HTRANS == NONSEQ || u_soc_top.dut.sub_ports[1].HTRANS == SEQ) begin
+                    if (u_soc_top.dut.sub_ports[1].HWRITE) begin
+                        if (!saw_sram_write) begin
+                            $display("[%0t] [CPU EXECUTION EVENT] CPU initiated AHB write to SRAM: addr=0x%08x", $time, u_soc_top.dut.sub_ports[1].HADDR);
+                            saw_sram_write = 1'b1;
+                        end
+                    end else begin
+                        if (!saw_sram_read) begin
+                            $display("[%0t] [CPU EXECUTION EVENT] CPU initiated AHB read from SRAM: addr=0x%08x", $time, u_soc_top.dut.sub_ports[1].HADDR);
+                            saw_sram_read = 1'b1;
+                        end
+                    end
                 end
             end
         end
@@ -83,7 +130,7 @@ module tb_aft_top_sram_integration;
         uart_rx = 1;
         spi0_miso = 0;
 
-        $display("=== STARTING SELF-CHECKING FULL-SOC SRAM INTEGRATION TEST ===");
+        $display("=== STARTING REAL CPU BOOT & EXECUTION INTEGRATION TEST ===");
 
         // Hold reset for 10 cycles
         #100;
@@ -91,70 +138,82 @@ module tb_aft_top_sram_integration;
         rst_n = 1;
         $display("[%0t] System reset deasserted.", $time);
 
-        // Allow CPU to execute reset-vector fetch phase
-        repeat (20) @(posedge clk);
+        // Run simulation for up to 300 clock cycles or until pass condition is reached
+        for (int cycle = 0; cycle < 300; cycle++) begin
+            @(posedge clk);
+            if (saw_gpio0_pass_5a5a) begin
+                repeat (10) @(posedge clk);
+                break;
+            end
+        end
 
-        // Verification Check 1: Reset Vector Fetch Assertion
+        $display("----------------------------------------------------");
+        $display("--- EVALUATING REAL ARCHITECTURAL EXECUTION CHECKS ---");
+        $display("----------------------------------------------------");
+
+        // Check 1: Reset Vector Fetch
         if (saw_reset_vector_fetch && captured_boot_addr == BOOT_ROM_BASE) begin
-            $display("[PASS] CPU correctly initiated reset-vector fetch at BOOT_ROM_BASE (0x%08x)", captured_boot_addr);
+            $display("[PASS] Check 1: CPU initiated reset-vector fetch at BOOT_ROM_BASE (0x%08x)", captured_boot_addr);
             pass_count++;
         end else begin
-            $display("[FAIL] CPU reset-vector fetch mismatch! saw=%0b, addr=0x%08x (expected 0x%08x)",
-                     saw_reset_vector_fetch, captured_boot_addr, BOOT_ROM_BASE);
+            $display("[FAIL] Check 1: CPU reset-vector fetch failed! addr=0x%08x", captured_boot_addr);
             fail_count++;
         end
 
-        // Verification Check 2: AHB Interconnect Address Decode and Memory Map Integrity
-        begin
-            if (ON_CHIP_RAM_BASE == 32'h0000_8400 && BOOT_ROM_BASE == 32'h0000_0400) begin
-                $display("[PASS] Memory map constants verified: ON_CHIP_RAM_BASE=0x%08x, BOOT_ROM_BASE=0x%08x",
-                         ON_CHIP_RAM_BASE, BOOT_ROM_BASE);
-                pass_count++;
-            end else begin
-                $display("[FAIL] Memory map constants corrupted!");
-                fail_count++;
-            end
+        // Check 2: Peripheral Store (GPIO0 Direction Configuration)
+        if (saw_gpio0_dir_write) begin
+            $display("[PASS] Check 2: CPU executed instruction stream and configured GPIO0 Direction (0x0000FFFF).");
+            pass_count++;
+        end else begin
+            $display("[FAIL] Check 2: CPU failed to execute GPIO0 Direction configuration!");
+            fail_count++;
         end
 
-        // Verification Check 3: Active SRAM Macro Control Signal Integrity Audit
-        begin
-            logic macro_active_polarity_ok = 1'b1;
-            for (int k = 0; k < 8; k++) begin
-                if (u_soc_top.dut.gen_sram_ram.u_sram_banked.csb0[k] === 1'bx) begin
-                    macro_active_polarity_ok = 1'b0;
-                end
-            end
-            if (macro_active_polarity_ok) begin
-                $display("[PASS] All 8 OpenRAM macro instances verified active with clean CSB0/WEB0 polarities.");
-                pass_count++;
-            end else begin
-                $display("[FAIL] OpenRAM macro CSB0 signals have undefined X values!");
-                fail_count++;
-            end
+        // Check 3: Peripheral Store (GPIO0 Data Pattern 0x0000A5A5)
+        if (saw_gpio0_data_a5a5) begin
+            $display("[PASS] Check 3: CPU executed store to GPIO0 Data register (0x0000A5A5).");
+            pass_count++;
+        end else begin
+            $display("[FAIL] Check 3: CPU failed to write GPIO0 Data register!");
+            fail_count++;
         end
 
-        // Verification Check 4: Subordinate 1 AHB Decoder Routing
-        begin
-            if (u_soc_top.dut.u_ram_sub.BASE_ADDR == ON_CHIP_RAM_BASE &&
-                u_soc_top.dut.u_ram_sub.NUM_WORDS == ON_CHIP_RAM_WORDS) begin
-                $display("[PASS] AHB Subordinate 1 correctly configured for 16 KiB SRAM array (%0d words at 0x%08x).",
-                         u_soc_top.dut.u_ram_sub.NUM_WORDS, u_soc_top.dut.u_ram_sub.BASE_ADDR);
-                pass_count++;
-            end else begin
-                $display("[FAIL] AHB Subordinate 1 address range mismatch!");
-                fail_count++;
-            end
+        // Check 4: SRAM Macro Bus Transaction (Write)
+        if (saw_sram_write) begin
+            $display("[PASS] Check 4: CPU executed store to on-chip SRAM macro via AHB bus.");
+            pass_count++;
+        end else begin
+            $display("[FAIL] Check 4: CPU failed to issue write to on-chip SRAM!");
+            fail_count++;
+        end
+
+        // Check 5: SRAM Macro Bus Transaction (Read)
+        if (saw_sram_read) begin
+            $display("[PASS] Check 5: CPU executed load from on-chip SRAM macro via AHB bus.");
+            pass_count++;
+        end else begin
+            $display("[FAIL] Check 5: CPU failed to issue read from on-chip SRAM!");
+            fail_count++;
+        end
+
+        // Check 6: Deterministic End-to-End Program Completion (GPIO0 == 0x00005A5A)
+        if (saw_gpio0_pass_5a5a) begin
+            $display("[PASS] Check 6: CPU successfully verified SRAM readback and signaled PASS (0x00005A5A)!");
+            pass_count++;
+        end else begin
+            $display("[FAIL] Check 6: CPU failed to complete program or SRAM readback verification!");
+            fail_count++;
         end
 
         $display("====================================================");
-        $display("SOC SRAM INTEGRATION RESULTS: Total=%0d, Passed=%0d, Failed=%0d",
+        $display("REAL CPU EXECUTION RESULTS: Total=%0d, Passed=%0d, Failed=%0d",
                  pass_count + fail_count, pass_count, fail_count);
         $display("====================================================");
 
         if (fail_count > 0) begin
-            $fatal(1, "[FAIL] SoC SRAM integration test failed with %0d errors!", fail_count);
+            $fatal(1, "[FAIL] Real CPU execution test failed with %0d errors!", fail_count);
         end else begin
-            $display("[SUCCESS] All self-checking SoC SRAM integration assertions passed!");
+            $display("[SUCCESS] Real CPU execution and SRAM-backed SoC operation fully verified!");
             $finish;
         end
     end

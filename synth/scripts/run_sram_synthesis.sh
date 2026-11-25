@@ -38,8 +38,8 @@ SYNTH_SCRIPT="/tmp/run_sram_synth.ys"
 
 docker exec "$CONTAINER_NAME" bash -lc "
 cat << 'EOF' > $SYNTH_SCRIPT
-# Read design with read_slang with SRAM backend enabled
-read_slang --single-unit --top aft_synth_top -DUSE_SRAM_MACRO=1 \
+# Read design with read_slang with SRAM backend and synthesizable Boot ROM enabled
+read_slang --single-unit --top aft_synth_top -DUSE_SRAM_MACRO=1 -DUSE_SYNTH_ROM=1 \
   -I bus/ahb/include \
   -I bus/apb/include \
   -I bus/generic \

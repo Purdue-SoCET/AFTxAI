@@ -4,8 +4,13 @@
 `define USE_SRAM_MACRO 1'b0
 `endif
 
+`ifndef USE_SYNTH_ROM
+`define USE_SYNTH_ROM 1'b0
+`endif
+
 module aft_top #(
-    parameter bit USE_SRAM_MACRO = `USE_SRAM_MACRO
+    parameter bit USE_SRAM_MACRO = `USE_SRAM_MACRO,
+    parameter bit USE_SYNTH_ROM  = `USE_SYNTH_ROM
 ) (
     input  logic clk,
     input  logic rst_n,
@@ -166,14 +171,24 @@ module aft_top #(
         .generic_if(rom_bus.protocol)
     );
 
-    ff_ram #(
-        .NBYTES(BOOT_ROM_WORDS * 4),
-        .ROM(1'b1)
-    ) u_boot_rom (
-        .clk(clk),
-        .rst_n(rst_n),
-        .bus(rom_bus.peripheral_vital)
-    );
+    if (USE_SYNTH_ROM) begin : gen_synth_rom
+        aft_boot_rom #(
+            .NBYTES(BOOT_ROM_WORDS * 4)
+        ) u_boot_rom (
+            .clk(clk),
+            .rst_n(rst_n),
+            .bus(rom_bus.peripheral_vital)
+        );
+    end else begin : gen_ff_rom
+        ff_ram #(
+            .NBYTES(BOOT_ROM_WORDS * 4),
+            .ROM(1'b1)
+        ) u_boot_rom (
+            .clk(clk),
+            .rst_n(rst_n),
+            .bus(rom_bus.peripheral_vital)
+        );
+    end
 
     // On-Chip RAM (Subordinate 1)
     bus_protocol_if ram_bus();

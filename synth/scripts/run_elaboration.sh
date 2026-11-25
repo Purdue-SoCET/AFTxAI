@@ -7,8 +7,8 @@ set -euo pipefail
 USE_SRAM="${1:-}"
 DEF_ARG=""
 if [ "$USE_SRAM" == "--sram" ]; then
-    echo "==> Configuring elaboration for SRAM macro backend (USE_SRAM_MACRO=1)..."
-    DEF_ARG="-DUSE_SRAM_MACRO=1"
+    echo "==> Configuring elaboration for SRAM macro backend and synthesizable ROM (USE_SRAM_MACRO=1 -DUSE_SYNTH_ROM=1)..."
+    DEF_ARG="-DUSE_SRAM_MACRO=1 -DUSE_SYNTH_ROM=1"
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -41,70 +41,74 @@ fi
 
 echo "==> Running Yosys + read_slang elaboration..."
 set +e
+ELAB_SCRIPT="/tmp/run_elab_${RANDOM}.ys"
+
 docker exec "$CONTAINER_NAME" bash -lc "
-    source /OpenROAD-flow-scripts/env.sh
-    cd /work
-    yosys -l /work/synth/out/soc_elab.log -p '
-        read_slang --single-unit --top aft_synth_top '"$DEF_ARG"' \
-          -I bus/ahb/include \
-          -I bus/apb/include \
-          -I bus/generic \
-          -I peripherals/sram_controller/include \
-          -I top_level/map \
-          -I riscv/include \
-          -I peripherals/interrupt_controller/clint/include \
-          -I peripherals/interrupt_controller/plic/include \
-          -I peripherals/spi/include \
-          -I peripherals/digital_io_mux/include \
-          top_level/map/aft_map_pkg.sv \
-          bus/ahb/include/ahb_pkg.sv \
-          bus/generic/bus_protocol_if.sv \
-          bus/ahb/include/ahb_if.sv \
-          bus/apb/include/apb_if.sv \
-          peripherals/sram_controller/include/sram_if.sv \
-          riscv/include/bus_ahbm_if.sv \
-          riscv/include/riscv_if.sv \
-          peripherals/interrupt_controller/clint/include/clint_if.sv \
-          peripherals/interrupt_controller/plic/include/plic_if.sv \
-          peripherals/dma/include/memArb_if.sv \
-          peripherals/spi/include/spi_types_pkg.sv \
-          peripherals/uart/include/uart_if.sv \
-          peripherals/spi/include/spi_if.sv \
-          peripherals/i2c/include/i2c_if.sv \
-          digital_lib/sync_2ff.sv \
-          digital_lib/counter.sv \
-          riscv/include/*.sv \
-          riscv/rtl/datapath/*.sv \
-          riscv/rtl/caches/*.sv \
-          riscv/rtl/memory/*.sv \
-          riscv/rtl/*.sv \
-          peripherals/dma/rtl/*.sv \
-          bus/bridge/rtl/*.sv \
-          bus/ahb/ahb_interconnect/*.sv \
-          bus/ahb/ahb_manager/*.sv \
-          bus/ahb/ahb_subordinate/*.sv \
-          bus/apb/rtl/*.sv \
-          peripherals/ff_ram/rtl/*.sv \
-          peripherals/sram_controller/rtl/*.sv \
-          peripherals/digital_io_mux/rtl/digital_io_mux_apb.sv \
-          peripherals/digital_io_mux/rtl/digital_io_mux_cell.sv \
-          peripherals/digital_io_mux/rtl/digital_io_mux.sv \
-          peripherals/gpio/src/*.sv \
-          peripherals/pwm/src/*.sv \
-          peripherals/timer/src/*.sv \
-          peripherals/spi/rtl/*.sv \
-          peripherals/i2c/rtl/i2c_engine.sv \
-          peripherals/i2c/rtl/i2c_regs.sv \
-          peripherals/i2c/rtl/i2c.sv \
-          peripherals/uart/rtl/*.sv \
-          peripherals/interrupt_controller/clint/rtl/*.sv \
-          peripherals/interrupt_controller/plic/rtl/plic.sv \
-          synth/sky130_sram_1rw1r_64x256_8_bb.v \
-          top_level/rtl/*.sv \
-          synth/aft_synth_top.sv
-        hierarchy -check -top aft_synth_top
-        stat
-    '
+cat << 'EOF' > $ELAB_SCRIPT
+read_slang --single-unit --top aft_synth_top $DEF_ARG \
+  -I bus/ahb/include \
+  -I bus/apb/include \
+  -I bus/generic \
+  -I peripherals/sram_controller/include \
+  -I top_level/map \
+  -I riscv/include \
+  -I peripherals/interrupt_controller/clint/include \
+  -I peripherals/interrupt_controller/plic/include \
+  -I peripherals/spi/include \
+  -I peripherals/digital_io_mux/include \
+  top_level/map/aft_map_pkg.sv \
+  bus/ahb/include/ahb_pkg.sv \
+  bus/generic/bus_protocol_if.sv \
+  bus/ahb/include/ahb_if.sv \
+  bus/apb/include/apb_if.sv \
+  peripherals/sram_controller/include/sram_if.sv \
+  riscv/include/bus_ahbm_if.sv \
+  riscv/include/riscv_if.sv \
+  peripherals/interrupt_controller/clint/include/clint_if.sv \
+  peripherals/interrupt_controller/plic/include/plic_if.sv \
+  peripherals/dma/include/memArb_if.sv \
+  peripherals/spi/include/spi_types_pkg.sv \
+  peripherals/uart/include/uart_if.sv \
+  peripherals/spi/include/spi_if.sv \
+  peripherals/i2c/include/i2c_if.sv \
+  digital_lib/sync_2ff.sv \
+  digital_lib/counter.sv \
+  riscv/include/*.sv \
+  riscv/rtl/datapath/*.sv \
+  riscv/rtl/caches/*.sv \
+  riscv/rtl/memory/*.sv \
+  riscv/rtl/*.sv \
+  peripherals/dma/rtl/*.sv \
+  bus/bridge/rtl/*.sv \
+  bus/ahb/ahb_interconnect/*.sv \
+  bus/ahb/ahb_manager/*.sv \
+  bus/ahb/ahb_subordinate/*.sv \
+  bus/apb/rtl/*.sv \
+  peripherals/ff_ram/rtl/*.sv \
+  peripherals/sram_controller/rtl/*.sv \
+  peripherals/digital_io_mux/rtl/digital_io_mux_apb.sv \
+  peripherals/digital_io_mux/rtl/digital_io_mux_cell.sv \
+  peripherals/digital_io_mux/rtl/digital_io_mux.sv \
+  peripherals/gpio/src/*.sv \
+  peripherals/pwm/src/*.sv \
+  peripherals/timer/src/*.sv \
+  peripherals/spi/rtl/*.sv \
+  peripherals/i2c/rtl/i2c_engine.sv \
+  peripherals/i2c/rtl/i2c_regs.sv \
+  peripherals/i2c/rtl/i2c.sv \
+  peripherals/uart/rtl/*.sv \
+  peripherals/interrupt_controller/clint/rtl/*.sv \
+  peripherals/interrupt_controller/plic/rtl/plic.sv \
+  synth/sky130_sram_1rw1r_64x256_8_bb.v \
+  top_level/rtl/*.sv \
+  synth/aft_synth_top.sv
+
+hierarchy -check -top aft_synth_top
+stat
+EOF
+source /OpenROAD-flow-scripts/env.sh
+cd /work
+yosys -l /work/synth/out/soc_elab.log $ELAB_SCRIPT
 " 2>&1 | tee -a "$LOG_FILE"
 ELAB_STATUS=${PIPESTATUS[0]}
 set -e

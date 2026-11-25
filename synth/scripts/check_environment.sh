@@ -54,7 +54,8 @@ docker run --rm "$IMAGE_NAME" bash -lc "
     if command -v verilator &> /dev/null; then
         echo -n '  - Verilator: ' && verilator --version
     else
-        echo '  - Verilator: [NOT INSTALLED] (Run synth/scripts/setup_eda.sh to build extended image)'
+        echo '  - Verilator: [FAIL] Verilator is required but not installed in image!'
+        exit 1
     fi
 "
 

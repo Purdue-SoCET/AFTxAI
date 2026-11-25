@@ -7,8 +7,13 @@
 `define USE_SRAM_MACRO 1'b0
 `endif
 
+`ifndef USE_SYNTH_ROM
+`define USE_SYNTH_ROM 1'b0
+`endif
+
 module aft_synth_top #(
-    parameter bit USE_SRAM_MACRO = `USE_SRAM_MACRO
+    parameter bit USE_SRAM_MACRO = `USE_SRAM_MACRO,
+    parameter bit USE_SYNTH_ROM  = `USE_SYNTH_ROM
 ) (
     input  logic clk,
     input  logic rst_n,
@@ -52,7 +57,8 @@ module aft_synth_top #(
     assign sram_lb1_n = sram_bus.lb1_n;
 
     aft_top #(
-        .USE_SRAM_MACRO(USE_SRAM_MACRO)
+        .USE_SRAM_MACRO(USE_SRAM_MACRO),
+        .USE_SYNTH_ROM(USE_SYNTH_ROM)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .gpio0_in(gpio0_in), .gpio0_out(gpio0_out), .gpio0_oe(gpio0_oe),
