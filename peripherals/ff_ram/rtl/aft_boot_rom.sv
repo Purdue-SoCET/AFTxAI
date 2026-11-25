@@ -35,11 +35,10 @@ module aft_boot_rom #(
             32'd3: rom_data = 32'h0062a423;
 
             // Word 4 (0x410): Write test pattern to GPIO0_DATA (0x80000004): REG32(0x80000004) = 0x0000A5A5
-            // li t1, 0xA5A5: lui t1, 0xB; addi t1, t1, -1627 -> simpler:
-            // lui t1, 0xA; addi t1, t1, 0x5A5 -> (0xA000 + 0x5A5 = 0xA5A5)
-            // lui t1, 0xA
+            // li t1, 0xA5A5:
+            // lui t1, 0xA (10 << 12 = 0x0000A000)
             32'd4: rom_data = 32'h0000a337;
-            // addi t1, t1, 0x5a5
+            // addi t1, t1, 0x5a5 (0x0000A000 + 0x5A5 = 0x0000A5A5)
             32'd5: rom_data = 32'h5a530313;
             // sw t1, 4(t0) -> writes to GPIO0_DATA (0x80000004)
             32'd6: rom_data = 32'h0062a223;
@@ -62,12 +61,10 @@ module aft_boot_rom #(
 
             // Word 13 (0x434): PASS sequence!
             // Update GPIO0_DATA to 0x00005A5A (signals PASS to outside world)
-            // lui t1, 0x6
+            // li t1, 0x5A5A:
+            // lui t1, 0x6 (6 << 12 = 24576 = 0x00006000)
             32'd13: rom_data = 32'h00006337;
-            // addi t1, t1, -1446 (0x6000 - 0x5A6 = 0x5A5A -> -1446 is -0x5A6)
-            // 0x5A5A: lui t1, 0x5; addi t1, t1, 0x25a -> 0x525a not 0x5a5a
-            // 0x5A5A in decimal: 23130. 23130 = (6 << 12) - 1446 = 24576 - 1446 = 23130.
-            // addi -1446 (12-bit imm: 12'hA5A = -1446):
+            // addi t1, t1, -1446 (0x6000 - 0x5A6 = 0x00005A5A; 12'hA5A is sign-extended -1446)
             32'd14: rom_data = 32'ha5a30313;
             // sw t1, 4(t0) -> writes 0x5A5A to GPIO0_DATA
             32'd15: rom_data = 32'h0062a223;

@@ -13,11 +13,11 @@ module l1_cache #(parameter int CACHE_SIZE = 1024, parameter int BLOCK_SIZE = 4,
     typedef enum logic [2:0] { STATE_IDLE, STATE_EVICT_REQ, STATE_EVICT_DATA, STATE_FILL_REQ, STATE_FILL_DATA } cache_state_e;
     cache_state_e state, next_state;
 
-    logic [TAG_BITS-1:0] tag_array   [NUM_SETS-1:0][ASSOCIATIVITY-1:0]; logic [TAG_BITS-1:0] next_tag_array   [NUM_SETS-1:0][ASSOCIATIVITY-1:0];
-    logic                valid_array [NUM_SETS-1:0][ASSOCIATIVITY-1:0]; logic                next_valid_array [NUM_SETS-1:0][ASSOCIATIVITY-1:0];
-    logic                dirty_array [NUM_SETS-1:0][ASSOCIATIVITY-1:0]; logic                next_dirty_array [NUM_SETS-1:0][ASSOCIATIVITY-1:0];
-    logic                lru_array   [NUM_SETS-1:0]; logic                next_lru_array   [NUM_SETS-1:0];
-    logic [31:0]         data_array  [NUM_SETS-1:0][ASSOCIATIVITY-1:0][BLOCK_SIZE-1:0]; logic [31:0]         next_data_array  [NUM_SETS-1:0][ASSOCIATIVITY-1:0][BLOCK_SIZE-1:0];
+    logic [TAG_BITS-1:0] tag_array   [NUM_SETS-1:0][ASSOCIATIVITY-1:0];
+    logic                valid_array [NUM_SETS-1:0][ASSOCIATIVITY-1:0];
+    logic                dirty_array [NUM_SETS-1:0][ASSOCIATIVITY-1:0];
+    logic                lru_array   [NUM_SETS-1:0];
+    logic [31:0]         data_array  [NUM_SETS-1:0][ASSOCIATIVITY-1:0][BLOCK_SIZE-1:0];
 
     logic [ACTUAL_INDEX_BITS-1:0] cpu_idx; logic [TAG_BITS-1:0] cpu_tag; logic [3:0] cpu_blk_offset;
     logic hit, hit_way, victim_way, next_victim_way; logic [3:0] word_cnt, next_word_cnt;
@@ -33,22 +33,11 @@ module l1_cache #(parameter int CACHE_SIZE = 1024, parameter int BLOCK_SIZE = 4,
         end
         
         next_state = state; next_word_cnt = word_cnt; next_victim_way = victim_way;
-        next_tag_array = tag_array; next_valid_array = valid_array; next_dirty_array = dirty_array;
-        next_lru_array = lru_array; next_data_array = data_array;
         
         case (state)
             STATE_IDLE: begin
                 if (cpu_if.valid) begin
-                    if (hit) begin
-                        if (ASSOCIATIVITY == 2) next_lru_array[cpu_idx] = ~hit_way;
-                        if (CACHE_TYPE == 1 && cpu_if.wstrb != 4'b0) begin
-                            next_dirty_array[cpu_idx][hit_way] = 1'b1;
-                            if (cpu_if.wstrb[0]) next_data_array[cpu_idx][hit_way][cpu_blk_offset][7:0]   = cpu_if.wdata[7:0];
-                            if (cpu_if.wstrb[1]) next_data_array[cpu_idx][hit_way][cpu_blk_offset][15:8]  = cpu_if.wdata[15:8];
-                            if (cpu_if.wstrb[2]) next_data_array[cpu_idx][hit_way][cpu_blk_offset][23:16] = cpu_if.wdata[23:16];
-                            if (cpu_if.wstrb[3]) next_data_array[cpu_idx][hit_way][cpu_blk_offset][31:24] = cpu_if.wdata[31:24];
-                        end
-                    end else begin
+                    if (!hit) begin
                         next_victim_way = (ASSOCIATIVITY == 1) ? 1'b0 : lru_array[cpu_idx];
                         next_word_cnt = '0;
                         if (CACHE_TYPE == 1 && valid_array[cpu_idx][next_victim_way] && dirty_array[cpu_idx][next_victim_way]) next_state = STATE_EVICT_REQ;
@@ -67,12 +56,11 @@ module l1_cache #(parameter int CACHE_SIZE = 1024, parameter int BLOCK_SIZE = 4,
             end
             STATE_FILL_REQ: if (bus_if.gnt) next_state = STATE_FILL_DATA;
             STATE_FILL_DATA: if (bus_if.valid) begin
-                next_data_array[cpu_idx][victim_way][word_cnt] = bus_if.rdata;
                 if (bus_if.last) begin
-                    next_valid_array[cpu_idx][victim_way] = 1'b1; next_dirty_array[cpu_idx][victim_way] = 1'b0;
-                    next_tag_array[cpu_idx][victim_way] = cpu_tag; next_state = STATE_IDLE;
+                    next_state = STATE_IDLE;
                 end else next_word_cnt = word_cnt + 1;
             end
+            default: next_state = STATE_IDLE;
         endcase
     end
 
@@ -85,8 +73,25 @@ module l1_cache #(parameter int CACHE_SIZE = 1024, parameter int BLOCK_SIZE = 4,
             end
         end else begin
             state <= next_state; word_cnt <= next_word_cnt; victim_way <= next_victim_way;
-            tag_array <= next_tag_array; valid_array <= next_valid_array; dirty_array <= next_dirty_array;
-            lru_array <= next_lru_array; data_array <= next_data_array;
+
+            // Sequential selective updates to status arrays
+            if (state == STATE_IDLE && cpu_if.valid && hit) begin
+                if (ASSOCIATIVITY == 2) lru_array[cpu_idx] <= ~hit_way;
+                if (CACHE_TYPE == 1 && cpu_if.wstrb != 4'b0) begin
+                    dirty_array[cpu_idx][hit_way] <= 1'b1;
+                    if (cpu_if.wstrb[0]) data_array[cpu_idx][hit_way][cpu_blk_offset][7:0]   <= cpu_if.wdata[7:0];
+                    if (cpu_if.wstrb[1]) data_array[cpu_idx][hit_way][cpu_blk_offset][15:8]  <= cpu_if.wdata[15:8];
+                    if (cpu_if.wstrb[2]) data_array[cpu_idx][hit_way][cpu_blk_offset][23:16] <= cpu_if.wdata[23:16];
+                    if (cpu_if.wstrb[3]) data_array[cpu_idx][hit_way][cpu_blk_offset][31:24] <= cpu_if.wdata[31:24];
+                end
+            end else if (state == STATE_FILL_DATA && bus_if.valid) begin
+                data_array[cpu_idx][victim_way][word_cnt] <= bus_if.rdata;
+                if (bus_if.last) begin
+                    valid_array[cpu_idx][victim_way] <= 1'b1;
+                    dirty_array[cpu_idx][victim_way] <= 1'b0;
+                    tag_array[cpu_idx][victim_way]   <= cpu_tag;
+                end
+            end
         end
     end
 

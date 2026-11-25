@@ -102,3 +102,26 @@ bash synth/scripts/run_sram_tests.sh
 - **Check 30:** Mid-transaction reset assertion and idle state recovery (`Reset: SRAM successfully reset to IDLE`).
 
 *(Note: While organized into 25 discrete functional test blocks in code, the testbench executes exactly 30 granular read/write and state assertions, each reporting an individual `[PASS]` message for a total of 30 passes).*
+
+---
+
+## 5. L1 Cache Optimization & Measured Timing Impact
+
+Following the integration of OpenRAM hard macros, Static Timing Analysis revealed that the primary critical path shifted from the on-chip RAM address decoder to the L1 Data Cache (`riscv/rtl/caches/l1_cache.sv`), exhibiting a pre-placement setup slack of **-84.49 ns**.
+
+### 1. Root-Cause Investigation
+- **Array Next-State Assignment:** The baseline cache executed `next_data_array = data_array;` inside an `always_comb` block, copying all 8,192 flip-flop values every clock cycle before modifying only the addressed word.
+- **Synthesis Artifact:** Yosys synthesized an exhaustive 64-way MUX writeback network across every bit of the 8,192 flip-flops. A 3-input NOR gate (`_044546_ nor3b_1` decoding `cpu_idx[2:0]`) had a fanout load of **1,218 standard-cell inputs** and **2.9317 pF** of unbuffered capacitance, introducing 62.03 ns of gate delay.
+
+### 2. Implementation of Selective Sequential Updates
+- In `riscv/rtl/caches/l1_cache.sv`, combinational whole-array copying was removed.
+- Status and data arrays (`valid_array`, `dirty_array`, `tag_array`, `data_array`) are now updated sequentially inside the `always_ff` block using direct indexed non-blocking assignments (`data_array[cpu_idx][hit_way][cpu_blk_offset] <= ...`).
+- All hit/miss detection, line refill burst ordering, dirty evictions, and byte-strobe semantics are preserved identically.
+
+### 3. Verification & Synthesis Results
+- Unit functional regression (`synth/scripts/run_cache_tests.sh` driving `tb_l1_cache_direct.sv`): **7/7 passed**.
+- Full-SoC execution verification (`synth/scripts/run_soc_sram_smoke.sh` driving `tb_aft_top_sram_integration.sv`): **6/6 passed**, verifying end-to-end CPU boot and SRAM readback.
+- Mapped Standard Cells: dropped from **82,518 cells to 73,501 cells** (-9,017 cells, -10.9%).
+- Standard-Cell Area: reduced from **1.177 mm² to 1.123 mm²** (-53,271 µm², -4.5%).
+- Pre-Placement Setup WNS: improved from **-84.49 ns to -80.91 ns** (+3.58 ns).
+- Analysis of the remaining -80.91 ns slack indicates that the unbuffered index decode tree (`nor3b_1` driving 1,233 read-multiplexers across 64 sets) requires physical placement and buffer tree insertion, or a pipelined synchronous read architecture, for further closure.
