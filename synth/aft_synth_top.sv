@@ -3,7 +3,13 @@
 // This wrapper only converts the external SRAM SystemVerilog interface into
 // ordinary top-level pins. It is not a SRAM model, pad macro, or RTL redesign.
 // Keep ports of this module synchronized with the verified aft_top.sv.
-module aft_synth_top (
+`ifndef USE_SRAM_MACRO
+`define USE_SRAM_MACRO 1'b0
+`endif
+
+module aft_synth_top #(
+    parameter bit USE_SRAM_MACRO = `USE_SRAM_MACRO
+) (
     input  logic clk,
     input  logic rst_n,
     input  logic [31:0] gpio0_in,
@@ -45,7 +51,9 @@ module aft_synth_top (
     assign sram_ub1_n = sram_bus.ub1_n;
     assign sram_lb1_n = sram_bus.lb1_n;
 
-    aft_top dut (
+    aft_top #(
+        .USE_SRAM_MACRO(USE_SRAM_MACRO)
+    ) dut (
         .clk(clk), .rst_n(rst_n),
         .gpio0_in(gpio0_in), .gpio0_out(gpio0_out), .gpio0_oe(gpio0_oe),
         .gpio0_pu(gpio0_pu), .gpio0_pd(gpio0_pd),

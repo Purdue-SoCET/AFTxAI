@@ -91,12 +91,14 @@ Run the standalone regression:
 bash synth/scripts/run_sram_tests.sh
 ```
 
-**Coverage of 30 Test Cases:**
-- All 8 banks tested at base addresses (`0x0000`, `0x0800`, `0x1000`, ...).
-- All 8 banks tested at top boundaries (`0x07FC`, `0x0FFC`, `0x17FC`, ...).
-- Sub-word byte strobes (1-byte, 2-byte, and 4-byte writes).
-- Low vs. High 32-bit word multiplexing within 64-bit macro words.
-- Back-to-back writes across banks.
-- Back-to-back reads across banks.
-- Write-then-immediate-read on identical addresses.
-- Mid-transaction reset assertion and idle state recovery.
+**Coverage of the 30 Verified Checks Across 25 Test Blocks:**
+- **Checks 1–8:** Base addresses across all 8 macro banks (`Bank_0_base` to `Bank_7_base` at offsets `0x0000`, `0x0800`, `0x1000`, ...).
+- **Checks 9–16:** Top boundary words across all 8 macro banks (`Bank_0_top` to `Bank_7_top` at offsets `0x07FC`, `0x0FFC`, `0x17FC`, ...).
+- **Checks 17–20:** Sub-word byte strobes (`Strobe_init`, `Strobe_byte0`, `Strobe_byte1`, `Strobe_byte2_3`).
+- **Checks 21–22:** 64-bit row word select (`Macro_row_word_low` at offset `0x20` and `Macro_row_word_high` at offset `0x24`).
+- **Checks 23–25:** Back-to-back writes across banks (`B2B_write_bank0`, `B2B_write_bank1`, `B2B_write_bank2`).
+- **Checks 26–28:** Back-to-back reads across banks (`B2B_read_bank0`, `B2B_read_bank1`, `B2B_read_bank2`).
+- **Check 29:** Write-then-immediate-read on identical addresses (`Write_immediate_read`).
+- **Check 30:** Mid-transaction reset assertion and idle state recovery (`Reset: SRAM successfully reset to IDLE`).
+
+*(Note: While organized into 25 discrete functional test blocks in code, the testbench executes exactly 30 granular read/write and state assertions, each reporting an individual `[PASS]` message for a total of 30 passes).*

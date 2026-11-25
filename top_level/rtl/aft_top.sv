@@ -1,6 +1,12 @@
 `timescale 1ns/1ps
 
-module aft_top (
+`ifndef USE_SRAM_MACRO
+`define USE_SRAM_MACRO 1'b0
+`endif
+
+module aft_top #(
+    parameter bit USE_SRAM_MACRO = `USE_SRAM_MACRO
+) (
     input  logic clk,
     input  logic rst_n,
 
@@ -181,15 +187,23 @@ module aft_top (
         .generic_if(ram_bus.protocol)
     );
 
-    ff_ram #(
-        .NBYTES(ON_CHIP_RAM_WORDS * 4),
-        .ROM(1'b0),
-        .DUMP_FILE("memsim_ram.hex")
-    ) u_onchip_ram (
-        .clk(clk),
-        .rst_n(rst_n),
-        .bus(ram_bus.peripheral_vital)
-    );
+    if (USE_SRAM_MACRO) begin : gen_sram_ram
+        sky130_sram_banked_16k u_sram_banked (
+            .clk(clk),
+            .rst_n(rst_n),
+            .bus(ram_bus.peripheral_vital)
+        );
+    end else begin : gen_ff_ram
+        ff_ram #(
+            .NBYTES(ON_CHIP_RAM_WORDS * 4),
+            .ROM(1'b0),
+            .DUMP_FILE("memsim_ram.hex")
+        ) u_onchip_ram (
+            .clk(clk),
+            .rst_n(rst_n),
+            .bus(ram_bus.peripheral_vital)
+        );
+    end
 
     // Off-Chip SRAM Controller (Subordinate 2)
     bus_protocol_if sram_bus();

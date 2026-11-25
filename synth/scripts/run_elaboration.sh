@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
 # synth/scripts/run_elaboration.sh
-# Performs full-SystemVerilog elaboration of AFTxAI using Yosys and read_slang.
+# Usage:
+#   bash synth/scripts/run_elaboration.sh [--sram]
 set -euo pipefail
+
+USE_SRAM="${1:-}"
+DEF_ARG=""
+if [ "$USE_SRAM" == "--sram" ]; then
+    echo "==> Configuring elaboration for SRAM macro backend (USE_SRAM_MACRO=1)..."
+    DEF_ARG="-DUSE_SRAM_MACRO=1"
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -37,7 +45,7 @@ docker exec "$CONTAINER_NAME" bash -lc "
     source /OpenROAD-flow-scripts/env.sh
     cd /work
     yosys -l /work/synth/out/soc_elab.log -p '
-        read_slang --single-unit --top aft_synth_top \
+        read_slang --single-unit --top aft_synth_top '"$DEF_ARG"' \
           -I bus/ahb/include \
           -I bus/apb/include \
           -I bus/generic \
@@ -91,6 +99,7 @@ docker exec "$CONTAINER_NAME" bash -lc "
           peripherals/uart/rtl/*.sv \
           peripherals/interrupt_controller/clint/rtl/*.sv \
           peripherals/interrupt_controller/plic/rtl/plic.sv \
+          synth/sky130_sram_1rw1r_64x256_8_bb.v \
           top_level/rtl/*.sv \
           synth/aft_synth_top.sv
         hierarchy -check -top aft_synth_top

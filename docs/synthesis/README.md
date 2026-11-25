@@ -4,6 +4,26 @@ Welcome to the **AFTxAI Synthesis and Implementation Engineering Guide**. This d
 
 ---
 
+## Measured Milestone Comparison (Baseline vs. SRAM Experiment)
+
+The table below contrasts the baseline register-based SoC against the 8-bank OpenRAM macro SoC:
+
+| Metric | FF-RAM Baseline (`feat/full-soc-synthesis`) | SRAM Experiment (`feat/sram-macro-experiment`) | Delta / Engineering Impact |
+|---|---|---|---|
+| **Standard-Cell Count** | 233,481 cells | **82,518 cells** | **-64.7% cell count reduction** |
+| **Sequential Flip-Flops** | 159,878 DFFs | **28,816 DFFs** | **-131,062 flip-flops eliminated!** |
+| **Standard-Cell Area** | 5,799,221.91 µm² (5.799 mm²) | **1,176,669.77 µm² (1.177 mm²)** | **-79.7% standard cell area reduction** |
+| **SRAM Hard Macro Area** | 0 mm² | **3.36 mm²** ($8 \times 0.42\text{ mm}^2$) | 8 physical macro blackboxes |
+| **Combined Instance Area** | 5.799 mm² | **4.537 mm²** | **-1.26 mm² (-21.8%) net silicon reduction** |
+| **Worst Setup Slack (WNS)** | **-1532.34 ns** (100 MHz target) | **-84.49 ns** (100 MHz target) | **+1447.85 ns improvement (18.1× better!)** |
+| **Worst Hold Slack** | +0.20 ns | **+0.11 ns** | Met (positive margin) |
+| **Critical Timing Path** | 16,393-load RAM Address Decoder | **L1 D-Cache Tag/Data Array Multiplexing** | RAM decoding bottleneck eliminated |
+| **SRAM Macro Timing Arcs** | N/A | **+3.67 ns slack (MET)** | Macro read output arcs comfortably meet timing |
+| **Unconstrained Endpoints** | 0 | **0** | Full synchronous coverage |
+| **Unresolved Instances** | 0 (`$_TBUF_` resolved) | **0** (All standard cells + macros resolved) | Clean OpenROAD linking |
+
+---
+
 ## Guide Index
 
 1. **[01 - Environment Setup & Prerequisites](01_environment_setup.md)**
@@ -32,35 +52,41 @@ Welcome to the **AFTxAI Synthesis and Implementation Engineering Guide**. This d
    - 8-bank 16 KiB interleaved architecture (`sky130_sram_banked_16k.sv`).
    - Timing arcs, Liberty setup/hold, and clock-edge root cause analysis.
    - 3-state FSM read controller architecture.
-   - 30-test regression verification suite.
+   - 30-check regression verification suite.
 6. **[06 - Troubleshooting & Verified Fixes](06_troubleshooting.md)**
    - Real encountered errors and their step-by-step remedies (`STA-0171`, `ORD-2010`, `ORD-2013`, `$_TBUF_` linking, undriven nets, simulation race conditions).
 7. **[07 - Project Status & Implementation Roadmap](07_status_and_roadmap.md)**
    - Current status of RTL, synthesis, timing, and SRAM experiment.
    - The Boot ROM initialization challenge and physical macro placement checklist.
+8. **[08 - Boot ROM Hardware Initialization Analysis](08_boot_rom_analysis.md)**
+   - Synthesizable case-ROM vs. hard metal ROM vs. QSPI Flash first-stage bootloader.
 
 ---
 
-## Quick Start: One-Command Automation Scripts
+## One-Command Automation Workflows
 
 The repository provides automated, reviewable bash entry points under `synth/scripts/`:
 
 ```bash
-# 1. Check host prerequisites and Docker container EDA toolchain
+# 1. Environment and toolchain verification
 bash synth/scripts/check_environment.sh
 
-# 2. Run the 30-test SRAM macro read-handshake regression suite
+# 2. Standalone SRAM 30-check regression suite
 bash synth/scripts/run_sram_tests.sh
 
-# 3. Run the AHB-Lite subordinate to SRAM macro integration suite
+# 3. AHB-Lite subordinate to SRAM integration suite
 bash synth/scripts/run_ahb_sram_tests.sh
 
-# 4. Run full-SoC SystemVerilog elaboration
-bash synth/scripts/run_elaboration.sh
+# 4. Full-SoC simulation smoke test with SRAM macros
+bash synth/scripts/run_soc_sram_smoke.sh
 
-# 4. Prepare full synthesis script
-bash synth/scripts/run_synthesis.sh
+# 5. Full-SoC SystemVerilog elaboration (Default FF-RAM vs. SRAM)
+bash synth/scripts/run_elaboration.sh         # Elaboration with FF-RAM
+bash synth/scripts/run_elaboration.sh --sram  # Elaboration with SRAM macros
 
-# 5. Run OpenROAD Static Timing Analysis
-bash synth/scripts/run_sta.sh
+# 6. Full-SoC SRAM-backed synthesis & SKY130HD mapping
+bash synth/scripts/run_sram_synthesis.sh
+
+# 7. OpenROAD macro-aware Static Timing Analysis
+bash synth/scripts/run_sram_sta.sh
 ```
