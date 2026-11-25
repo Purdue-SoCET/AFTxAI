@@ -36,6 +36,7 @@ read_slang --single-unit --top aft_synth_top \
   peripherals/spi/include/spi_if.sv \
   peripherals/i2c/include/i2c_if.sv \
   digital_lib/sync_2ff.sv \
+  digital_lib/counter.sv \
   riscv/include/*.sv \
   riscv/rtl/datapath/*.sv \
   riscv/rtl/caches/*.sv \

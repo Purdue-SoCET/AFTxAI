@@ -23,3 +23,9 @@ xrun.log
 xrun*.log
 build/
 *.do
+
+# Synthesis and STA artifacts
+synth/out/
+*.netlist
+*.v.bak
+
