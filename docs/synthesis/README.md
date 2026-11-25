@@ -6,6 +6,9 @@ Welcome to the **AFTxAI Synthesis and Implementation Engineering Guide**. This d
 
 ## Measured Milestone Comparison (Baseline vs. SRAM Experiment)
 
+> **Important Engineering Note on Timing & Physical Metrics:**  
+> All timing and area results reported below are **pre-placement static timing estimates** (ideal clock tree, wire-load models) derived from mapped gate netlists linked in OpenROAD. They are not physical signoff results. The unplaced −84.49 ns WNS confirms that while the 1.5 µs RAM decoder bottleneck has been eliminated, the SoC still violates the 10.0 ns (100 MHz) clock target. In addition, macro areas represent logical boundary footprints; macros have not yet been physically placed or routed on a floorplan.
+
 The table below contrasts the baseline register-based SoC against the 8-bank OpenRAM macro SoC:
 
 | Metric | FF-RAM Baseline (`feat/full-soc-synthesis`) | SRAM Experiment (`feat/sram-macro-experiment`) | Delta / Engineering Impact |
@@ -13,11 +16,11 @@ The table below contrasts the baseline register-based SoC against the 8-bank Ope
 | **Standard-Cell Count** | 233,481 cells | **82,518 cells** | **-64.7% cell count reduction** |
 | **Sequential Flip-Flops** | 159,878 DFFs | **28,816 DFFs** | **-131,062 flip-flops eliminated!** |
 | **Standard-Cell Area** | 5,799,221.91 µm² (5.799 mm²) | **1,176,669.77 µm² (1.177 mm²)** | **-79.7% standard cell area reduction** |
-| **SRAM Hard Macro Area** | 0 mm² | **3.36 mm²** ($8 \times 0.42\text{ mm}^2$) | 8 physical macro blackboxes |
+| **SRAM Hard Macro Footprint** | 0 mm² | **3.36 mm²** ($8 \times 0.42\text{ mm}^2$, unplaced) | 8 unplaced macro blackboxes |
 | **Combined Instance Area** | 5.799 mm² | **4.537 mm²** | **-1.26 mm² (-21.8%) net silicon reduction** |
-| **Worst Setup Slack (WNS)** | **-1532.34 ns** (100 MHz target) | **-84.49 ns** (100 MHz target) | **+1447.85 ns improvement (18.1× better!)** |
-| **Worst Hold Slack** | +0.20 ns | **+0.11 ns** | Met (positive margin) |
-| **Critical Timing Path** | 16,393-load RAM Address Decoder | **L1 D-Cache Tag/Data Array Multiplexing** | RAM decoding bottleneck eliminated |
+| **Worst Setup Slack (WNS)** | **-1532.34 ns** (pre-placement estimate) | **-84.49 ns** (pre-placement estimate) | **+1447.85 ns improvement (18.1× better, still violates 10ns target)** |
+| **Worst Hold Slack** | +0.20 ns | **+0.11 ns** | Met (pre-placement estimate) |
+| **Critical Timing Path** | 16,393-load RAM Address Decoder | **L1 D-Cache Tag/Data Array Multiplexing** | RAM decoding bottleneck eliminated; cache bottleneck exposed |
 | **SRAM Macro Timing Arcs** | N/A | **+3.67 ns slack (MET)** | Macro read output arcs comfortably meet timing |
 | **Unconstrained Endpoints** | 0 | **0** | Full synchronous coverage |
 | **Unresolved Instances** | 0 (`$_TBUF_` resolved) | **0** (All standard cells + macros resolved) | Clean OpenROAD linking |

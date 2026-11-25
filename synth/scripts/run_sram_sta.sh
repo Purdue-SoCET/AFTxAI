@@ -40,10 +40,42 @@ if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
     fi
 fi
 
+REL_NETLIST="${NETLIST_INPUT#$REPO_ROOT/}"
+REL_SDC="${SDC_INPUT#$REPO_ROOT/}"
+STA_TCL="/tmp/run_sta_sram_${RANDOM}.tcl"
+
 echo "==> Running OpenROAD in Docker..."
 docker exec "$CONTAINER_NAME" bash -lc "
+cat << EOF > $STA_TCL
+set lib_file \"/OpenROAD-flow-scripts/flow/platforms/sky130hd/lib/sky130_fd_sc_hd__tt_025C_1v80.lib\"
+set tech_lef \"/OpenROAD-flow-scripts/flow/platforms/sky130hd/lef/sky130_fd_sc_hd.tlef\"
+set cell_lef \"/OpenROAD-flow-scripts/flow/platforms/sky130hd/lef/sky130_fd_sc_hd_merged.lef\"
+set sram_lib \"/OpenROAD-flow-scripts/flow/platforms/sky130ram/sky130_sram_1rw1r_64x256_8/sky130_sram_1rw1r_64x256_8_TT_1p8V_25C.lib\"
+set sram_lef \"/OpenROAD-flow-scripts/flow/platforms/sky130ram/sky130_sram_1rw1r_64x256_8/sky130_sram_1rw1r_64x256_8.lef\"
+set netlist_file \"/work/$REL_NETLIST\"
+set sdc_file \"/work/$REL_SDC\"
+
+read_liberty \\\$lib_file
+read_liberty \\\$sram_lib
+read_lef \\\$tech_lef
+read_lef \\\$cell_lef
+read_lef \\\$sram_lef
+read_verilog \\\$netlist_file
+link_design aft_synth_top
+read_sdc \\\$sdc_file
+
+check_setup -unconstrained_endpoints
+report_checks -through [get_pins -hierarchical *u_sram*/*] -endpoint_count 5
+report_checks -fields {capacitance slew input_pins nets} -format full_clock_expanded -path_delay max -digits 4
+report_checks -path_delay max -endpoint_count 10 -digits 4
+report_worst_slack -max
+report_worst_slack -min
+report_clock_skew
+report_checks -unconstrained -endpoint_count 20
+exit
+EOF
     source /OpenROAD-flow-scripts/env.sh
-    openroad -exit /work/synth/run_sta_sram_linked.tcl
+    openroad -exit $STA_TCL
 " 2>&1 | tee "$LOG_FILE"
 
 echo "==> [SUCCESS] SRAM STA complete. Log written to $LOG_FILE"

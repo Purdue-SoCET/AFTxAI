@@ -1,6 +1,8 @@
 # 08 - Boot ROM Hardware Initialization Analysis
 
-This document addresses Section 7 of the ASIC implementation milestone: investigating a reproducible, synthesizable approach for the on-chip **4 KiB Boot ROM** (`BOOT_ROM_BASE = 0x0000_0000`, 1024 words × 32 bits).
+> **Disclaimer:** This document is an **architectural investigation and design proposal**. None of the options below represent an implemented or physically synthesized Boot ROM in the current AFTxAI netlist. The current synthesized netlist retains the baseline `u_boot_rom` behavior (constant zero logic due to uninitialized register elimination). All silicon area numbers in this document are preliminary order-of-magnitude architectural estimates, not tool-measured post-synthesis statistics.
+
+This document addresses Section 7 of the ASIC implementation milestone: investigating a reproducible, synthesizable approach for the on-chip **4 KiB Boot ROM** (`BOOT_ROM_BASE = 0x0000_0400`, 1024 words × 32 bits).
 
 ---
 
@@ -19,11 +21,11 @@ In the baseline simulation and FPGA environment:
 
 We evaluated three potential implementation paths for the 4 KiB Boot ROM:
 
-| Option | Architecture | Silicon Area | Flexibility | Physical Feasibility (SKY130) |
+| Option | Architecture | Estimated Silicon Area (Order of Magnitude) | Flexibility | Physical Feasibility (SKY130) |
 |---|---|---|---|---|
-| **Option A: Synthesized Combinational Lookup Decoder (Case/ROM array in RTL)** | Synthesizable `always_comb` case statement mapping addresses `0x0` to `0xFFC` to constants. | $\approx 0.15\text{--}0.25\ \text{mm}^2$ (standard cells) | Low (requires resynthesis to update firmware) | **High (100% standard-cell compatible, no custom macros required).** |
-| **Option B: Dedicated Hard Metal-Programmed ROM Macro** | Hardened ROM macro generator (e.g., OpenLane / SkyWater Via-programmed ROM). | $\approx 0.04\ \text{mm}^2$ | Low (firmware fixed in metal via mask) | **Medium (requires qualified SKY130 metal ROM compiler view).** |
-| **Option C: Hardware SPI Bootloader to SRAM (First-Stage Bootloader)** | Minimal 128-byte hardware state machine or tiny 256-byte ROM that loads program code from off-chip SPI Flash into on-chip 16 KiB SRAM on reset. | $< 0.02\ \text{mm}^2$ | **Very High** (Flash can be reprogrammed at any time) | **High (standard practice for commercial SoCs like ESP32 / RP2040).** |
+| **Option A: Synthesized Combinational Lookup Decoder (Case/ROM array in RTL)** | Synthesizable `always_comb` case statement mapping addresses `0x0` to `0xFFC` to constants. | $\approx 0.15\text{--}0.25\ \text{mm}^2$ (estimated standard cells) | Low (requires resynthesis to update firmware) | **High (100% standard-cell compatible, no custom macros required).** |
+| **Option B: Dedicated Hard Metal-Programmed ROM Macro** | Hardened ROM macro generator (e.g., OpenLane / SkyWater Via-programmed ROM). | $\approx 0.04\ \text{mm}^2$ (estimated macro footprint) | Low (firmware fixed in metal via mask) | **Medium (requires qualified SKY130 metal ROM compiler view).** |
+| **Option C: Hardware SPI Bootloader to SRAM (First-Stage Bootloader)** | Minimal autonomous hardware FSM or microcode ROM that loads program code from off-chip SPI Flash into on-chip 16 KiB SRAM on reset. | $< 0.02\ \text{mm}^2$ (estimated logic) | **Very High** (Flash can be reprogrammed at any time) | **High (standard practice for commercial SoCs like ESP32 / RP2040).** |
 
 ---
 

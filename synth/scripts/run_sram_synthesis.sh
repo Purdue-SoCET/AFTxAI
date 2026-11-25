@@ -32,6 +32,8 @@ if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
     fi
 fi
 
+REL_OUT_DIR="${OUT_DIR#$REPO_ROOT/}"
+
 SYNTH_SCRIPT="/tmp/run_sram_synth.ys"
 
 docker exec "$CONTAINER_NAME" bash -lc "
@@ -107,8 +109,8 @@ abc -liberty /OpenROAD-flow-scripts/flow/platforms/sky130hd/lib/sky130_fd_sc_hd_
 clean
 stat -liberty /OpenROAD-flow-scripts/flow/platforms/sky130hd/lib/sky130_fd_sc_hd__tt_025C_1v80.lib
 
-# Write gate-level netlists into out_sram
-write_verilog -noattr /work/synth/out_sram/netlist_synth.v
+# Write gate-level netlists into output directory
+write_verilog -noattr /work/$REL_OUT_DIR/netlist_synth.v
 EOF
 "
 
@@ -116,13 +118,10 @@ echo "==> Running Yosys synthesis inside Docker..."
 docker exec "$CONTAINER_NAME" bash -lc "
     source /OpenROAD-flow-scripts/env.sh
     cd /work
-    yosys -l /work/synth/out_sram/soc_synth.log $SYNTH_SCRIPT
+    yosys -l /work/$REL_OUT_DIR/soc_synth.log $SYNTH_SCRIPT
 " 2>&1 | tee "$OUT_DIR/soc_synth_terminal.log"
 
-echo "==> Cleaning behavioral blocks from netlist..."
-python3 "$REPO_ROOT/synth/scripts/clean_netlist.py" "$OUT_DIR/netlist_synth.v" "$OUT_DIR/netlist_sta_clean.v"
-
-echo "==> Creating clean netlist for STA (resolving tri-state cells)..."
-cat "$OUT_DIR/netlist_sta_clean.v" "$REPO_ROOT/synth/tbuf_sky130.v" > "$OUT_DIR/netlist_sta_linked.v"
+echo "==> Re-exporting clean structural netlist via Yosys (removing simulation artifacts)..."
+bash "$REPO_ROOT/synth/scripts/export_clean_netlist.sh" "$OUT_DIR/netlist_synth.v" "$OUT_DIR/netlist_sta_linked.v"
 
 echo "==> [SUCCESS] SRAM-backed synthesis complete! Netlist: $OUT_DIR/netlist_sta_linked.v"
