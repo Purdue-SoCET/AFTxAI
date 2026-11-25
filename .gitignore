@@ -27,6 +27,7 @@ build/
 # Synthesis and STA artifacts
 synth/out/
 synth/out_sram/
+synth/out_physical/
 *.netlist
 *.v.bak
 

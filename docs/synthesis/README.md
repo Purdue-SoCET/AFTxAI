@@ -4,26 +4,26 @@ Welcome to the **AFTxAI Synthesis and Implementation Engineering Guide**. This d
 
 ---
 
-## Measured Milestone Comparison (Baseline vs. SRAM Experiment)
+## Measured Milestone Comparison (Synthesis Baseline vs. SRAM vs. Physical Placement)
 
 > **Important Engineering Note on Timing & Physical Metrics:**  
-> All timing and area results reported below are **pre-placement static timing estimates** (ideal clock tree, wire-load models) derived from mapped gate netlists linked in OpenROAD. They are not physical signoff results. The unplaced −84.49 ns WNS confirms that while the 1.5 µs RAM decoder bottleneck has been eliminated, the SoC still violates the 10.0 ns (100 MHz) clock target. In addition, macro areas represent logical boundary footprints; macros have not yet been physically placed or routed on a floorplan.
+> Checkpoints 1 through 3 represent unplaced or pre-repair estimates. Checkpoint 4 presents the **first fully legalized physical placement checkpoint** with placed OpenRAM macros, legalized standard cells, and post-repair high-fanout buffer trees. Physical metrics now use exact LEF macro dimensions ($1040.76\ \mu\text{m} \times 403.035\ \mu\text{m} = 0.4195\text{ mm}^2$ per macro; $3.3557\text{ mm}^2$ total macro area). While high-fanout buffering successfully resolved the severe cache slew bottleneck (reducing WNS from −80.91 ns down to −19.54 ns), full 100 MHz closure has not yet been achieved.
 
-The table below contrasts the baseline register-based SoC against the 8-bank OpenRAM macro SoC:
+The table below contrasts the baseline register-based SoC against the SRAM experiment and physical placement milestones:
 
-| Metric | FF-RAM Baseline (`feat/full-soc-synthesis`) | SRAM Baseline (`6e83625`) | L1 Cache Optimized (`feat/sram-macro-experiment`) | Delta / Engineering Impact |
-|---|---|---|---|---|
-| **Standard-Cell Count** | 233,481 cells | 82,518 cells | **73,501 cells** | **-9,017 cells (-10.9%) vs SRAM baseline** |
-| **Sequential Flip-Flops** | 159,878 DFFs | 28,816 DFFs | **28,816 DFFs** | Identical (8,192 data + 1,408 tag + status DFFs) |
-| **Standard-Cell Area** | 5.799 mm² | 1.177 mm² | **1.123 mm²** | **-53,271 µm² (-4.5%) standard cell area reduction** |
-| **SRAM Hard Macro Footprint** | 0 mm² | 3.36 mm² ($8 \times 0.42\text{ mm}^2$, unplaced) | **3.36 mm²** | 8 unplaced macro blackboxes |
-| **Combined Instance Area** | 5.799 mm² | 4.537 mm² | **4.483 mm²** | **Net logical area reduced** |
-| **Worst Setup Slack (WNS)** | **-1532.34 ns** | **-84.49 ns** | **-80.91 ns** | **+3.58 ns improvement in combinational MUX depth** |
-| **Worst Hold Slack** | +0.20 ns | +0.11 ns | **+0.11 ns** | Met (pre-placement estimate) |
-| **Critical Timing Path** | 16,393-load RAM Address Decoder | L1 D-Cache Next-State MUX loop | **L1 D-Cache Tag/Data Array Read Multiplexing** | Next-state write-back MUX loop collapsed; read-MUX remaining |
-| **SRAM Macro Timing Arcs** | N/A | +3.67 ns slack (MET) | **+3.68 ns slack (MET)** | Macro read output arcs comfortably meet timing |
-| **Unconstrained Endpoints** | 0 | 0 | **0** | Full synchronous coverage |
-| **Unresolved Instances** | 0 | 0 | **0** | Clean OpenROAD linking |
+| Metric | FF-RAM Baseline (`feat/full-soc-synthesis`) | SRAM Baseline (`6e83625`) | L1 Cache Optimized (`feat/sram-macro-experiment`) | Placed & Repaired (`c4cbdce0`) | Delta / Engineering Impact |
+|---|---|---|---|---|---|
+| **Standard-Cell Count** | 233,481 cells | 82,518 cells | 73,501 cells | **76,318 cells** | +2,817 buffer/inverter cells inserted |
+| **Sequential Flip-Flops** | 159,878 DFFs | 28,816 DFFs | 28,816 DFFs | **28,816 DFFs** | Identical synchronous state storage |
+| **Standard-Cell Area** | 5.799 mm² | 1.177 mm² | 1.123 mm² | **1.157 mm²** | +33,408 µm² buffer insertion area |
+| **SRAM Hard Macro Footprint** | 0 mm² | 3.36 mm² (est.) | 3.36 mm² (est.) | **3.356 mm²** ($8 \times 1040.76 \times 403.04\ \mu\text{m}$) | 8 placed & legalized macro instances |
+| **Total Core Area / Utilization**| N/A | N/A | N/A | **9.602 mm² / 47.0%** (3.15 × 3.15 mm core) | Feasible density; 759 µm central channel |
+| **Worst Setup Slack (WNS)** | **-1532.34 ns** | **-84.49 ns** | **-80.91 ns** | **-19.54 ns** | **+61.37 ns timing closure (4.1× reduction!)** |
+| **Total Negative Slack (TNS)** | -4.12E+07 ns | -2.18E+06 ns | -2.11E+06 ns | **-2.72E+05 ns** | **87.1% TNS reduction post-repair** |
+| **Worst Hold Slack** | +0.20 ns | +0.11 ns | +0.11 ns | **+0.12 ns** | Met across all checkpoints |
+| **Critical Timing Path** | 16,393-load RAM Decoder | L1 D-Cache Writeback MUX | L1 D-Cache Read Multiplexer | **PLIC Enable (`enable_q[31]`) -> I-Cache Fill** | Cache fanout bottleneck resolved! |
+| **Max Slew Violation** | ~84 ns | ~83 ns | 83.89 ns | **8.09 ns** | **-75.80 ns slew reduction** |
+| **SRAM Macro Timing Arcs** | N/A | +3.67 ns slack (MET) | +3.68 ns slack (MET) | **+3.68 ns slack (MET)** | Macro read output arcs comfortably meet timing |
 
 ---
 

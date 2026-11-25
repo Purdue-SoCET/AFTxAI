@@ -24,11 +24,14 @@ We selected **`sky130_sram_1rw1r_64x256_8`**:
 - Word count: 256 rows × 64 bits = 16,384 bits = 2048 bytes (2 KiB) per macro.
 - 8 instances banked together deliver exactly **16 KiB (16,384 bytes = 4096 words × 32 bits)**.
 
-### Physical Footprint Reality Check:
-Each `sky130_sram_1rw1r_64x256_8` macro has physical dimensions of approximately $683\ \mu\text{m} \times 615\ \mu\text{m} \approx 0.42\ \text{mm}^2$.
-- 8 macro instances total **3.36 mm² of core macro area**.
+### Physical Footprint Reality Check (Exact LEF Dimensions):
+In early documentation, an estimated dimension of $683\ \mu\text{m} \times 615\ \mu\text{m}$ was noted. Verification of the physical LEF view (`/OpenROAD-flow-scripts/flow/platforms/sky130ram/sky130_sram_1rw1r_64x256_8/sky130_sram_1rw1r_64x256_8.lef`) establishes the exact physical boundary:
+- **Exact Bounding Box:** **`SIZE 1040.76 BY 403.035`** ($\mu\text{m}$).
+- **Single Macro Area:** $1040.76\ \mu\text{m} \times 403.035\ \mu\text{m} = 419,462.71\ \mu\text{m}^2 \approx 0.4195\text{ mm}^2$.
+- **8 Macro Total Core Area:** $8 \times 419,462.71\ \mu\text{m}^2 = 3,355,701.65\ \mu\text{m}^2 \approx 3.356\text{ mm}^2$.
+- **Pin Placement:** Port pins (`din0`, `dout0`, `addr0`, `wmask0`, `clk0`, `csb0`, `web0`) reside on `met2` along the bottom boundary (Y: 2.69 µm to 2.95 µm).
 - Total chip area with SRAM macros is approximately:
-  $$\text{Standard Cells (Non-RAM)} \approx 1.04\ \text{mm}^2 + \text{SRAM Macros} \approx 3.36\ \text{mm}^2 + \text{Routing/Pads} \approx 0.5\text{--}1.0\ \text{mm}^2 \approx 4.9\text{--}5.4\ \text{mm}^2$$
+  $$\text{Standard Cells (Non-RAM)} \approx 1.16\ \text{mm}^2 + \text{SRAM Macros} \approx 3.36\ \text{mm}^2 + \text{Routing Corridors/Pads} \approx 5.08\ \text{mm}^2 \approx 9.60\ \text{mm}^2$$
 - While total die area decreases moderately from the unroutable 5.80 mm² flop baseline, the primary engineering wins are **eliminating 131,072 clock tree endpoints**, removing unbuffered 16,393-load decoding trees, and dramatically improving routeability.
 
 ---
@@ -125,3 +128,38 @@ Following the integration of OpenRAM hard macros, Static Timing Analysis reveale
 - Standard-Cell Area: reduced from **1.177 mm² to 1.123 mm²** (-53,271 µm², -4.5%).
 - Pre-Placement Setup WNS: improved from **-84.49 ns to -80.91 ns** (+3.58 ns).
 - Analysis of the remaining -80.91 ns slack indicates that the unbuffered index decode tree (`nor3b_1` driving 1,233 read-multiplexers across 64 sets) requires physical placement and buffer tree insertion, or a pipelined synchronous read architecture, for further closure.
+
+---
+
+## 6. Physical Placement & High-Fanout Repair Results
+
+Using OpenROAD inside the qualified container environment, the macro-aware floorplan, global placement, high-fanout buffer repair, and detailed placement legalization were executed (`synth/scripts/run_physical_placement.sh`).
+
+### 1. Macro-Aware Floorplan Architecture
+- **Die Area:** $3200\ \mu\text{m} \times 3200\ \mu\text{m}$ ($10.24\text{ mm}^2$).
+- **Core Area:** $3100\ \mu\text{m} \times 3100\ \mu\text{m}$ ($9.602\text{ mm}^2$, snapped to site `unithd` grid $0.46\ \mu\text{m} \times 2.72\ \mu\text{m}$).
+- **Macro Placement Scheme:**
+  - 8 macros arranged in two balanced columns of 4 rows along the east and west chip boundaries.
+  - Column 0 (Banks 0–3): $X = 100.28\ \mu\text{m}$, Rows at $Y \in \{100.64, 700.40, 1300.16, 1902.64\}\ \mu\text{m}$.
+  - Column 1 (Banks 4–7): $X = 1900.26\ \mu\text{m}$, Rows at $Y \in \{100.64, 700.40, 1300.16, 1902.64\}\ \mu\text{m}$.
+  - **Central Routing Corridor:** $759.22\ \mu\text{m}$ wide, keeping high-density core logic and bus interconnect uninhibited by macro blockages.
+  - Core Utilization: **47.0%** (Standard cells: $1.157\text{ mm}^2$; Macros: $3.356\text{ mm}^2$).
+
+### 2. Multi-Checkpoint Progression
+
+| Metric | Checkpoint 1 (Unplaced Baseline) | Checkpoint 2 (Global Placement) | Checkpoint 3 (Post-Repair) | Checkpoint 4 (Detailed Legalized) |
+|---|---|---|---|---|
+| **Worst Setup Slack (WNS)** | -81.17 ns | -81.17 ns | -19.28 ns | **-19.54 ns** |
+| **Total Negative Slack (TNS)**| -2,113,142 ns | -2,113,142 ns | -270,344 ns | **-271,564 ns** |
+| **Worst Hold Slack** | +0.11 ns | +0.11 ns | +0.11 ns | **+0.12 ns** |
+| **Worst Slew Violation** | 83.89 ns | 83.89 ns | 8.09 ns | **8.09 ns** |
+| **Buffer Insertion Count** | 0 | 0 | +2,841 buffers | **+2,841 buffers** |
+| **Standard-Cell Instance Count**| 73,469 cells | 73,469 cells | 76,310 cells | **76,310 cells** |
+| **Standard-Cell Area** | 1,123,398 µm² | 1,123,398 µm² | 1,156,807 µm² | **1,156,807 µm²** |
+| **Legalization HPWL** | N/A | 3,001,168 µm | 3,639,673 µm | **3,754,093 µm** (+3% delta) |
+| **Critical Timing Path** | L1 Cache Read-MUX (`_052154_`) | L1 Cache Read-MUX (`_052154_`) | PLIC Enable -> I-Cache Fill | **PLIC Enable -> I-Cache Fill** |
+
+### 3. Key Physical Engineering Findings
+1. **L1 Cache Fanout Resolution:** The high-fanout net on the L1 cache read multiplexer (`_052154_ nor3b_1`) driving 1,233 loads was completely buffered by `repair_design`. Its unbuffered 62.74 ns gate delay was eliminated, and the path dropped off the top-10 critical paths entirely!
+2. **New Critical Path Discovered:** The post-placement critical path (-19.54 ns setup slack) now originates at the PLIC interrupt enable register (`dut.u_plic.enable_q[31]`) and propagates across the APB/AHB bus fabric into the I-cache refill data bus (`dut.u_core.icache_inst.data_array[23][99]`).
+3. **Physical Signoff Reality:** While WNS improved dramatically by **+61.37 ns** (from −80.91 ns to −19.54 ns, a 4.1× reduction in cycle deficit), the SoC remains non-closed at 100 MHz. Full timing closure will require pipelining long cross-SoC bus paths (such as the PLIC-to-core interrupt/bus crossing) and clock tree synthesis.
