@@ -7,12 +7,17 @@
 `define USE_SRAM_MACRO 1'b0
 `endif
 
+`ifndef SRAM_BACKEND
+`define SRAM_BACKEND 0
+`endif
+
 `ifndef USE_SYNTH_ROM
 `define USE_SYNTH_ROM 1'b0
 `endif
 
 module aft_synth_top #(
     parameter bit USE_SRAM_MACRO = `USE_SRAM_MACRO,
+    parameter int SRAM_BACKEND   = `SRAM_BACKEND,
     parameter bit USE_SYNTH_ROM  = `USE_SYNTH_ROM
 ) (
     input  logic clk,
@@ -58,6 +63,7 @@ module aft_synth_top #(
 
     aft_top #(
         .USE_SRAM_MACRO(USE_SRAM_MACRO),
+        .SRAM_BACKEND(SRAM_BACKEND),
         .USE_SYNTH_ROM(USE_SYNTH_ROM)
     ) dut (
         .clk(clk), .rst_n(rst_n),

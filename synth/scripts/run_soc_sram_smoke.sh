@@ -39,9 +39,10 @@ docker exec "$CONTAINER_NAME" bash -lc "
       -I/work/peripherals/sram_controller/include -I/work/top_level/map -I/work/riscv/include \
       -I/work/peripherals/interrupt_controller/clint/include -I/work/peripherals/interrupt_controller/plic/include \
       -I/work/peripherals/spi/include -I/work/peripherals/digital_io_mux/include \
-      -I/work/peripherals/ff_ram/rtl -I/work/peripherals/ff_ram/include \
-      -I/OpenROAD-flow-scripts/flow/platforms/sky130ram/sky130_sram_1rw1r_64x256_8 \
-      /work/top_level/map/aft_map_pkg.sv /work/bus/ahb/include/ahb_pkg.sv /work/bus/generic/bus_protocol_if.sv \
+	      -I/work/peripherals/ff_ram/rtl -I/work/peripherals/ff_ram/include \
+	      -I/OpenROAD-flow-scripts/flow/platforms/sky130ram/sky130_sram_1rw1r_64x256_8 \
+	      -I/work/synth/sram22/sram22_256x64m4w8 \
+	      /work/top_level/map/aft_map_pkg.sv /work/bus/ahb/include/ahb_pkg.sv /work/bus/generic/bus_protocol_if.sv \
       /work/bus/ahb/include/ahb_if.sv /work/bus/apb/include/apb_if.sv /work/peripherals/sram_controller/include/sram_if.sv \
       /work/riscv/include/bus_ahbm_if.sv /work/riscv/include/riscv_if.sv \
       /work/peripherals/interrupt_controller/clint/include/clint_if.sv \
@@ -57,9 +58,10 @@ docker exec "$CONTAINER_NAME" bash -lc "
       /work/peripherals/digital_io_mux/rtl/digital_io_mux.sv /work/peripherals/gpio/src/*.sv /work/peripherals/pwm/src/*.sv \
       /work/peripherals/timer/src/*.sv /work/peripherals/spi/rtl/*.sv /work/peripherals/i2c/rtl/i2c_engine.sv \
       /work/peripherals/i2c/rtl/i2c_regs.sv /work/peripherals/i2c/rtl/i2c.sv /work/peripherals/uart/rtl/*.sv \
-      /work/peripherals/interrupt_controller/clint/rtl/*.sv /work/peripherals/interrupt_controller/plic/rtl/plic.sv \
-      /OpenROAD-flow-scripts/flow/platforms/sky130ram/sky130_sram_1rw1r_64x256_8/sky130_sram_1rw1r_64x256_8.v \
-      /work/top_level/rtl/*.sv /work/synth/aft_synth_top.sv \
+	      /work/peripherals/interrupt_controller/clint/rtl/*.sv /work/peripherals/interrupt_controller/plic/rtl/plic.sv \
+	      /OpenROAD-flow-scripts/flow/platforms/sky130ram/sky130_sram_1rw1r_64x256_8/sky130_sram_1rw1r_64x256_8.v \
+	      /work/synth/sram22/sram22_256x64m4w8/sram22_256x64m4w8.v \
+	      /work/top_level/rtl/*.sv /work/synth/aft_synth_top.sv \
       /work/top_level/verification/tb/tb_aft_top_sram_integration.sv \
       --top-module tb_aft_top_sram_integration -o /tmp/sim_soc_sram_smoke 2>&1 && \
     /tmp/sim_soc_sram_smoke

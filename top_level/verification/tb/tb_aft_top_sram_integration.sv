@@ -27,11 +27,12 @@ module tb_aft_top_sram_integration;
     pullup(i2c0_sda);
     pullup(i2c0_scl);
 
-    // Instantiate aft_synth_top with USE_SRAM_MACRO = 1 and USE_SYNTH_ROM = 1
-    aft_synth_top #(
-        .USE_SRAM_MACRO(1'b1),
-        .USE_SYNTH_ROM(1'b1)
-    ) u_soc_top (
+	    // Instantiate aft_synth_top with USE_SRAM_MACRO = 1, SRAM_BACKEND = 1 (SRAM22), and USE_SYNTH_ROM = 1
+	    aft_synth_top #(
+	        .USE_SRAM_MACRO(1'b1),
+	        .SRAM_BACKEND(1),
+	        .USE_SYNTH_ROM(1'b1)
+	    ) u_soc_top (
         .clk(clk),
         .rst_n(rst_n),
         .gpio0_in(gpio0_in), .gpio0_out(gpio0_out), .gpio0_oe(gpio0_oe), .gpio0_pu(gpio0_pu), .gpio0_pd(gpio0_pd),

@@ -4,12 +4,19 @@
 `define USE_SRAM_MACRO 1'b0
 `endif
 
+`ifndef SRAM_BACKEND
+// 0 = OpenRAM (sky130_sram_1rw1r_64x256_8)
+// 1 = SRAM22  (sram22_256x64m4w8)
+`define SRAM_BACKEND 0
+`endif
+
 `ifndef USE_SYNTH_ROM
 `define USE_SYNTH_ROM 1'b0
 `endif
 
 module aft_top #(
     parameter bit USE_SRAM_MACRO = `USE_SRAM_MACRO,
+    parameter int SRAM_BACKEND   = `SRAM_BACKEND,
     parameter bit USE_SYNTH_ROM  = `USE_SYNTH_ROM
 ) (
     input  logic clk,
@@ -203,11 +210,19 @@ module aft_top #(
     );
 
     if (USE_SRAM_MACRO) begin : gen_sram_ram
-        sky130_sram_banked_16k u_sram_banked (
-            .clk(clk),
-            .rst_n(rst_n),
-            .bus(ram_bus.peripheral_vital)
-        );
+        if (SRAM_BACKEND == 1) begin : gen_sram22
+            sram22_sram_banked_16k u_sram_banked (
+                .clk(clk),
+                .rst_n(rst_n),
+                .bus(ram_bus.peripheral_vital)
+            );
+        end else begin : gen_openram
+            sky130_sram_banked_16k u_sram_banked (
+                .clk(clk),
+                .rst_n(rst_n),
+                .bus(ram_bus.peripheral_vital)
+            );
+        end
     end else begin : gen_ff_ram
         ff_ram #(
             .NBYTES(ON_CHIP_RAM_WORDS * 4),
