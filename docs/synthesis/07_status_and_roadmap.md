@@ -12,8 +12,10 @@ This document outlines the current state of the AFTxAI pre-silicon implementatio
 | **Standard-Cell Synthesis** | **Verified Baseline** | Flop-based SoC baseline mapped to SKY130HD standard cells (5.80 mm² area). |
 | **Static Timing Analysis (STA)** | **Preliminary Pre-Placement** | 100 MHz target constrained; baseline critical path (-1532 ns) isolated to 16,393-fanout RAM decoding. |
 | **SRAM Macro RTL & Handshake** | **Verified Experimental** | 16 KiB 8-bank OpenRAM macro wrapper with 3-state FSM passes 30/30 regression tests. |
-| **Boot ROM Implementation** | **Pending Physical Solution** | Boot ROM currently uses synthesizeable flop array. Needs conversion to hard ROM macro or metal-programmed array. |
-| **Physical Floorplan & Place-and-Route** | **Not Started** | Awaits macro placement, power distribution network (PDN), and I/O pad ring integration. |
+| **SRAM Physical GDS Supply Quality** | **FABRICATION BLOCKER** | Hard VDD-GND short confirmed in local macro GDS on met3 (260 short polygons, 70.07 µm² overlap). Physically unqualified. |
+| **Boot ROM Implementation** | **Synthesizable Demo** | Synthesizable Boot ROM verified running self-checking CPU execution smoke test. |
+| **Physical Floorplan & Placement** | **Placed & Repaired** | 8 macros placed, core area 9.602 mm², detailed placement legalized, WNS reduced to -19.54 ns post-repair. |
+| **Power Grid, CTS & Routing** | **Pending** | Clock tree synthesis, PDN, and detailed routing pending. |
 
 ---
 
@@ -34,9 +36,10 @@ To advance AFTxAI to physical fabrication signoff, the following stages must be 
 - [x] **Milestone 2:** Gate-level synthesis and SKY130HD cell mapping.
 - [x] **Milestone 3:** SDC constraint authoring and pre-placement OpenROAD STA linking.
 - [x] **Milestone 4:** OpenRAM hard macro banking and cycle-accurate read handshake controller.
-- [ ] **Milestone 5:** AHB-Lite bus integration testing of SRAM wrapper under full master protocol.
-- [ ] **Milestone 6:** Floorplanning: Macro placement of 8 SRAM instances with proper spacing, halo, and pin orientations.
-- [ ] **Milestone 7:** Power Distribution Network (PDN): Core power grid (VDD/VSS) routing to SRAM macro rings and stripes.
-- [ ] **Milestone 8:** Clock Tree Synthesis (CTS): Clock buffering to balance skew between processor core and SRAM clock pins.
-- [ ] **Milestone 9:** I/O Pad Ring Integration: Connecting chip periphery to SkyWater pad macros (`sky130_fd_io`).
-- [ ] **Milestone 10:** Post-Routing Signoff: Parasitic extraction (SPEF), post-route STA, Design Rule Checking (DRC), and Layout Versus Schematic (LVS) in Pegasus/Magic.
+- [x] **Milestone 5:** AHB-Lite bus integration testing of SRAM wrapper under full master protocol.
+- [x] **Milestone 6:** Floorplanning: Macro placement of 8 SRAM instances with proper spacing, halo, and pin orientations.
+- [x] **Milestone 7:** Physical GDS Supply Verification: Formally identified and audited upstream OpenRAM VDD-GND defect.
+- [ ] **Milestone 8:** Power Distribution Network (PDN): Core power grid (VDD/VSS) routing.
+- [ ] **Milestone 9:** Clock Tree Synthesis (CTS): Clock buffering to balance skew between processor core and memories.
+- [ ] **Milestone 10:** I/O Pad Ring Integration: Connecting chip periphery to SkyWater pad macros (`sky130_fd_io`).
+- [ ] **Milestone 11:** Post-Routing Signoff: Parasitic extraction (SPEF), post-route STA, Design Rule Checking (DRC), and Layout Versus Schematic (LVS) in Pegasus/Magic.

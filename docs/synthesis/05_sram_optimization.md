@@ -163,3 +163,28 @@ Using OpenROAD inside the qualified container environment, the macro-aware floor
 1. **L1 Cache Fanout Resolution:** The high-fanout net on the L1 cache read multiplexer (`_052154_ nor3b_1`) driving 1,233 loads was completely buffered by `repair_design`. Its unbuffered 62.74 ns gate delay was eliminated, and the path dropped off the top-10 critical paths entirely!
 2. **New Critical Path Discovered:** The post-placement critical path (-19.54 ns setup slack) now originates at the PLIC interrupt enable register (`dut.u_plic.enable_q[31]`) and propagates across the APB/AHB bus fabric into the I-cache refill data bus (`dut.u_core.icache_inst.data_array[23][99]`).
 3. **Physical Signoff Reality:** While WNS improved dramatically by **+61.37 ns** (from −80.91 ns to −19.54 ns, a 4.1× reduction in cycle deficit), the SoC remains non-closed at 100 MHz. Full timing closure will require pipelining long cross-SoC bus paths (such as the PLIC-to-core interrupt/bus crossing) and clock tree synthesis.
+
+---
+
+## 7. Critical Physical Quality Audit: Macro Supply Short (Fabrication Blocker)
+
+### Upstream Issue Context
+Following upstream OpenROAD-flow-scripts Issue #4752, prebuilt OpenRAM compiler macros across multiple configurations were reported to contain severe physical DRC violations and electrical supply shorts connecting $V_{DD}$ and $V_{SS}$ directly on metal/via layers.
+
+### Independent Verification & Reproduction on Local Layout
+An automated, bounded geometry audit script was authored and executed using KLayout's layout engine (`pya`) on the local macro layout:
+- **Macro GDS Path:** `/OpenROAD-flow-scripts/flow/platforms/sky130ram/sky130_sram_1rw1r_64x256_8/sky130_sram_1rw1r_64x256_8.gds`
+- **GDS SHA-256:** `d80b62abeddb681b143364b15131a5e0fad748544befbd2b7fd9fd5e67748e3d`
+- **Execution Script:** `synth/scripts/verify_sram_gds_short.sh` (using `synth/scripts/run_verify_report.py`)
+
+### Measured Findings:
+1. **Defect Confirmation:** A hard physical metallic short was confirmed on metal layer 3 (`met3`, layer 70/20).
+2. **Defect Extent:**
+   - **260 distinct shorting geometries** on `met3` directly connect $V_{DD}$ and $V_{SS}$ text labels within the top-level macro cell.
+   - Total shorted metal area: **70,070,000 dbu² (70.0700 µm²)**.
+   - Sample short polygon bbox: `(876.350, 230.405)` to `(876.840, 230.955)` µm.
+3. **Engineering Impact:**
+   - **Fabrication Blocker:** Because $V_{DD}$ and $V_{SS}$ are shorted with over 70 µm² of metal overlap, submitting this macro for tapeout would permanently short the chip's power rails.
+   - **Classification:** The current eight-macro SRAM implementation is designated as **physically unqualified for fabrication**.
+   - **Retention of Achievements:** All functional RTL, synthesis wrappers, cycle-accurate 3-state handshake FSMs, and macro-placement floorplans remain highly valuable architectural and research achievements.
+   - **Remediation Plan:** A clean tapeout requires either replacing these macros with an independently qualified generator (such as SRAM22 or DFF-RAM compilation) or acquiring an upstream OpenRAM patch that regenerates clean layouts.
