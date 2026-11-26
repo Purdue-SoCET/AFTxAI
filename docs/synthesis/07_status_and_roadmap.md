@@ -1,45 +1,28 @@
-# 07 - Project Status & Implementation Roadmap
+# 07 - Status and Roadmap
+**Date: November 26, 2026**
 
-This document outlines the current state of the AFTxAI pre-silicon implementation and details the engineering checklist required for full physical signoff.
+## 1. Current Milestone Status
 
----
-
-## 1. Current Status Summary
-
-| Area | Status | Notes |
-|---|---|---|
-| **RTL Design & Elaboration** | **Production Ready** | Full-SoC cleanly elaborates in Yosys via `read_slang` with 0 errors. |
-| **Standard-Cell Synthesis** | **Verified Baseline** | Flop-based SoC baseline mapped to SKY130HD standard cells (5.80 mm² area). |
-| **Static Timing Analysis (STA)** | **Preliminary Pre-Placement** | 100 MHz target constrained; baseline critical path (-1532 ns) isolated to 16,393-fanout RAM decoding. |
-| **SRAM Macro RTL & Handshake** | **Verified Experimental** | 16 KiB 8-bank OpenRAM macro wrapper with 3-state FSM passes 30/30 regression tests. |
-| **SRAM Physical GDS Supply Quality** | **FABRICATION BLOCKER** | Hard VDD-GND short confirmed in local macro GDS on met3 (260 short polygons, 70.07 µm² overlap). Physically unqualified. |
-| **Boot ROM Implementation** | **Synthesizable Demo** | Synthesizable Boot ROM verified running self-checking CPU execution smoke test. |
-| **Physical Floorplan & Placement** | **Placed & Repaired** | 8 macros placed, core area 9.602 mm², detailed placement legalized, WNS reduced to -19.54 ns post-repair. |
-| **Power Grid, CTS & Routing** | **Pending** | Clock tree synthesis, PDN, and detailed routing pending. |
+- [x] **Milestone 1:** Establish synthesizable Boot ROM and standalone SRAM macro functional wrappers.
+- [x] **Milestone 2:** Verify AHB-Lite subordinate to SRAM macro integration with cycle-accurate read handshake (6/6 passing).
+- [x] **Milestone 3:** Full SoC instruction-driven CPU execution verification with SRAM load/store verification (6/6 passing).
+- [x] **Milestone 4:** Full ASIC synthesis with macro blackbox preservation and SKY130HD standard cell mapping (73,451 cells).
+- [x] **Milestone 5:** Establish physical placement floorplan with 8 SRAM macros and legal standard-cell placement.
+- [x] **Milestone 6:** Physical macro GDS audit isolating OpenRAM metallic supply short defect (`met3`, 260 shorting polygons, 70.07 µm²).
+- [x] **Milestone 7:** Research, inspect, and physically verify SRAM22 (`sram22_256x64m4w8`) macro geometry (0 planar/via shorts).
+- [x] **Milestone 8:** Author parameter-selectable backend (`SRAM_BACKEND=0/1`) in RTL, synthesis, STA, and PnR flows.
+- [x] **Milestone 9:** Synthesize full SRAM22-backed SoC, validate 8-macro structural netlist, and run macro-aware OpenROAD STA.
+- [x] **Milestone 10:** Create SRAM22 physical placement floorplan with halo blockages, achieving 100% full legality validation (`check_placement -verbose` passes with 0 errors).
+- [x] **Milestone 11:** Measure and document comparative PPA metrics (SRAM22 delivers 52% macro area reduction and 18% lower TNS).
 
 ---
 
-## 2. The Boot ROM Initialization Challenge
+## 2. Active Roadmap
 
-In the current baseline design (`peripherals/ff_ram/rtl/ff_ram.sv`), both RAM and ROM use `$readmemh(".../meminit.bin", mem)`.
-- During FPGA synthesis or simulation, `$readmemh` initializes memory contents at time zero.
-- In ASIC standard-cell synthesis without hard macros, Yosys synthesizes initial ROM values into an unalterable combinational decoder or flip-flop initialization tree.
-- When migrating the 16 KiB main RAM to SRAM macros, the **4 KiB Boot ROM** remains as flip-flop registers unless replaced with a dedicated metal-programmed Read-Only Memory (ROM) cell or an off-chip SPI flash bootloader.
-
----
-
-## 3. Physical Implementation Checklist (Path to GDSII)
-
-To advance AFTxAI to physical fabrication signoff, the following stages must be completed:
-
-- [x] **Milestone 1:** Full-SoC SystemVerilog elaboration in open-source tooling.
-- [x] **Milestone 2:** Gate-level synthesis and SKY130HD cell mapping.
-- [x] **Milestone 3:** SDC constraint authoring and pre-placement OpenROAD STA linking.
-- [x] **Milestone 4:** OpenRAM hard macro banking and cycle-accurate read handshake controller.
-- [x] **Milestone 5:** AHB-Lite bus integration testing of SRAM wrapper under full master protocol.
-- [x] **Milestone 6:** Floorplanning: Macro placement of 8 SRAM instances with proper spacing, halo, and pin orientations.
-- [x] **Milestone 7:** Physical GDS Supply Verification: Formally identified and audited upstream OpenRAM VDD-GND defect.
-- [ ] **Milestone 8:** Power Distribution Network (PDN): Core power grid (VDD/VSS) routing.
-- [ ] **Milestone 9:** Clock Tree Synthesis (CTS): Clock buffering to balance skew between processor core and memories.
-- [ ] **Milestone 10:** I/O Pad Ring Integration: Connecting chip periphery to SkyWater pad macros (`sky130_fd_io`).
-- [ ] **Milestone 11:** Post-Routing Signoff: Parasitic extraction (SPEF), post-route STA, Design Rule Checking (DRC), and Layout Versus Schematic (LVS) in Pegasus/Magic.
+1. **Timing Closure on Combinational Bus Path:**
+   - Critical path: PLIC register `dut.u_plic.enable_q[31]` through APB/AHB multiplexing to CPU I-Cache refill register (`_102400_`), slack −19.66 ns.
+   - Pipelining / registering read responses will break this long cross-subsystem combinational path into two single-cycle transfers.
+2. **Clock Tree Synthesis (CTS) & Routing:**
+   - With complete placement legality validated and 1.51 mm wide central routing channels available, advance design through TritonCTS and detailed routing.
+3. **DRC / LVS Tapeout Signoff:**
+   - Execute full chip DRC and LVS checks using Pegasus/Magic/KLayout signoff decks.

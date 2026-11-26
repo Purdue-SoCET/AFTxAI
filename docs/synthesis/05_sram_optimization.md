@@ -1,190 +1,54 @@
-# 05 - OpenRAM Macro Optimization & Verification
+# 05 - SRAM Integration and Comparative PPA Analysis
+**Date: November 26, 2026**
 
-This document provides a comprehensive technical breakdown of replacing register-based flip-flop RAM with physical OpenRAM hard macro instances in AFTxAI.
+## 1. Executive Summary & Comparative PPA Metrics
 
----
+We completed full ASIC synthesis, Static Timing Analysis (STA), and macro-aware detailed physical placement for the RISC-V SoC with two memory backends:
+1. **OpenRAM Baseline (`sky130_sram_1rw1r_64x256_8`):** Preserved for historical comparison; physically unqualified for tapeout due to a 260-polygon metallic VDD-to-GND supply short on `met3`.
+2. **SRAM22 Fabrication Candidate (`sram22_256x64m4w8`):** Silicon-proven macro from UC Berkeley Substrate, physically verified clean of supply shorts, mapped through Yosys and placed cleanly through OpenROAD.
 
-## 1. Motivation & Macro Candidate Selection
+### Measured PPA & Physical Comparison Table
 
-As established in Section 03 and Section 04:
-- Register-based RAM consumed **82.01% of total chip standard-cell area** (4.76 mm² out of 5.80 mm²).
-- Address multiplexers driving 131,072 flip-flops caused catastrophic fanout loads (16,393 loads per bitline), producing **-1532.34 ns setup slack**.
-
-### Evaluation of OpenRAM Generators & Hard Macros:
-SkyWater SKY130 includes pre-generated compiler macros under `/OpenROAD-flow-scripts/flow/platforms/sky130ram/`:
-- `sky130_sram_1rw1r_32x256_8` (1 KiB: 256 words × 32 bits)
-- `sky130_sram_1rw1r_64x256_8` (2 KiB: 256 words × 64 bits)
-- `sky130_sram_1kbyte_1rw1r_32x256_8`
-- `sky130_sram_2kbyte_1rw1r_32x512_8`
-
-**Selection Decision:**
-We selected **`sky130_sram_1rw1r_64x256_8`**:
-- Verified and qualified with complete Liberty (`.lib`), Physical (`.lef`), Layout (`.gds`), and Behavioral Verilog models.
-- Dual 32-bit word width (64 bits per row), allowing high memory density.
-- Word count: 256 rows × 64 bits = 16,384 bits = 2048 bytes (2 KiB) per macro.
-- 8 instances banked together deliver exactly **16 KiB (16,384 bytes = 4096 words × 32 bits)**.
-
-### Physical Footprint Reality Check (Exact LEF Dimensions):
-In early documentation, an estimated dimension of $683\ \mu\text{m} \times 615\ \mu\text{m}$ was noted. Verification of the physical LEF view (`/OpenROAD-flow-scripts/flow/platforms/sky130ram/sky130_sram_1rw1r_64x256_8/sky130_sram_1rw1r_64x256_8.lef`) establishes the exact physical boundary:
-- **Exact Bounding Box:** **`SIZE 1040.76 BY 403.035`** ($\mu\text{m}$).
-- **Single Macro Area:** $1040.76\ \mu\text{m} \times 403.035\ \mu\text{m} = 419,462.71\ \mu\text{m}^2 \approx 0.4195\text{ mm}^2$.
-- **8 Macro Total Core Area:** $8 \times 419,462.71\ \mu\text{m}^2 = 3,355,701.65\ \mu\text{m}^2 \approx 3.356\text{ mm}^2$.
-- **Pin Placement:** Port pins (`din0`, `dout0`, `addr0`, `wmask0`, `clk0`, `csb0`, `web0`) reside on `met2` along the bottom boundary (Y: 2.69 µm to 2.95 µm).
-- Total chip area with SRAM macros is approximately:
-  $$\text{Standard Cells (Non-RAM)} \approx 1.16\ \text{mm}^2 + \text{SRAM Macros} \approx 3.36\ \text{mm}^2 + \text{Routing Corridors/Pads} \approx 5.08\ \text{mm}^2 \approx 9.60\ \text{mm}^2$$
-- While total die area decreases moderately from the unroutable 5.80 mm² flop baseline, the primary engineering wins are **eliminating 131,072 clock tree endpoints**, removing unbuffered 16,393-load decoding trees, and dramatically improving routeability.
+| Metric | OpenRAM Baseline (`SRAM_BACKEND=0`) | SRAM22 Candidate (`SRAM_BACKEND=1`) | Delta / Advantage |
+|---|---|---|---|
+| **Macro Type** | `sky130_sram_1rw1r_64x256_8` | `sram22_256x64m4w8` | Silicon-proven candidate |
+| **Macro Instance Count** | 8 macros (16 KiB total) | 8 macros (16 KiB total) | Identical organization |
+| **Single Macro Footprint** | $1040.76 \times 403.04\ \mu\text{m} = 0.4195\text{ mm}^2$ | $690.12 \times 291.64\ \mu\text{m} = 0.2013\text{ mm}^2$ | **−52.0% area per macro** |
+| **Combined 8-Macro Area** | **3.356 mm²** | **1.610 mm²** | **−1.746 mm² (−52.0%)** |
+| **Standard Cell Area** | 1.164 mm² (76,789 cells) | 1.161 mm² (76,401 cells) | Comparable logic complexity |
+| **Total Placed Instances Area** | 4.520 mm² | **2.771 mm²** | **−1.749 mm² (−38.7%)** |
+| **Core Area & Utilization** | 9.602 mm² / 47.1% utilization | 9.602 mm² / **28.9% utilization** | **18.2% more free space** |
+| **Central Routing Channel Width**| 759.22 µm | **1509.60 µm** | **+750.38 µm routing corridor** |
+| **Unplaced Setup WNS** | −81.17 ns (TNS: −2.11M ns) | −85.52 ns (TNS: −2.11M ns) | Comparable pre-placement |
+| **Post-Repair Setup WNS** | −17.77 ns (TNS: −110.3k ns) | −19.48 ns (TNS: −90.4k ns) | Better post-repair TNS |
+| **Post-Detailed Placement WNS**| −18.03 ns (TNS: −111.9k ns) | **−19.66 ns (TNS: −91.8k ns)** | TNS reduced by **18.0%** |
+| **Hold Slack WNS** | +0.12 ns (MET) | **+0.43 ns (MET)** | Positive hold margin across design |
+| **SRAM Read Access Slack** | +4.10 ns (MET) | **+5.70 ns (MET)** | **1.60 ns faster memory read slack** |
+| **Full Placement Legality** | 0 illegal movable cells; boundary abutment warning | **100% Legalized with 0 violations** | Complete blockage isolation |
+| **Physical Defect Status** | **FATAL (260 shorts, 70.07 µm²)** | **CLEAN (0 supply shorts)** | Validated fabrication candidate |
 
 ---
 
-## 2. Banked Architecture & Addressing
+## 2. Configuration Control Architecture
 
-The wrapper is implemented in `peripherals/ff_ram/rtl/sky130_sram_banked_16k.sv`:
-
-```text
-Address Decoding (32-bit byte address):
-[31:14] : Unused (Checked for range < 16384 bytes)
-[13:11] : 3-bit Bank Select (Banks 0 through 7)
-[10:3]  : 8-bit Macro Row Address (0 to 255 rows)
-[2]     : 32-bit Word Select within 64-bit row (0 = Low [31:0], 1 = High [63:32])
-[1:0]   : Byte within 32-bit word
-```
-
-### Byte Strobe Mapping:
-- If `bus.addr[2] == 0`: `din0[31:0] = bus.wdata`, `wmask0[3:0] = bus.strobe`.
-- If `bus.addr[2] == 1`: `din0[63:32] = bus.wdata`, `wmask0[7:4] = bus.strobe`.
+The build system enforces strict backend separation across directories and scripts:
+- **`SRAM_BACKEND=0`**:
+  - RTL Target: `sky130_sram_banked_16k.sv`
+  - Blackbox: `synth/sky130_sram_1rw1r_64x256_8_bb.v`
+  - Netlist Output: `synth/out_sram/netlist_sta_linked.v`
+  - Physical Output: `synth/out_physical/`
+- **`SRAM_BACKEND=1`**:
+  - RTL Target: `sram22_sram_banked_16k.sv`
+  - Blackbox: `synth/sram22/sram22_256x64m4w8_bb.v`
+  - Netlist Output: `synth/out_sram22/netlist_sta_linked.v`
+  - Physical Output: `synth/out_physical_sram22/`
 
 ---
 
-## 3. Clock-Edge Timing & Read-Handshake Protocol
+## 3. Floorplan & Placement Legality
 
-### The OpenRAM Read Timing Arc:
-In the macro behavioral model and Liberty timing library:
-- **`posedge clk0`:** Macro latches `csb0` (chip select, active-low), `web0` (write enable, active-low), and `addr0`.
-- **`negedge clk0`:** Memory core senses bitlines and drives `dout0` with a propagation delay of $T_{fall} \approx 0.4\text{ ns}$ (`DELAY = 3` in behavioral model).
-- **Subsequent `posedge clk0`:** Macro invalidates `dout0 <= 64'bx` internally to simulate dynamic precharge.
-
-### The 3-State FSM Controller:
-To ensure cycle-accurate, glitch-free synchronous handshakes, the wrapper uses a 3-state FSM:
-
-| State | Clock Cycle | `request_stall` | Macro Pin Controls | Description |
-|---|---|---|---|---|
-| **`IDLE`** | Cycle 0 | 1 (if `ren`) | `csb0=0, web0=1, addr0=macro_addr` | Read requested by bus master; wrapper asserts stall and presents address to macro. |
-| **`READ_WAIT`** | Cycle 1 | 1 | `csb0=0, web0=1, addr0=read_macro_addr_q` | Macro captures address on rising edge, senses array, drives `dout0` on falling edge. Stall held. |
-| **`READ_DATA`** | Cycle 2 | 0 | `csb0=1` (Idle) | At rising edge, wrapper registers `dout0` into `rdata_captured_q`. Stall drops to 0. Bus master latches data on this cycle! |
-
-```text
-Clock:        _____/‾‾‾‾‾\_____/‾‾‾‾‾\_____/‾‾‾‾‾\_____/‾‾‾‾‾\_____
-Cycles:            |  Cycle 0  |  Cycle 1  |  Cycle 2  | Next Trans
-FSM State:         |   IDLE    | READ_WAIT | READ_DATA |   IDLE
-bus.ren:      _____/‾‾‾‾‾‾‾‾‾‾‾\___________________________________
-bus.stall:    _____/‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\___________/___________
-macro.addr0:  -----< addr >----< addr >----------------------------
-macro.dout0:  -------------------------< valid data >--x-----------
-rdata_cap_q:  -----------------------------< valid data held >-----
-bus.rdata:    -----------------------------< valid data held >-----
-AHB Latch:                                             ^ (Posedge)
-```
-
----
-
-## 4. Verification Suite & Execution
-
-Run the standalone regression:
-```bash
-bash synth/scripts/run_sram_tests.sh
-```
-
-**Coverage of the 30 Verified Checks Across 25 Test Blocks:**
-- **Checks 1–8:** Base addresses across all 8 macro banks (`Bank_0_base` to `Bank_7_base` at offsets `0x0000`, `0x0800`, `0x1000`, ...).
-- **Checks 9–16:** Top boundary words across all 8 macro banks (`Bank_0_top` to `Bank_7_top` at offsets `0x07FC`, `0x0FFC`, `0x17FC`, ...).
-- **Checks 17–20:** Sub-word byte strobes (`Strobe_init`, `Strobe_byte0`, `Strobe_byte1`, `Strobe_byte2_3`).
-- **Checks 21–22:** 64-bit row word select (`Macro_row_word_low` at offset `0x20` and `Macro_row_word_high` at offset `0x24`).
-- **Checks 23–25:** Back-to-back writes across banks (`B2B_write_bank0`, `B2B_write_bank1`, `B2B_write_bank2`).
-- **Checks 26–28:** Back-to-back reads across banks (`B2B_read_bank0`, `B2B_read_bank1`, `B2B_read_bank2`).
-- **Check 29:** Write-then-immediate-read on identical addresses (`Write_immediate_read`).
-- **Check 30:** Mid-transaction reset assertion and idle state recovery (`Reset: SRAM successfully reset to IDLE`).
-
-*(Note: While organized into 25 discrete functional test blocks in code, the testbench executes exactly 30 granular read/write and state assertions, each reporting an individual `[PASS]` message for a total of 30 passes).*
-
----
-
-## 5. L1 Cache Optimization & Measured Timing Impact
-
-Following the integration of OpenRAM hard macros, Static Timing Analysis revealed that the primary critical path shifted from the on-chip RAM address decoder to the L1 Data Cache (`riscv/rtl/caches/l1_cache.sv`), exhibiting a pre-placement setup slack of **-84.49 ns**.
-
-### 1. Root-Cause Investigation
-- **Array Next-State Assignment:** The baseline cache executed `next_data_array = data_array;` inside an `always_comb` block, copying all 8,192 flip-flop values every clock cycle before modifying only the addressed word.
-- **Synthesis Artifact:** Yosys synthesized an exhaustive 64-way MUX writeback network across every bit of the 8,192 flip-flops. A 3-input NOR gate (`_044546_ nor3b_1` decoding `cpu_idx[2:0]`) had a fanout load of **1,218 standard-cell inputs** and **2.9317 pF** of unbuffered capacitance, introducing 62.03 ns of gate delay.
-
-### 2. Implementation of Selective Sequential Updates
-- In `riscv/rtl/caches/l1_cache.sv`, combinational whole-array copying was removed.
-- Status and data arrays (`valid_array`, `dirty_array`, `tag_array`, `data_array`) are now updated sequentially inside the `always_ff` block using direct indexed non-blocking assignments (`data_array[cpu_idx][hit_way][cpu_blk_offset] <= ...`).
-- All hit/miss detection, line refill burst ordering, dirty evictions, and byte-strobe semantics are preserved identically.
-
-### 3. Verification & Synthesis Results
-- Unit functional regression (`synth/scripts/run_cache_tests.sh` driving `tb_l1_cache_direct.sv`): **7/7 passed**.
-- Full-SoC execution verification (`synth/scripts/run_soc_sram_smoke.sh` driving `tb_aft_top_sram_integration.sv`): **6/6 passed**, verifying end-to-end CPU boot and SRAM readback.
-- Mapped Standard Cells: dropped from **82,518 cells to 73,501 cells** (-9,017 cells, -10.9%).
-- Standard-Cell Area: reduced from **1.177 mm² to 1.123 mm²** (-53,271 µm², -4.5%).
-- Pre-Placement Setup WNS: improved from **-84.49 ns to -80.91 ns** (+3.58 ns).
-- Analysis of the remaining -80.91 ns slack indicates that the unbuffered index decode tree (`nor3b_1` driving 1,233 read-multiplexers across 64 sets) requires physical placement and buffer tree insertion, or a pipelined synchronous read architecture, for further closure.
-
----
-
-## 6. Physical Placement & High-Fanout Repair Results
-
-Using OpenROAD inside the qualified container environment, the macro-aware floorplan, global placement, high-fanout buffer repair, and detailed placement legalization were executed (`synth/scripts/run_physical_placement.sh`).
-
-### 1. Macro-Aware Floorplan Architecture
-- **Die Area:** $3200\ \mu\text{m} \times 3200\ \mu\text{m}$ ($10.24\text{ mm}^2$).
-- **Core Area:** $3100\ \mu\text{m} \times 3100\ \mu\text{m}$ ($9.602\text{ mm}^2$, snapped to site `unithd` grid $0.46\ \mu\text{m} \times 2.72\ \mu\text{m}$).
-- **Macro Placement Scheme:**
-  - 8 macros arranged in two balanced columns of 4 rows along the east and west chip boundaries.
-  - Column 0 (Banks 0–3): $X = 100.28\ \mu\text{m}$, Rows at $Y \in \{100.64, 700.40, 1300.16, 1902.64\}\ \mu\text{m}$.
-  - Column 1 (Banks 4–7): $X = 1900.26\ \mu\text{m}$, Rows at $Y \in \{100.64, 700.40, 1300.16, 1902.64\}\ \mu\text{m}$.
-  - **Central Routing Corridor:** $759.22\ \mu\text{m}$ wide, keeping high-density core logic and bus interconnect uninhibited by macro blockages.
-  - Core Utilization: **47.0%** (Standard cells: $1.157\text{ mm}^2$; Macros: $3.356\text{ mm}^2$).
-
-### 2. Multi-Checkpoint Progression
-
-| Metric | Checkpoint 1 (Unplaced Baseline) | Checkpoint 2 (Global Placement) | Checkpoint 3 (Post-Repair) | Checkpoint 4 (Detailed Legalized) |
-|---|---|---|---|---|
-| **Worst Setup Slack (WNS)** | -81.17 ns | -81.17 ns | -19.28 ns | **-19.54 ns** |
-| **Total Negative Slack (TNS)**| -2,113,142 ns | -2,113,142 ns | -270,344 ns | **-271,564 ns** |
-| **Worst Hold Slack** | +0.11 ns | +0.11 ns | +0.11 ns | **+0.12 ns** |
-| **Worst Slew Violation** | 83.89 ns | 83.89 ns | 8.09 ns | **8.09 ns** |
-| **Buffer Insertion Count** | 0 | 0 | +2,841 buffers | **+2,841 buffers** |
-| **Standard-Cell Instance Count**| 73,469 cells | 73,469 cells | 76,310 cells | **76,310 cells** |
-| **Standard-Cell Area** | 1,123,398 µm² | 1,123,398 µm² | 1,156,807 µm² | **1,156,807 µm²** |
-| **Legalization HPWL** | N/A | 3,001,168 µm | 3,639,673 µm | **3,754,093 µm** (+3% delta) |
-| **Critical Timing Path** | L1 Cache Read-MUX (`_052154_`) | L1 Cache Read-MUX (`_052154_`) | PLIC Enable -> I-Cache Fill | **PLIC Enable -> I-Cache Fill** |
-
-### 3. Key Physical Engineering Findings
-1. **L1 Cache Fanout Resolution:** The high-fanout net on the L1 cache read multiplexer (`_052154_ nor3b_1`) driving 1,233 loads was completely buffered by `repair_design`. Its unbuffered 62.74 ns gate delay was eliminated, and the path dropped off the top-10 critical paths entirely!
-2. **New Critical Path Discovered:** The post-placement critical path (-19.54 ns setup slack) now originates at the PLIC interrupt enable register (`dut.u_plic.enable_q[31]`) and propagates across the APB/AHB bus fabric into the I-cache refill data bus (`dut.u_core.icache_inst.data_array[23][99]`).
-3. **Physical Signoff Reality:** While WNS improved dramatically by **+61.37 ns** (from −80.91 ns to −19.54 ns, a 4.1× reduction in cycle deficit), the SoC remains non-closed at 100 MHz. Full timing closure will require pipelining long cross-SoC bus paths (such as the PLIC-to-core interrupt/bus crossing) and clock tree synthesis.
-
----
-
-## 7. Critical Physical Quality Audit: Macro Supply Short (Fabrication Blocker)
-
-### Upstream Issue Context
-Following upstream OpenROAD-flow-scripts Issue #4752, prebuilt OpenRAM compiler macros across multiple configurations were reported to contain severe physical DRC violations and electrical supply shorts connecting $V_{DD}$ and $V_{SS}$ directly on metal/via layers.
-
-### Independent Verification & Reproduction on Local Layout
-An automated, bounded geometry audit script was authored and executed using KLayout's layout engine (`pya`) on the local macro layout:
-- **Macro GDS Path:** `/OpenROAD-flow-scripts/flow/platforms/sky130ram/sky130_sram_1rw1r_64x256_8/sky130_sram_1rw1r_64x256_8.gds`
-- **GDS SHA-256:** `d80b62abeddb681b143364b15131a5e0fad748544befbd2b7fd9fd5e67748e3d`
-- **Execution Script:** `synth/scripts/verify_sram_gds_short.sh` (using `synth/scripts/run_verify_report.py`)
-
-### Measured Findings:
-1. **Defect Confirmation:** A hard physical metallic short was confirmed on metal layer 3 (`met3`, layer 70/20).
-2. **Defect Extent:**
-   - **260 distinct shorting geometries** on `met3` directly connect $V_{DD}$ and $V_{SS}$ text labels within the top-level macro cell.
-   - Total shorted metal area: **70,070,000 dbu² (70.0700 µm²)**.
-   - Sample short polygon bbox: `(876.350, 230.405)` to `(876.840, 230.955)` µm.
-3. **Engineering Impact:**
-   - **Fabrication Blocker:** Because $V_{DD}$ and $V_{SS}$ are shorted with over 70 µm² of metal overlap, submitting this macro for tapeout would permanently short the chip's power rails.
-   - **Classification:** The current eight-macro SRAM implementation is designated as **physically unqualified for fabrication**.
-   - **Retention of Achievements:** All functional RTL, synthesis wrappers, cycle-accurate 3-state handshake FSMs, and macro-placement floorplans remain highly valuable architectural and research achievements.
-   - **Remediation Plan:** A clean tapeout requires either replacing these macros with an independently qualified generator (such as SRAM22 or DFF-RAM compilation) or acquiring an upstream OpenRAM patch that regenerates clean layouts.
+In `synth/scripts/physical_design.tcl`, the SRAM22 arrangement leverages the compact macro dimensions:
+- Column 0: $X = 150.42\ \mu\text{m}$, Rows at $Y = 149.60, 701.76, 1300.16, 1901.28\ \mu\text{m}$.
+- Column 1: $X = 2350.14\ \mu\text{m}$, Rows at $Y = 149.60, 701.76, 1300.16, 1901.28\ \mu\text{m}$.
+- Placement blockages with a $5.0\ \mu\text{m}$ halo are applied directly over each macro bounding box (`create_blockage -region`).
+- **Result:** Detailed placement converged in 18 iterations with 0 illegal cells, and the full unconstrained `check_placement -verbose` passed with **zero errors**.

@@ -4,75 +4,73 @@
 ## 1. Branch and Repository State
 - **Repository:** `Purdue-SoCET/AFTxAI`
 - **Active Branch:** `feat/sram-macro-experiment`
-- **Base Verification Commit:** `4de22cf` (*feat(pnr): validate SRAM GDS defect, consolidate verification scripts, and fix physical placement checks*)
-- **Target PDK:** SkyWater SKY130 (sky130hd standard cells, sky130ram macros, sram22 macros)
+- **Base Commit:** `8b2b147` (*feat(sram22): integrate verified SRAM22 macro backend, validate GDS supply integrity, and verify full-SoC CPU execution*)
+- **Target PDK:** SkyWater SKY130 (sky130hd standard cells, sram22 macros, sky130ram baseline)
 - **Target Clock:** 100 MHz (10.0 ns period)
 
 ---
 
-## 2. SRAM Macro Physical Integrity & Replacement Assessment
+## 2. Configuration Control & Separation of Workflows
 
-### A. OpenRAM Macro (`sky130_sram_1rw1r_64x256_8`)
-- **Status:** **Physically Unqualified — Absolute Fabrication Blocker**
-- **Evidence:** Confirmed hard metallic supply short on `met3` (layer 70/20) with 260 shorting geometries and 70.07 µm² direct VDD-to-GND overlap.
-- **Role:** Preserved solely as an experimental architectural baseline and historical comparison point.
+The build flow enforces clean separation between the historical OpenRAM baseline and the fabrication-ready SRAM22 candidate:
+- **`SRAM_BACKEND=0` (OpenRAM):**
+  - Synthesizes `sky130_sram_banked_16k.sv` with `synth/sky130_sram_1rw1r_64x256_8_bb.v`.
+  - Outputs gate netlist to `synth/out_sram/netlist_sta_linked.v`.
+  - Places macros into `synth/out_physical/`.
+- **`SRAM_BACKEND=1` (SRAM22):**
+  - Synthesizes `sram22_sram_banked_16k.sv` with `synth/sram22/sram22_256x64m4w8_bb.v`.
+  - Outputs gate netlist to `synth/out_sram22/netlist_sta_linked.v`.
+  - Places macros into `synth/out_physical_sram22/`.
 
-### B. SRAM22 Replacement Macro (`sram22_256x64m4w8`)
-- **Status:** **Physically Credible & Validated Replacement Candidate**
-- **Source:** UC Berkeley Substrate project (`ucb-substrate/sram22_sky130_macros`, commit `292a4e2`, BSD-3-Clause).
-- **Physical Layout Verification:**
-  - Layout SHA-256: `b6d5e63d819133c617e96eaa12123b66a6b771ecbdaeb153b87f868d0e94abd5`
-  - Dimensions: $690.120\ \mu\text{m} \times 291.640\ \mu\text{m} = 0.2013\text{ mm}^2$ per macro.
-  - Total 8-macro footprint: **$1.610\text{ mm}^2$** (a **52.0% area reduction** compared to OpenRAM's $3.356\text{ mm}^2$!).
-  - Signal pins located on `met1` along bottom boundary ($Y = 0.0$ to $0.32\ \mu\text{m}$).
-  - Power rails on `met2` (VDD/VSS straps).
-  - Supply Audit Result: **Clean PASS (Status 0)**. 732 VDD labels, 701 VSS labels, 0 shorted geometries across `met1` and `met2`.
-- **Timing Characterization:**
-  - Liberty corner: `sram22_256x64m4w8_tt_025C_1v80.lib`.
-  - Clock-to-Q read access time: $\sim 3.40\text{ ns}$ (comfortably fits inside 10.0 ns / 100 MHz clock period).
-  - Setup constraint on address/controls: $\sim 0.14\text{ ns}$ to $0.32\text{ ns}$.
-  - Hold constraint: $\sim 0.07\text{ ns}$ to $0.12\text{ ns}$.
-- **Silicon Silicon Provenance:** Tested on silicon via Cadence shuttle program at $V_{DD}=1.8\text{ V}$, 25 MHz functional operation.
+Every synthesis, STA, and physical placement script honors `SRAM_BACKEND`, validates Docker repository mounts, and verifies netlist macro counts before proceeding.
 
 ---
 
-## 3. Verified Regressions Across Backends
+## 3. Verified SRAM22 Synthesis & Physical PPA Results
 
-The architecture features a clean parameter-selectable memory backend in `aft_top` and `aft_synth_top`:
-- `SRAM_BACKEND = 0`: OpenRAM (`sky130_sram_banked_16k`)
-- `SRAM_BACKEND = 1`: SRAM22 (`sram22_sram_banked_16k`)
+### A. Synthesis & Netlist Structural Audit
+- Command: `SRAM_BACKEND=1 bash synth/scripts/run_sram_synthesis.sh`
+- Structural Audit:
+  - Exact `sram22_256x64m4w8` instance count: **8**
+  - OpenRAM macro instances: **0**
+  - Unintended memory flip-flops: **0** (synthesizable Boot ROM and SRAM blackboxes cleanly preserved)
+  - Standard cell gate count: **73,451 cells** (1.122 mm² mapped area)
 
-All test suites pass 100% cleanly:
-- **SRAM22 Equivalence Regression (27/27 checks):** **PASS** (`synth/scripts/run_sram22_tests.sh`)
-- **AHB-Lite to SRAM22 Subordinate Integration (6/6 checks):** **PASS** (`synth/scripts/run_ahb_sram22_tests.sh`)
-- **Full-SoC CPU Boot & SRAM Readback Smoke Test:** **PASS** (`synth/scripts/run_soc_sram_smoke.sh`)
-  - Real instruction stream execution from Boot ROM verified.
-  - GPIO output configuration verified.
-  - AHB memory write and readback verified matching expected data (`0x00005A5A`).
-- **L1 Cache Direct Functional Regression (7/7 checks):** **PASS** (`synth/scripts/run_cache_tests.sh`)
-- **SRAM22 Physical GDS Supply Audit:** **PASS** (`synth/scripts/run_verify_sram22.sh`, Exit 0, 0 shorts detected).
+### B. Pre-Placement OpenROAD Macro-Aware STA
+- Command: `SRAM_BACKEND=1 bash synth/scripts/run_sram_sta.sh`
+- Timing arcs through SRAM22 macros:
+  - Macro Setup time: **0.47 ns** (Slack: **+4.33 ns MET**)
+  - Macro Clock-to-Q read access time: **3.40 ns** (Slack: **+5.70 ns MET**)
+  - Demonstrates that SRAM22 comfortably supports 100 MHz synchronous read/write timing.
+
+### C. Physical Placement & Complete Legality Validation
+- Command: `SRAM_BACKEND=1 bash synth/scripts/run_physical_placement.sh`
+- Macro Floorplan:
+  - 2 columns of 4 macros: Column 0 at $X = 150.42\ \mu\text{m}$, Column 1 at $X = 2350.14\ \mu\text{m}$.
+  - Central routing channel width: **1509.60 µm** (nearly double OpenRAM's 759.22 µm corridor).
+  - Placement blockages: Applied $5.0\ \mu\text{m}$ halo blockages over macro bounding boxes.
+- Placement Convergence:
+  - Detailed placement negotiation legalizer converged in 18 iterations (0 illegal cells, 0 illegal sites).
+  - Unconstrained full placement check (`check_placement -verbose`) passed with **0 errors**.
+- Placement Timing & Area:
+  - Total macro area: **1.610 mm²** (vs OpenRAM's 3.356 mm², **52.0% macro area reduction**).
+  - Core utilization: **28.9%** (vs OpenRAM's 47.1%).
+  - Detailed placement setup WNS: **−19.66 ns** (TNS: **−91,756 ns**, down from −111,938 ns in baseline).
+  - Detailed placement hold WNS: **+0.43 ns (MET)**.
+  - Critical path: `dut.u_plic.enable_q[31]` through APB/AHB bus multiplexers to `dut.u_core.icache_inst.data_array[6][3]` (`_102400_`).
 
 ---
 
-## 4. Key Physical Placement & Floorplan Metrics
-
-- **Die Area:** 3200 × 3200 µm
-- **Core Area:** 3100 × 3100 µm (9.602 mm², ~47.0% core utilization with OpenRAM macros; lower with SRAM22)
-- **Standard Cells (Post-Repair):** 76,789 movable instances (1.164 mm²)
-- **Timing Slack (Post-Detailed Placement):**
-  - Unplaced setup WNS: −81.17 ns
-  - Post-Buffer Repair WNS: −17.77 ns
-  - Post-Detailed Placement WNS: −18.03 ns
-  - TNS: −111,938 ns
-- **Placement Legality Analysis:**
-  - Movable cells: 100% legalized (`check_placement -placeable` exits 0 with 0 illegal cells and 0 overlaps).
-  - Macro boundary abutment: OpenROAD's unconstrained checker flags standard cells placed directly on the unhaloed macro edge (DPL-0011). Adding explicit placement blockages or halos around macro columns completely decouples movable cell legalization from fixed macro boundaries.
+## 4. Multi-Layer Supply Integrity Audit
+- Command: `bash synth/scripts/run_verify_sram22.sh`
+- Layer-aware geometric audit across `met1` (68/20), `met2` (69/20), and `via1` (68/44) cuts.
+- 728 VDD labels, 697 VSS labels.
+- Zero planar supply shorts, zero via bridging cuts.
+- Result: **Clean PASS (Status 0)**.
 
 ---
 
 ## 5. Next Engineering Steps
-1. **SRAM22 Physical Floorplan & PnR Run:**
-   - Author macro floorplan script updated with SRAM22 dimensions ($690.12\ \mu\text{m} \times 291.64\ \mu\text{m}$).
-   - Set up explicit placement halos (`set_halo -halo {5 5}`) and verify full unconstrained `check_placement`.
-2. **Timing Optimization on Critical Path:**
-   - Address the −18.03 ns combinational path from PLIC to I-cache refill line by pipelining or registering the bus response.
+1. **Pipelining Critical Path:** Register the PLIC/APB read response to break the −19.66 ns combinational path into two single-cycle transfers.
+2. **Clock Tree Synthesis (CTS):** Run TritonCTS on `synth/out_physical_sram22/aft_synth_top_placed.odb`.
+3. **Routing & GDS Export:** Stream out routed GDS for DRC/LVS tapeout signoff.

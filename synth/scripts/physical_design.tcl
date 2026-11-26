@@ -1,18 +1,43 @@
 # synth/scripts/physical_design.tcl
 # OpenROAD Macro-Aware Physical Placement and High-Fanout Repair
+# Selectable SRAM backend:
+#   SRAM_BACKEND=0 : OpenRAM (sky130_sram_1rw1r_64x256_8) -> /work/synth/out_physical
+#   SRAM_BACKEND=1 : SRAM22  (sram22_256x64m4w8)          -> /work/synth/out_physical_sram22
 
-set out_dir "/work/synth/out_physical"
+if {[info exists ::env(SRAM_BACKEND)]} {
+    set sram_backend $::env(SRAM_BACKEND)
+} else {
+    set sram_backend 1
+}
+
+if {$sram_backend == 1} {
+    puts "=== Physical Flow: SRAM22 Backend Selected ==="
+    set out_dir "/work/synth/out_physical_sram22"
+    set sram_lef "/work/synth/sram22/sram22_256x64m4w8/sram22_256x64m4w8.lef"
+    set sram_lib "/work/synth/sram22/sram22_256x64m4w8/sram22_256x64m4w8_tt_025C_1v80.lib"
+    set netlist  "/work/synth/out_sram22/netlist_sta_linked.v"
+    set macro_prefix "dut.gen_sram_ram.gen_sram22.u_sram_banked.gen_sram_banks"
+    # SRAM22 macro: 690.120 um (X) x 291.640 um (Y)
+    set macro_w 690.12
+    set macro_h 291.64
+} else {
+    puts "=== Physical Flow: OpenRAM Backend Selected ==="
+    set out_dir "/work/synth/out_physical"
+    set sram_lef "/OpenROAD-flow-scripts/flow/platforms/sky130ram/sky130_sram_1rw1r_64x256_8/sky130_sram_1rw1r_64x256_8.lef"
+    set sram_lib "/OpenROAD-flow-scripts/flow/platforms/sky130ram/sky130_sram_1rw1r_64x256_8/sky130_sram_1rw1r_64x256_8_TT_1p8V_25C.lib"
+    set netlist  "/work/synth/out_sram/netlist_sta_linked.v"
+    set macro_prefix "dut.gen_sram_ram.u_sram_banked.gen_sram_banks"
+    # OpenRAM macro: 1040.760 um (X) x 403.035 um (Y)
+    set macro_w 1040.76
+    set macro_h 403.035
+}
+
 file mkdir $out_dir
 
 set tech_lef "/OpenROAD-flow-scripts/flow/platforms/sky130hd/lef/sky130_fd_sc_hd.tlef"
 set cell_lef "/OpenROAD-flow-scripts/flow/platforms/sky130hd/lef/sky130_fd_sc_hd_merged.lef"
-set sram_lef "/OpenROAD-flow-scripts/flow/platforms/sky130ram/sky130_sram_1rw1r_64x256_8/sky130_sram_1rw1r_64x256_8.lef"
-
-set std_lib "/OpenROAD-flow-scripts/flow/platforms/sky130hd/lib/sky130_fd_sc_hd__tt_025C_1v80.lib"
-set sram_lib "/OpenROAD-flow-scripts/flow/platforms/sky130ram/sky130_sram_1rw1r_64x256_8/sky130_sram_1rw1r_64x256_8_TT_1p8V_25C.lib"
-
-set netlist "/work/synth/out_sram/netlist_sta_linked.v"
-set sdc     "/work/synth/aft_top.sdc"
+set std_lib  "/OpenROAD-flow-scripts/flow/platforms/sky130hd/lib/sky130_fd_sc_hd__tt_025C_1v80.lib"
+set sdc      "/work/synth/aft_top.sdc"
 set top_module "aft_synth_top"
 
 puts "============================================================"
@@ -64,47 +89,59 @@ set_wire_rc -layer met3
 puts "\n============================================================"
 puts " Stage 2: Physical SRAM Macro Placement"
 puts "============================================================"
-# Macro dimensions: 1040.76 um (X) by 403.035 um (Y).
-# Place 8 macros into 2 columns of 4 rows:
-# Column 0: X = 100.28 (snapped to 0.46 um site)
-# Column 1: X = 1900.26 (snapped to 0.46 um site)
-# Central routing corridor: 1900.26 - (100.28 + 1040.76) = 759.22 um wide!
-# Row Y coordinates (snapped to 2.72 um site):
-#   Row 0: Y = 100.64   (top: 503.675)
-#   Row 1: Y = 700.40   (top: 1103.435, gap ~197 um)
-#   Row 2: Y = 1300.16  (top: 1703.195, gap ~197 um)
-#   Row 3: Y = 1902.64  (top: 2305.675, gap ~199 um)
 
-set macro_col0_x 100.28
-set macro_col1_x 1900.26
-set macro_rows_y [list 100.64 700.40 1300.16 1902.64]
+if {$sram_backend == 1} {
+    # SRAM22 arrangement:
+    # 2 columns of 4 rows
+    # Col 0: X = 150.42 (snapped to 0.46 um grid: 327 * 0.46 = 150.42)
+    # Col 1: X = 2350.14 (snapped to 0.46 um grid: 5109 * 0.46 = 2350.14)
+    # Central routing channel: 2350.14 - (150.42 + 690.12) = 1509.60 um wide!
+    # Row Y coordinates (snapped to 2.72 um grid: Y % 2.72 == 0):
+    #   Row 0: Y = 149.60 (55 * 2.72) -> top: 441.24
+    #   Row 1: Y = 700.40 (257.5 -> snap 258*2.72 = 701.76) -> top: 993.40
+    #   Row 2: Y = 1300.16 (snap 478*2.72 = 1300.16) -> top: 1591.80
+    #   Row 3: Y = 1901.28 (snap 699*2.72 = 1901.28) -> top: 2192.92
+    set col0_x 150.42
+    set col1_x 2350.14
+    set rows_y [list 149.60 701.76 1300.16 1901.28]
+} else {
+    set col0_x 100.28
+    set col1_x 1900.26
+    set rows_y [list 100.64 700.40 1300.16 1902.64]
+}
 
-# Column 0: Banks 0-3 (Orientation R0, pins face south toward channel)
+# Column 0: Banks 0-3 (Orientation R0)
 for {set i 0} {$i < 4} {incr i} {
-    set inst_name "dut.gen_sram_ram.u_sram_banked.gen_sram_banks\\\[$i\\\].u_sram"
-    set y_coord [lindex $macro_rows_y $i]
-    puts "Placing $inst_name at ($macro_col0_x, $y_coord) R0"
-    place_macro -macro_name $inst_name -location [list $macro_col0_x $y_coord] -orientation R0 -snap_to_site_grid
+    set inst_name "${macro_prefix}\\\[$i\\\].u_sram"
+    set y_coord [lindex $rows_y $i]
+    puts "Placing $inst_name at ($col0_x, $y_coord) R0"
+    place_macro -macro_name $inst_name -location [list $col0_x $y_coord] -orientation R0 -snap_to_site_grid
 }
 
 # Column 1: Banks 4-7 (Orientation R0)
 for {set i 4} {$i < 8} {incr i} {
-    set inst_name "dut.gen_sram_ram.u_sram_banked.gen_sram_banks\\\[$i\\\].u_sram"
-    set y_coord [lindex $macro_rows_y [expr {$i - 4}]]
-    puts "Placing $inst_name at ($macro_col1_x, $y_coord) R0"
-    place_macro -macro_name $inst_name -location [list $macro_col1_x $y_coord] -orientation R0 -snap_to_site_grid
+    set inst_name "${macro_prefix}\\\[$i\\\].u_sram"
+    set y_coord [lindex $rows_y [expr {$i - 4}]]
+    puts "Placing $inst_name at ($col1_x, $y_coord) R0"
+    place_macro -macro_name $inst_name -location [list $col1_x $y_coord] -orientation R0 -snap_to_site_grid
 }
 
-# Add placement padding (halo) around macros in placement sites
-# Left/right padding ensures routing access to side pins
-# Note: In OpenROAD, if placement padding is enabled on macros, detailed_placement must respect it without failing check_placement.
-# If detailed legalizer negotiation exceeds padding, check_placement reports padding check failure.
-# We test with check_placement -verbose; if padding check fails on macro halo, check_placement will flag it.
+# Create placement blockages covering macro bounding boxes + 5.0 um halo on left/right/top/bottom
+# This completely prevents standard cells from abutting or entering macro boundaries,
+# ensuring both movable and fixed legality checks pass 100% cleanly!
+puts "\nAdding placement blockages around SRAM macros for complete halo isolation..."
+for {set i 0} {$i < 4} {incr i} {
+    set y0 [lindex $rows_y $i]
+    set y1 [expr {$y0 + $macro_h}]
+    # Blockage for Col 0 macro + 5 um halo
+    create_blockage -region [list [expr {$col0_x - 5.0}] [expr {$y0 - 5.0}] [expr {$col0_x + $macro_w + 5.0}] [expr {$y1 + 5.0}]]
+    # Blockage for Col 1 macro + 5 um halo
+    create_blockage -region [list [expr {$col1_x - 5.0}] [expr {$y0 - 5.0}] [expr {$col1_x + $macro_w + 5.0}] [expr {$y1 + 5.0}]]
+}
 
 puts "\n============================================================"
 puts " Stage 3: Global Placement"
 puts "============================================================"
-# Standard cell global placement with density targeting
 global_placement -density 0.55 -skip_io
 
 puts "\n============================================================"
@@ -121,7 +158,6 @@ report_check_types -max_slew -max_capacitance -max_fanout -violators > "$out_dir
 puts "\n============================================================"
 puts " Stage 4: High-Fanout, Slew, and Capacitance Repair"
 puts "============================================================"
-# Configure repair_design buffer and inverter cells from SKY130HD
 set_wire_rc -layer met3
 repair_design -verbose
 
@@ -137,16 +173,15 @@ report_checks -path_delay max -endpoint_path_count 10 > "$out_dir/03_post_repair
 report_check_types -max_slew -max_capacitance -max_fanout -violators > "$out_dir/03_post_repair_drc_violators.rpt"
 
 puts "\n============================================================"
-puts " Stage 5: Detailed Placement / Legalization"
+puts " Stage 5: Detailed Placement / Legalization & Full Legality Check"
 puts "============================================================"
-# Note: place_pins -random is obsolete in OpenROAD 2026. Use place_pins with layer constraints.
 place_pins -hor_layers met3 -ver_layers met2
 
 detailed_placement
-# Use -placeable to verify legality of all movable standard cells.
-# Note: check_placement with unconstrained fixed checks flags macro-to-cell boundary abutment
-# (DPL-0011) unless an explicit halo/keepout blockage is defined.
-check_placement -placeable
+
+# Run full legality check (both movable and fixed instances!)
+puts "Checking complete placement legality..."
+check_placement -verbose -report_file_name "$out_dir/check_placement_full.rpt"
 
 puts "\n============================================================"
 puts " CHECKPOINT 4: Detailed Placement Complete"
